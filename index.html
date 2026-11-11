@@ -13493,6 +13493,7 @@ img{max-width:100%}
           '<button class="btn-secondary" type="button" id="fbTestEvent">Send test event</button>' +
           '<button class="btn-secondary" type="button" id="fbPullAn">Merge cloud analytics</button>' +
           '<button class="btn-secondary" type="button" id="fbPushFb">Push feedback</button>' +
+          '<button class="btn-secondary" type="button" id="fbSyncTk">Re-send tickets</button>' +
         '</div>' +
         '<div class="xm-note">Events go to <code>analytics_events</code> and must match your rules: ' +
           '<code>t</code>, <code>type</code>, <code>vid</code>, <code>sid</code> plus optional fields only.</div>' +
@@ -13512,6 +13513,10 @@ img{max-width:100%}
       document.getElementById('fbPushFb').onclick = function () {
         pushFeedback().then(function (n) { alert('Pushed ' + n + ' feedback items.'); })
           .catch(function (e) { alert('Push failed: ' + e.message); });
+      };
+      var tkBtn = document.getElementById('fbSyncTk');
+      if (tkBtn) tkBtn.onclick = function () {
+        syncAllTickets().then(function (n) { alert('Re-sent ' + n + ' ticket(s) with their attachments.'); });
       };
     };
 
@@ -13629,9 +13634,13 @@ img{max-width:100%}
         setTimeout(function () {
           try {
             var list = JSON.parse(localStorage.getItem('das_studio_feedbacks') || '[]');
-            if (list.length) cloudCreateFeedback(list[0]);
+            /* records are appended, so the newest is the one with the latest createdAt */
+            var newest = list.slice().sort(function (a, b) {
+              return (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
+            })[0];
+            if (newest) cloudCreateFeedback(newest);
           } catch (e) {}
-        }, 250);
+        }, 400);
       });
     }
 
@@ -13695,6 +13704,19 @@ img{max-width:100%}
         });
     }
     window.__dasMergeFeedback = mergeCloudFeedback;
+
+    /* re-send every ticket held in this browser (fixes ones sent before the fix) */
+    function syncAllTickets() {
+      if (!db()) return Promise.resolve(0);
+      var list = [];
+      try { list = JSON.parse(localStorage.getItem('das_studio_feedbacks') || '[]'); } catch (e) {}
+      var jobs = list.map(function (rec) { return cloudCreateFeedback(rec); });
+      return Promise.all(jobs).then(function () {
+        note('Re-sent ' + list.length + ' ticket(s) with attachments.');
+        return list.length;
+      });
+    }
+    window.__dasSyncTickets = syncAllTickets;
 
     /* ---------- 4. live updates in every open browser ---------- */
     function watch() {
