@@ -13538,6 +13538,193 @@ img{max-width:100%}
     });
   })();
   /* ============================================================
+     CROSS-BROWSER SYNC — settings, tools and feedback
+     ============================================================ */
+  (function crossBrowserSync() {
+    var pushing = false;
+
+    function db() { return window.__dasDb || null; }
+    function signedIn() { return !!(window.__dasUser); }
+
+    function note(msg, bad) {
+      try { console.log('[sync] ' + msg); } catch (e) {}
+      var el = document.getElementById('fbLog');
+      if (el && el.querySelector('.fb-log-line')) {
+        var line = document.createElement('div');
+        line.className = 'fb-log-line' + (bad ? ' bad' : '');
+        line.innerHTML = '<span>' + new Date().toLocaleTimeString() + '</span> ' + escapeHtml(msg);
+        el.insertBefore(line, el.firstChild);
+      }
+    }
+
+    /* ---------- 1. write-through: every local save reaches Firestore ---------- */
+    function pushDoc(name, value) {
+      if (!db() || !signedIn()) return;
+      try {
+        db().collection(name).doc('main').set({
+          data: JSON.stringify(value),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(function () { note('Saved ' + name + ' to the cloud.'); })
+          .catch(function (e) { note(name + ' save failed: ' + (e.code || e.message), true); });
+      } catch (e) {}
+    }
+
+    var pending = {};
+    function schedulePush(name, value) {
+      if (pushing) return;
+      clearTimeout(pending[name]);
+      pending[name] = setTimeout(function () { pushDoc(name, value); }, 1200);
+    }
+
+    var nativeSet = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      nativeSet.apply(this, arguments);
+      if (pushing) return;
+      try {
+        if (key === 'das_studio_settings') schedulePush('settings', JSON.parse(value));
+        else if (key === 'das_studio_tools') schedulePush('tools', JSON.parse(value));
+      } catch (e) {}
+    };
+
+    /* ---------- 2. feedback written by visitors lands in the cloud ---------- */
+    function cloudCreateFeedback(rec) {
+      if (!db() || !rec || !rec.message) return;
+      var doc = {
+        message: String(rec.message).slice(0, 4900),
+        name: String(rec.name || '').slice(0, 80),
+        email: String(rec.email || '').slice(0, 120),
+        type: String(rec.type || 'general').slice(0, 30),
+        priority: String(rec.priority || 'normal').slice(0, 20),
+        ticket: String(rec.ticket || '').slice(0, 24),
+        status: String(rec.status || 'pending').slice(0, 20),
+        createdAt: Number(rec.createdAt || Date.now())
+      };
+      db().collection('feedback').doc(doc.ticket || ('fb' + doc.createdAt)).set(doc)
+        .then(function () { note('Ticket ' + doc.ticket + ' delivered to the cloud.'); })
+        .catch(function (e) { note('Ticket upload failed: ' + (e.code || e.message), true); });
+    }
+
+    /* the form's own listener runs first, so read back what it just stored */
+    var form = document.getElementById('userFeedbackForm');
+    if (form) {
+      form.addEventListener('submit', function () {
+        setTimeout(function () {
+          try {
+            var list = JSON.parse(localStorage.getItem('das_studio_feedbacks') || '[]');
+            if (list.length) cloudCreateFeedback(list[0]);
+          } catch (e) {}
+        }, 250);
+      });
+    }
+
+    /* ---------- 3. admin pulls tickets raised anywhere ---------- */
+    function mergeCloudFeedback() {
+      if (!db() || !signedIn()) return Promise.resolve(0);
+      return db().collection('feedback').orderBy('createdAt', 'desc').limit(200).get()
+        .then(function (snap) {
+          var local = [];
+          try { local = JSON.parse(localStorage.getItem('das_studio_feedbacks') || '[]'); } catch (e) {}
+          var byTicket = {};
+          local.forEach(function (f) { byTicket[f.ticket || f.id] = true; });
+          var added = 0;
+          snap.forEach(function (doc) {
+            var f = doc.data();
+            var key = f.ticket || doc.id;
+            if (byTicket[key]) return;
+            local.unshift({
+              id: 'fb_' + (f.createdAt || Date.now()) + '_' + Math.random().toString(36).slice(2, 6),
+              ticket: key,
+              name: f.name || 'Visitor',
+              email: f.email || '',
+              type: f.type || 'general',
+              priority: f.priority || 'normal',
+              message: f.message || '',
+              date: new Date(f.createdAt || Date.now()).toLocaleString(),
+              createdAt: f.createdAt || Date.now(),
+              status: f.status || 'pending',
+              cloud: true
+            });
+            added++;
+          });
+          if (added) {
+            pushing = true;
+            try { localStorage.setItem('das_studio_feedbacks', JSON.stringify(local)); } catch (e) {}
+            pushing = false;
+            try { renderFeedbacks(); } catch (e) {}
+            note('Pulled ' + added + ' new ticket(s) from the cloud.');
+          }
+          return added;
+        })
+        .catch(function (e) {
+          note('Ticket pull failed: ' + (e.code || e.message) +
+            (String(e.code || '').indexOf('permission') > -1 ? ' — sign in as staff' : ''), true);
+          return 0;
+        });
+    }
+    window.__dasMergeFeedback = mergeCloudFeedback;
+
+    /* ---------- 4. live updates in every open browser ---------- */
+    function watch() {
+      if (!db()) return;
+      ['tools', 'settings'].forEach(function (name) {
+        try {
+          db().collection(name).doc('main').onSnapshot(function (doc) {
+            if (!doc.exists) return;
+            var raw = doc.data() && doc.data().data;
+            if (!raw) return;
+            var parsed = JSON.parse(raw);
+            pushing = true;
+            try {
+              if (name === 'tools' && Array.isArray(parsed)) {
+                localStorage.setItem('das_studio_tools', raw);
+                tools = parsed;
+                try { renderGrid(); } catch (e) {}
+              } else if (name === 'settings' && parsed && typeof parsed === 'object') {
+                localStorage.setItem('das_studio_settings', raw);
+                Object.keys(parsed).forEach(function (k) { settings[k] = parsed[k]; });
+                try { applySettingsToDOM(); } catch (e) {}
+              }
+            } catch (e) {}
+            pushing = false;
+            note('Live update received: ' + name + '.');
+          }, function (e) { note('Live ' + name + ' listener: ' + (e.code || e.message), true); });
+        } catch (e) {}
+      });
+
+      try {
+        db().collection('feedback').orderBy('createdAt', 'desc').limit(50)
+          .onSnapshot(function () { mergeCloudFeedback(); },
+            function () { /* non-staff visitors have no read access — expected */ });
+      } catch (e) {}
+    }
+
+    /* refresh tickets whenever the Messages tab opens */
+    var prevMsgs = tabRenderers.tabMsgs;
+    if (prevMsgs) {
+      tabRenderers.tabMsgs = function () {
+        prevMsgs.apply(null, arguments);
+        mergeCloudFeedback();
+      };
+    }
+
+    /* start when Firebase is ready, and again when the admin signs in */
+    var tries = 0;
+    var timer = setInterval(function () {
+      tries++;
+      if (db() && window.firebase) {
+        clearInterval(timer);
+        watch();
+        if (signedIn()) mergeCloudFeedback();
+      } else if (tries > 40) { clearInterval(timer); }
+    }, 500);
+
+    window.addEventListener('load', function () {
+      setTimeout(function () {
+        if (db() && signedIn()) mergeCloudFeedback();
+      }, 3000);
+    });
+  })();
+  /* ============================================================
      INIT
      ============================================================ */
   renderGrid();
