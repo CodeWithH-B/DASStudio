@@ -6596,18 +6596,21 @@ img{max-width:100%}
     if (el) return el;
     el = document.createElement('div'); el.id = 'admLogin'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'alTitle');
     el.innerHTML = '<form class="al-box" id="alForm" autocomplete="on"><h2 id="alTitle">🔐 Admin sign in</h2><p>Enter the admin password to manage tools, settings and messages.</p>' +
-      '<div class="al-field"><input type="password" id="alPass" autocomplete="current-password" placeholder="Password" aria-label="Admin password" required>' +
+      '<div class="al-field"><input type="email" id="alEmail" autocomplete="username" placeholder="Admin email" aria-label="Admin email" style="width:100%"></div><div class="al-field"><input type="password" id="alPass" autocomplete="current-password" placeholder="Password" aria-label="Admin password" required>' +
       '<button type="button" class="al-eye" id="alEye" aria-label="Show password">👁️</button></div><div class="al-err" id="alErr" role="alert"></div>' +
       '<div class="al-row"><button type="button" id="alCancel">Cancel</button><button type="submit" class="go" id="alGo">Sign in</button></div></form>';
     document.body.appendChild(el);
     var inp = el.querySelector('#alPass');
+    var mailInp = el.querySelector('#alEmail');
+    try { var bcfg = JSON.parse(localStorage.getItem('das_studio_backend') || '{}'); mailInp.value = bcfg.email || (settings && settings.supportEmail) || 'mongald018@gmail.com'; }
+    catch (e2) { mailInp.value = 'mongald018@gmail.com'; }
     el.querySelector('#alEye').onclick = function () { var show = inp.type === 'password'; inp.type = show ? 'text' : 'password'; this.setAttribute('aria-label', show ? 'Hide password' : 'Show password'); inp.focus(); };
     el.querySelector('#alCancel').onclick = function () { el.classList.remove('show'); };
     el.addEventListener('mousedown', function (e) { if (e.target === el) el.classList.remove('show'); });
     el.addEventListener('keydown', function (e) { if (e.key === 'Escape') el.classList.remove('show'); });
     el.querySelector('#alForm').onsubmit = function (e) {
       e.preventDefault(); var v = inp.value; if (!v) return;
-      el.classList.remove('show'); inp.value = ''; inp.type = 'password'; adminLoginCore(v);
+      el.classList.remove('show'); inp.value = ''; inp.type = 'password'; adminLoginCore(v, (mailInp && mailInp.value || '').trim());
     };
     return el;
   }
@@ -13120,7 +13123,8 @@ img{max-width:100%}
       storageBucket: 'dasstudio-49f08.firebasestorage.app',
       messagingSenderId: '209248553216',
       appId: '1:209248553216:web:efa6f9373f0629c405cbe5',
-      measurementId: 'G-L8H2T2D4VX'
+      measurementId: 'G-L8H2T2D4VX',
+      adminEmail: 'mongald018@gmail.com'
     };
 
     var SDK = 'https://www.gstatic.com/firebasejs/10.8.0/';
@@ -13188,13 +13192,14 @@ img{max-width:100%}
     }
 
     var prevLogin = adminLoginCore;
-    adminLoginCore = function (pass) {
+    adminLoginCore = function (pass, emailArg) {
       if (!state.ready) return prevLogin.apply(null, arguments);
-      var email = (settings.supportEmail || FIREBASE_CONFIG.adminEmail || '').trim();
+      var email = String(emailArg || '').trim();
       var stored = {};
       try { stored = JSON.parse(localStorage.getItem('das_studio_backend') || '{}'); } catch (e) {}
       email = (stored.email || email || '').trim();
-      if (!email) { admLoginError('Add the admin email in Security → Backend first.'); return; }
+      if (!email) email = (FIREBASE_CONFIG.adminEmail || (settings && settings.supportEmail) || '').trim();
+      if (!email) { admLoginError('Enter the admin email to sign in.'); return; }
       admLoginError('Signing in…');
       state.auth.signInWithEmailAndPassword(email, pass)
         .then(function () { admLoginError(''); })
