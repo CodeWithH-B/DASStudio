@@ -1511,6 +1511,12 @@
   .setup-item button{padding:4px 10px;border-radius:7px;border:1px solid var(--border);background:transparent;
     color:var(--accent-grad-1);font:inherit;font-size:11px;font-weight:700;cursor:pointer}
   .setup-item.done .lbl{color:var(--muted)}
+  .fb-log{background:var(--card);border:1px solid var(--border);border-radius:9px;padding:9px 11px;
+    font-family:var(--font-mono);font-size:10.5px;line-height:1.7;max-height:150px;overflow:auto;margin-top:8px}
+  .fb-log-line{color:var(--muted);border-bottom:1px dashed var(--border);padding:2px 0}
+  .fb-log-line:last-child{border-bottom:none}
+  .fb-log-line.bad{color:#ef4444}
+  .fb-log-line span{opacity:.65;margin-right:6px}
   @media (max-width:1200px){ .grid{grid-template-columns:repeat(3,1fr)} }
   @media (max-width:900px){ .grid{grid-template-columns:repeat(2,1fr)} }
   @media (max-width:600px){
@@ -13151,6 +13157,7 @@ img{max-width:100%}
           if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
           state.auth = firebase.auth();
           state.db = firebase.firestore();
+          window.__dasAuth = state.auth; window.__dasDb = state.db;
           state.ready = true;
           wireAuth();
           pullFromCloud();
@@ -13172,7 +13179,7 @@ img{max-width:100%}
     /* ---------- auth ---------- */
     function wireAuth() {
       state.auth.onAuthStateChanged(function (user) {
-        state.user = user;
+        state.user = user; window.__dasUser = user;
         if (user) {
           if (!isAdmin) {
             isAdmin = true;
@@ -13321,6 +13328,214 @@ img{max-width:100%}
 
     if (document.readyState === 'complete') boot();
     else window.addEventListener('load', boot);
+  })();
+  /* ============================================================
+     FIREBASE + ANALYTICS FIX — real events, visible errors,
+     rule-compliant writes
+     ============================================================ */
+  (function fixFirebaseAnalytics() {
+    var OWNER_UID = 'Sub6GlCXjaecs0Po1E2RdvqJpye2';
+    var logLines = [];
+
+    function log(msg, bad) {
+      logLines.unshift({ t: new Date().toLocaleTimeString(), msg: msg, bad: !!bad });
+      logLines = logLines.slice(0, 8);
+      var el = document.getElementById('fbLog');
+      if (el) {
+        el.innerHTML = logLines.map(function (l) {
+          return '<div class="fb-log-line' + (l.bad ? ' bad' : '') + '"><span>' + l.t + '</span> ' + escapeHtml(l.msg) + '</div>';
+        }).join('');
+      }
+    }
+
+    function ready() { return window.__dasDb && window.__dasAuth; }
+
+    /* ---------- 1. rule-compliant analytics events ---------- */
+    function deviceKind() {
+      var w = window.innerWidth;
+      return w < 640 ? 'mobile' : (w < 1024 ? 'tablet' : 'desktop');
+    }
+    function vid() {
+      var v = localStorage.getItem('das_vid');
+      if (!v) { v = 'v' + Math.random().toString(36).slice(2, 12); localStorage.setItem('das_vid', v); }
+      return v;
+    }
+    function sid() {
+      var s = sessionStorage.getItem('das_sid');
+      if (!s) { s = 's' + Math.random().toString(36).slice(2, 12); sessionStorage.setItem('das_sid', s); }
+      return s;
+    }
+
+    function emitEvent(type, extra) {
+      if (!ready()) return;
+      var doc = {
+        t: Date.now(),
+        type: type,
+        vid: vid(),
+        sid: sid(),
+        dev: deviceKind(),
+        lang: (navigator.language || 'en').slice(0, 12)
+      };
+      if (extra && extra.tool) doc.tool = String(extra.tool).slice(0, 80);
+      if (extra && extra.path) doc.path = String(extra.path).slice(0, 100);
+      if (extra && extra.ref) doc.ref = String(extra.ref).slice(0, 100);
+      if (extra && extra.src) doc.src = String(extra.src).slice(0, 40);
+      window.__dasDb.collection('analytics_events').add(doc)
+        .catch(function (e) { log('analytics write: ' + (e.code || e.message), true); });
+    }
+    window.__dasEmit = emitEvent;
+
+    /* page view once per session */
+    try { emitEvent('view', { path: location.pathname.slice(0, 100), ref: (document.referrer || '').slice(0, 100) }); } catch (e) {}
+
+    /* tool clicks already flow through trackToolClick — mirror them to the cloud */
+    var baseClick = trackToolClick;
+    trackToolClick = function (name) {
+      baseClick.apply(null, arguments);
+      emitEvent('tool', { tool: name });
+    };
+
+    /* runtime errors become events, so System Health has real signal */
+    window.addEventListener('error', function (ev) {
+      emitEvent('error', { path: (ev.message || 'error').slice(0, 100) });
+    });
+
+    /* ---------- 2. pull cloud events and merge once ---------- */
+    function mergeCloudAnalytics() {
+      if (!ready() || !window.__dasUser) return Promise.resolve(false);
+      var since = Number(localStorage.getItem('das_an_merged') || 0);
+      return window.__dasDb.collection('analytics_events')
+        .orderBy('t', 'desc').limit(600).get()
+        .then(function (snap) {
+          var newest = since, merged = 0;
+          snap.forEach(function (doc) {
+            var e = doc.data();
+            if (!e || !e.t || e.t <= since) return;
+            if (e.t > newest) newest = e.t;
+            merged++;
+            if (e.type === 'tool' && e.tool) {
+              analyticsData.clicks[e.tool] = analyticsData.clicks[e.tool] || { count: 0, lastClicked: '' };
+              analyticsData.clicks[e.tool].count += 1;
+              analyticsData.clicks[e.tool].lastClicked = new Date(e.t).toLocaleString();
+              var dk = anDayKey(e.t);
+              analyticsData.daily[dk] = analyticsData.daily[dk] || { visits: 0, clicks: 0 };
+              analyticsData.daily[dk].clicks = (analyticsData.daily[dk].clicks || 0) + 1;
+            } else if (e.type === 'view') {
+              analyticsData.visits = (analyticsData.visits || 0) + 1;
+              var dk2 = anDayKey(e.t);
+              analyticsData.daily[dk2] = analyticsData.daily[dk2] || { visits: 0, clicks: 0 };
+              analyticsData.daily[dk2].visits = (analyticsData.daily[dk2].visits || 0) + 1;
+              if (e.dev) analyticsData.devices[e.dev] = (analyticsData.devices[e.dev] || 0) + 1;
+              if (e.path) analyticsData.pages[e.path] = (analyticsData.pages[e.path] || 0) + 1;
+            }
+          });
+          if (merged) {
+            localStorage.setItem('das_an_merged', String(newest));
+            anSave();
+            log('Merged ' + merged + ' cloud events into analytics.');
+          } else {
+            log('Cloud analytics up to date.');
+          }
+          return merged > 0;
+        })
+        .catch(function (e) {
+          var code = e.code || e.message;
+          log('analytics read: ' + code + (String(code).indexOf('permission') > -1 ? ' — sign in as staff/owner' : ''), true);
+          return false;
+        });
+    }
+    window.__dasMergeAnalytics = mergeCloudAnalytics;
+
+    /* ---------- 3. feedback writes that satisfy the rules ---------- */
+    function pushFeedback() {
+      if (!ready() || !window.__dasUser) return Promise.reject(new Error('Sign in first.'));
+      var list = [];
+      try { list = JSON.parse(localStorage.getItem('das_studio_feedbacks') || '[]'); } catch (e) {}
+      if (!list.length) return Promise.resolve(0);
+      var jobs = list.slice(0, 100).map(function (f) {
+        var doc = {
+          message: String(f.message || f.text || '(no message)').slice(0, 4900),
+          name: String(f.name || '').slice(0, 80),
+          email: String(f.email || '').slice(0, 120),
+          type: String(f.type || 'general').slice(0, 30),
+          priority: String(f.priority || 'normal').slice(0, 20),
+          ticket: String(f.ticket || '').slice(0, 24),
+          status: String(f.status || 'new').slice(0, 20),
+          createdAt: Number(f.createdAt || f.t || Date.now())
+        };
+        return window.__dasDb.collection('feedback').doc(doc.ticket || ('fb' + doc.createdAt)).set(doc)
+          .catch(function (e) { log('feedback write: ' + (e.code || e.message), true); });
+      });
+      return Promise.all(jobs).then(function () { return jobs.length; });
+    }
+
+    /* ---------- 4. panel: status, diagnostics, role check ---------- */
+    function uidCheck() {
+      var u = window.__dasUser;
+      if (!u) return 'Not signed in.';
+      if (u.uid === OWNER_UID) return 'Signed in as the owner account — full write access.';
+      return 'Signed in as ' + (u.email || u.uid) + ' — this account needs a document in /admins to write.';
+    }
+
+    var prevSec = tabRenderers.tabSec;
+    tabRenderers.tabSec = function () {
+      prevSec.apply(null, arguments);
+      var tab = document.getElementById('tabSec');
+      if (!tab || document.getElementById('fbDiag')) return;
+      var box = document.createElement('div');
+      box.id = 'fbDiag';
+      box.innerHTML =
+        '<div class="settings-section-title">🩺 Firebase &amp; analytics diagnostics</div>' +
+        '<div class="xm-alert" id="fbUidState">' + escapeHtml(uidCheck()) + '</div>' +
+        '<div class="xm-row">' +
+          '<button class="btn-secondary" type="button" id="fbTestEvent">Send test event</button>' +
+          '<button class="btn-secondary" type="button" id="fbPullAn">Merge cloud analytics</button>' +
+          '<button class="btn-secondary" type="button" id="fbPushFb">Push feedback</button>' +
+        '</div>' +
+        '<div class="xm-note">Events go to <code>analytics_events</code> and must match your rules: ' +
+          '<code>t</code>, <code>type</code>, <code>vid</code>, <code>sid</code> plus optional fields only.</div>' +
+        '<div class="fb-log" id="fbLog"><div class="fb-log-line">No activity yet this session.</div></div>';
+      tab.appendChild(box);
+
+      document.getElementById('fbTestEvent').onclick = function () {
+        if (!ready()) { alert('Firebase SDK is not loaded yet.'); return; }
+        emitEvent('view', { path: '/test', ref: 'diagnostics' });
+        log('Test event sent — check Firestore → analytics_events.');
+      };
+      document.getElementById('fbPullAn').onclick = function () {
+        mergeCloudAnalytics().then(function (changed) {
+          alert(changed ? 'Cloud events merged. Open Analytics to see them.' : 'Nothing new to merge.');
+        });
+      };
+      document.getElementById('fbPushFb').onclick = function () {
+        pushFeedback().then(function (n) { alert('Pushed ' + n + ' feedback items.'); })
+          .catch(function (e) { alert('Push failed: ' + e.message); });
+      };
+    };
+
+    /* analytics tab: merge first, then render with fresh numbers */
+    var prevAn = tabRenderers.tabAnalytics;
+    if (prevAn) {
+      tabRenderers.tabAnalytics = function () {
+        prevAn.apply(null, arguments);
+        mergeCloudAnalytics().then(function (changed) {
+          if (changed) { try { prevAn.apply(null, arguments); } catch (e) {} }
+        });
+      };
+    }
+
+    /* expose user + db for the diagnostics above */
+    window.addEventListener('load', function () {
+      setTimeout(function () {
+        try {
+          if (window.firebase && firebase.apps.length) {
+            window.__dasDb = window.__dasDb || firebase.firestore();
+            window.__dasAuth = window.__dasAuth || firebase.auth();
+            firebase.auth().onAuthStateChanged(function (u) { window.__dasUser = u; });
+          }
+        } catch (e) {}
+      }, 1500);
+    });
   })();
   /* ============================================================
      INIT
@@ -13541,111 +13756,6 @@ window.admQa=function(k){var b=document.querySelector('.adm-top [data-qa="'+k+'"
   var am=document.getElementById('adminModal');
   if(am&&window.MutationObserver){var pend;new MutationObserver(function(){clearTimeout(pend);pend=setTimeout(scan,250);}).observe(am,{childList:true,subtree:true});}
   scan();
-})();
-</script>
-<script id="liveBackendJs">
-(function(){
-'use strict';
-var FB={apiKey:'AIzaSyCsldPssXQmCyWySmC5giR7GUCWjhdlBeQ',projectId:'dasstudio-49f08'};
-function cfg(){var c={};try{c=JSON.parse(localStorage.getItem('das_studio_backend')||'{}')||{};}catch(e){}return{apiKey:c.apiKey||FB.apiKey,projectId:c.projectId||FB.projectId};}
-function base(){return 'https://firestore.googleapis.com/v1/projects/'+encodeURIComponent(cfg().projectId)+'/databases/(default)/documents';}
-function tok(){return window.__dasToken||'';}
-function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
-function api(path,o){o=o||{};var h={'Content-Type':'application/json'};if(o.auth&&tok())h.Authorization='Bearer '+tok();
-  var u=base()+path;u+=(u.indexOf('?')>-1?'&':'?')+'key='+encodeURIComponent(cfg().apiKey);
-  return fetch(u,{method:o.method||'GET',headers:h,body:o.body?JSON.stringify(o.body):undefined,keepalive:!!o.keepalive}).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error((j&&j.error&&j.error.message)||('HTTP '+r.status));return j;});});}
-function enc(v){if(v==null)return{nullValue:null};if(typeof v==='number')return Number.isInteger(v)?{integerValue:String(v)}:{doubleValue:v};if(typeof v==='boolean')return{booleanValue:v};if(Array.isArray(v))return{arrayValue:{values:v.map(enc)}};if(typeof v==='object')return{mapValue:{fields:flds(v)}};return{stringValue:String(v)};}
-function flds(o){var f={};Object.keys(o).forEach(function(k){f[k]=enc(o[k]);});return f;}
-function dec(v){if('stringValue'in v)return v.stringValue;if('integerValue'in v)return Number(v.integerValue);if('doubleValue'in v)return v.doubleValue;if('booleanValue'in v)return v.booleanValue;if('arrayValue'in v)return(v.arrayValue.values||[]).map(dec);if('mapValue'in v){var o={},f=v.mapValue.fields||{};Object.keys(f).forEach(function(k){o[k]=dec(f[k]);});return o;}return null;}
-function doc(d){var o=dec({mapValue:{fields:d.fields||{}}});o._id=(d.name||'').split('/').pop();return o;}
-function query(col,since,limit){return api(':runQuery',{method:'POST',auth:true,body:{structuredQuery:{from:[{collectionId:col}],where:{fieldFilter:{field:{fieldPath:'t'},op:'GREATER_THAN_OR_EQUAL',value:{integerValue:String(since)}}},orderBy:[{field:{fieldPath:'t'},direction:'DESCENDING'}],limit:limit}}}).then(function(r){return r.filter(function(x){return x.document;}).map(function(x){return doc(x.document);});});}
-function tools(){try{return JSON.parse(localStorage.getItem('das_studio_tools')||'[]')||[];}catch(e){return[];}}
-
-/* ===== A. Visitor tracking (real events, written to Firestore) ===== */
-function consentOk(){try{var s=JSON.parse(localStorage.getItem('das_studio_settings')||'{}'),c=JSON.parse(localStorage.getItem('das_cookie_consent')||'null');if(s.cookieEnabled)return!!(c&&c.choice==='accept');}catch(e){}return true;}
-function trackOk(){return !/bot|crawl|spider|headless/i.test(navigator.userAgent)&&navigator.doNotTrack!=='1'&&!localStorage.getItem('das_no_track')&&consentOk();}
-function rid(){return Math.random().toString(36).slice(2,12)+Date.now().toString(36);}
-var vid=localStorage.getItem('das_vid')||(function(){var v=rid();try{localStorage.setItem('das_vid',v);}catch(e){}return v;})();
-var sid=sessionStorage.getItem('das_sid')||(function(){var v=rid();try{sessionStorage.setItem('das_sid',v);}catch(e){}return v;})();
-function track(type,x){try{if(!trackOk())return;var e={t:Date.now(),type:type,path:location.pathname.slice(0,100),ref:(document.referrer?new URL(document.referrer).hostname:'direct').slice(0,100),vid:vid,sid:sid,dev:innerWidth<700?'mobile':innerWidth<1100?'tablet':'desktop',lang:(navigator.language||'').slice(0,10)};
-  var q=new URLSearchParams(location.search).get('utm_source');if(q)e.src=q.slice(0,60);if(x&&x.tool)e.tool=String(x.tool).slice(0,80);
-  api('/analytics_events',{method:'POST',body:{fields:flds(e)},keepalive:true}).catch(function(){});}catch(z){}}
-track('view');
-document.addEventListener('click',function(ev){var a=ev.target.closest&&ev.target.closest('#grid a[href]');if(!a)return;var h=a.href,n='';
-  tools().forEach(function(t){if(t.link&&h.indexOf(t.link)===0)n=t.titleMain||t.title||t.header||t.link;});track('tool',{tool:n||a.hostname+a.pathname});},true);
-var errN=0;window.addEventListener('error',function(e){if(errN++<3&&e.message)track('error',{tool:e.message});});
-if(tok())try{localStorage.setItem('das_no_track','1');}catch(e){}
-
-/* ===== shared admin UI helpers ===== */
-function noAuth(p,fn){var em='';try{em=(JSON.parse(localStorage.getItem('das_studio_backend')||'{}')||{}).email||'';}catch(e){}
-  p.innerHTML='<div class="pro-note warn">Live data needs your Firebase admin sign-in. Use the Firebase account password, not the local panel password. The sign-in lasts about an hour and is forgotten when you reload the page.</div><form id="lvForm" style="display:flex;gap:8px;flex-wrap:wrap;max-width:560px"><input id="lvMail" type="email" autocomplete="username" placeholder="Firebase admin email" aria-label="Firebase admin email" value="'+esc(em)+'" style="flex:1;min-width:200px"><input id="lvPass" type="password" autocomplete="current-password" placeholder="Firebase password" aria-label="Firebase password" style="flex:1;min-width:160px"><button class="btn-primary" type="submit">Sign in and load</button></form><div id="lvErr" class="xm-note" role="alert" style="margin-top:8px"></div>';
-  document.getElementById('lvForm').onsubmit=function(ev){ev.preventDefault();var m=document.getElementById('lvMail').value.trim(),w=document.getElementById('lvPass').value,er=document.getElementById('lvErr');er.textContent='Signing in…';
-    idt('signInWithPassword',{email:m,password:w,returnSecureToken:true}).then(function(j){window.__dasToken=j.idToken;window.__dasUid=j.localId;try{localStorage.setItem('das_no_track','1');}catch(e){}fn(p);}).catch(function(e){er.textContent='Sign-in failed: '+e.message+'. Check the email, the password, and that Email/Password sign-in is enabled in Firebase Authentication.';});};}
-function fail(p,e){p.innerHTML='<div class="pro-note warn">Could not load live data: '+esc(e.message)+'. If this says permission denied, publish the new firestore.rules and check your role.</div>';}
-function hook(btn,pane,fn){var b=document.getElementById(btn),p=document.getElementById(pane);if(!b||!p)return;b.addEventListener('click',function(){setTimeout(function(){if(!tok())return noAuth(p,fn);try{localStorage.setItem('das_no_track','1');}catch(e){}fn(p);},120);});}
-function card(l,v){return'<div style="flex:1;min-width:130px;padding:12px 14px;border:1px solid var(--border);border-radius:12px;background:var(--card)"><div style="font-size:12px;color:var(--muted)">'+esc(l)+'</div><div style="font-size:22px;font-weight:800">'+esc(v)+'</div></div>';}
-function top(map,n){return Object.keys(map).map(function(k){return[k,map[k]];}).sort(function(a,b){return b[1]-a[1];}).slice(0,n||8);}
-function tbl(rows,h){if(!rows.length)return'<div class="empty-state"><b>No data yet</b>Events appear here after visitors use the site.</div>';return'<table style="width:100%;border-collapse:collapse;font-size:13px"><tr>'+h.map(function(x){return'<th style="text-align:left;padding:6px;border-bottom:1px solid var(--border)">'+x+'</th>';}).join('')+'</tr>'+rows.map(function(r){return'<tr>'+r.map(function(c){return'<td style="padding:6px;border-bottom:1px solid var(--border)">'+c+'</td>';}).join('')+'</tr>';}).join('')+'</table>';}
-
-/* ===== B. Analytics ===== */
-function renderAn(p,days){days=days||7;p.innerHTML='<div class="pro-note">Loading live analytics…</div>';
-  query('analytics_events',Date.now()-days*864e5,2000).then(function(ev){
-    var views=ev.filter(function(e){return e.type==='view';}),V={},S={},day={},T={},R={},D={},U={},er=0;
-    ev.forEach(function(e){V[e.vid]=1;S[e.sid]=1;if(e.type==='tool')T[e.tool||'?']=(T[e.tool||'?']||0)+1;if(e.type==='error')er++;
-      if(e.type==='view'){var k=new Date(e.t).toISOString().slice(0,10);day[k]=(day[k]||0)+1;R[e.ref||'direct']=(R[e.ref||'direct']||0)+1;D[e.dev||'?']=(D[e.dev||'?']||0)+1;if(e.src)U[e.src]=(U[e.src]||0)+1;}});
-    var ks=[],i;for(i=days-1;i>=0;i--)ks.push(new Date(Date.now()-i*864e5).toISOString().slice(0,10));
-    var mx=Math.max.apply(null,ks.map(function(k){return day[k]||0;}).concat([1])),w=100/ks.length;
-    var svg='<svg viewBox="0 0 100 40" preserveAspectRatio="none" style="width:100%;height:120px" role="img" aria-label="Page views per day">'+ks.map(function(k,j){var h=(day[k]||0)/mx*36;return'<rect x="'+(j*w+.4)+'" y="'+(38-h)+'" width="'+(w-.8)+'" height="'+h+'" rx=".6" fill="var(--accent-grad-1)"><title>'+k+': '+(day[k]||0)+'</title></rect>';}).join('')+'</svg>';
-    p.innerHTML='<div class="xm-row" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px"><select id="anDays" aria-label="Date range">'+[7,30,90].map(function(d){return'<option value="'+d+'"'+(d===days?' selected':'')+'>Last '+d+' days</option>';}).join('')+'</select><button class="btn-secondary" id="anCsv" type="button">Export CSV</button><button class="btn-secondary" id="anRef" type="button">Refresh</button></div>'+
-      '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">'+card('Page views',views.length)+card('Unique visitors',Object.keys(V).length)+card('Sessions',Object.keys(S).length)+card('Tool clicks',ev.filter(function(e){return e.type==='tool';}).length)+card('JS errors',er)+'</div>'+svg+
-      '<h4 style="margin:14px 0 6px">Top tools</h4>'+tbl(top(T).map(function(x){return[esc(x[0]),x[1]];}),['Tool','Clicks'])+
-      '<h4 style="margin:14px 0 6px">Traffic sources</h4>'+tbl(top(R).map(function(x){return[esc(x[0]),x[1]];}),['Source','Views'])+
-      '<h4 style="margin:14px 0 6px">Devices and campaigns</h4>'+tbl(top(D).concat(top(U).map(function(x){return['utm: '+x[0],x[1]];})).map(function(x){return[esc(x[0]),x[1]];}),['Segment','Views'])+
-      '<div class="pro-note" style="margin-top:14px">Based on the latest '+ev.length+' events'+(ev.length>=2000?' (limit reached, showing the newest 2000)':'')+'. Bots, Do Not Track visitors, rejected-cookie visitors and your own admin browser are not counted.</div>';
-    document.getElementById('anDays').onchange=function(){renderAn(p,+this.value);};document.getElementById('anRef').onclick=function(){renderAn(p,days);};
-    document.getElementById('anCsv').onclick=function(){var c='time,type,tool,path,ref,source,device,lang,visitor,session\n'+ev.map(function(e){return[new Date(e.t).toISOString(),e.type,e.tool||'',e.path||'',e.ref||'',e.src||'',e.dev||'',e.lang||'',e.vid,e.sid].map(function(x){return'"'+String(x).replace(/"/g,'""')+'"';}).join(',');}).join('\n');var a=document.createElement('a');a.href=URL.createObjectURL(new Blob([c],{type:'text/csv'}));a.download='analytics-'+days+'d.csv';a.click();};
-  }).catch(function(e){fail(p,e);});}
-
-/* ===== C. System Health (real measurements, saved history) ===== */
-function ping(u){var t0=performance.now(),c=new AbortController(),to=setTimeout(function(){c.abort();},8000);return fetch(u,{mode:'no-cors',cache:'no-store',signal:c.signal}).then(function(){clearTimeout(to);return{ok:true,ms:Math.round(performance.now()-t0)};}).catch(function(){clearTimeout(to);return{ok:false,ms:Math.round(performance.now()-t0)};});}
-function renderSys(p){p.innerHTML='<div class="pro-note">Running checks…</div>';var T=tools().filter(function(t){return t.link;}),t0=performance.now();
-  api('/settings/main',{auth:true}).catch(function(){}).then(function(){var fs=Math.round(performance.now()-t0);
-    return ping('https://identitytoolkit.googleapis.com/').then(function(au){return Promise.all(T.map(function(t){return ping(t.link);})).then(function(r){return{fs:fs,au:au.ms,r:r};});});
-  }).then(function(o){
-    return query('analytics_events',Date.now()-864e5,2000).catch(function(){return[];}).then(function(ev){
-      var er=ev.filter(function(e){return e.type==='error';}).length,res=T.map(function(t,i){return{id:String(t.id),n:t.titleMain||t.title||t.header||t.link,ok:o.r[i].ok,ms:o.r[i].ms};}),used=0;
-      for(var k in localStorage)used+=(localStorage[k].length+k.length)*2;
-      api('/health_checks',{method:'POST',auth:true,body:{fields:flds({t:Date.now(),fs:o.fs,au:o.au,errors24:er,tools:res.map(function(x){return{id:x.id,ok:x.ok,ms:x.ms};})})}}).catch(function(){});
-      return query('health_checks',Date.now()-30*864e5,200).catch(function(){return[];}).then(function(h){
-        var up={};h.forEach(function(c){(c.tools||[]).forEach(function(x){var u=up[x.id]||(up[x.id]={n:0,ok:0});u.n++;if(x.ok)u.ok++;});});
-        var down=res.filter(function(x){return!x.ok;}).length,slow=res.filter(function(x){return x.ok&&x.ms>2500;}).length;
-        p.innerHTML='<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px">'+card('Tools reachable',(res.length-down)+' / '+res.length)+card('Database latency',o.fs+' ms')+card('Auth latency',o.au+' ms')+card('JS errors (24h)',er)+card('Browser storage',(used/1048576).toFixed(2)+' of ~5 MB')+'</div>'+
-          (down||slow||er>20||o.fs>2000?'<div class="pro-note warn">Attention: '+[down?down+' tool link(s) unreachable':'',slow?slow+' slow tool link(s)':'',er>20?'many JS errors in 24h':'',o.fs>2000?'database is slow':''].filter(Boolean).join(', ')+'.</div>':'<div class="pro-note">All checks passed.</div>')+
-          '<button class="btn-primary" id="sysRun" type="button" style="margin-bottom:12px">Run checks again</button>'+
-          tbl(res.map(function(x){var u=up[x.id],pc=u&&u.n?Math.round(u.ok/u.n*1000)/10+'%':'n/a';return[esc(x.n),x.ok?'✅ Reachable':'🔴 Unreachable',x.ms+' ms',pc+' ('+(u?u.n:0)+' checks)'];}),['Tool','Status','Response','30-day uptime'])+
-          '<div class="pro-note" style="margin-top:14px">Checks run from your browser when you open or refresh this tab and are saved to Firestore. A tool counts as reachable when its server answers; the browser cannot read the HTTP status. For checks while the panel is closed, add a scheduled monitor such as UptimeRobot.</div>';
-        document.getElementById('sysRun').onclick=function(){renderSys(p);};});});
-  }).catch(function(e){fail(p,e);});}
-
-/* ===== D. Users with enforced roles (rules read the admins collection) ===== */
-function me(){try{var j=JSON.parse(atob(tok().split('.')[1].replace(/-/g,'+').replace(/_/g,'/')));return{uid:j.user_id||j.sub,email:j.email};}catch(e){return{};}}
-function idt(m,b){return fetch('https://identitytoolkit.googleapis.com/v1/accounts:'+m+'?key='+encodeURIComponent(cfg().apiKey),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)}).then(function(r){return r.json().then(function(j){if(j.error)throw new Error(j.error.message.replace(/_/g,' ').toLowerCase());return j;});});}
-function pw(){var a=new Uint8Array(18);crypto.getRandomValues(a);return Array.prototype.map.call(a,function(x){return'Aa1'.charAt(x%3)+x.toString(36);}).join('').slice(0,24);}
-function renderUsers(p,msg){var m=me();p.innerHTML='<div class="pro-note">Loading users…</div>';
-  api('/admins?pageSize=200',{auth:true}).then(function(r){var L=(r.documents||[]).map(doc);
-    var roles=['owner','editor','viewer','disabled'];
-    p.innerHTML=(msg?'<div class="pro-note">'+esc(msg)+'</div>':'')+'<div class="pro-note">Signed in as <b>'+esc(m.email||'?')+'</b>. Roles are enforced by Firestore rules: <b>owner</b> manages everything, <b>editor</b> edits tools and content, <b>viewer</b> reads only, <b>disabled</b> has no access.</div>'+
-      tbl(L.map(function(u){return[esc(u.email||u._id),'<select data-uid="'+esc(u._id)+'" aria-label="Role for '+esc(u.email||'')+'">'+roles.map(function(x){return'<option'+(x===u.role?' selected':'')+'>'+x+'</option>';}).join('')+'</select>',u.createdAt?new Date(u.createdAt).toLocaleDateString():'',u._id===m.uid?'You':'<button class="btn-secondary" data-rm="'+esc(u._id)+'" type="button">Remove access</button>'];}),['Email','Role','Added','Action'])+
-      '<h4 style="margin:16px 0 6px">Invite a team member</h4><div style="display:flex;gap:8px;flex-wrap:wrap"><input id="uvMail" type="email" placeholder="Email" aria-label="Email" style="flex:1;min-width:180px"><select id="uvRole" aria-label="Role"><option>editor</option><option>viewer</option><option>owner</option></select><button class="btn-primary" id="uvGo" type="button">Send invite</button></div><div class="xm-note" style="margin-top:6px">Creates the sign-in account and emails a link to set a password. If the email already has an account, paste its UID (Firebase Console, Authentication) below.</div><input id="uvUid" placeholder="Existing UID (optional)" aria-label="Existing UID" style="margin-top:6px;width:100%">';
-    p.querySelectorAll('select[data-uid]').forEach(function(s){s.onchange=function(){api('/admins/'+s.dataset.uid+'?updateMask.fieldPaths=role',{method:'PATCH',auth:true,body:{fields:flds({role:s.value})}}).then(function(){renderUsers(p,'Role updated.');}).catch(function(e){fail(p,e);});};});
-    p.querySelectorAll('[data-rm]').forEach(function(b){b.onclick=function(){if(confirm('Remove this person\'s access? Their sign-in account stays until you delete it in the Firebase Console.'))api('/admins/'+b.dataset.rm,{method:'DELETE',auth:true}).then(function(){renderUsers(p,'Access removed.');}).catch(function(e){fail(p,e);});};});
-    document.getElementById('uvGo').onclick=function(){var em=document.getElementById('uvMail').value.trim(),ro=document.getElementById('uvRole').value,uid=document.getElementById('uvUid').value.trim();if(!/^\S+@\S+\.\S+$/.test(em))return alert('Enter a valid email address.');
-      (uid?Promise.resolve({localId:uid}):idt('signUp',{email:em,password:pw(),returnSecureToken:false})).then(function(j){return api('/admins?documentId='+encodeURIComponent(j.localId),{method:'POST',auth:true,body:{fields:flds({email:em,role:ro,createdAt:Date.now(),invitedBy:m.email||''})}});}).then(function(){return idt('sendOobCode',{requestType:'PASSWORD_RESET',email:em}).catch(function(){});}).then(function(){renderUsers(p,'Invite sent to '+em+'.');}).catch(function(e){alert('Invite failed: '+e.message);});};
-  }).catch(function(e){fail(p,e);});}
-
-hook('tabAnalyticsBtn','tabAnalytics',function(p){renderAn(p,7);});
-hook('tabSysBtn','tabSys',renderSys);
-hook('tabUsersBtn','tabUsers',function(p){renderUsers(p);});
 })();
 </script>
 </body>
