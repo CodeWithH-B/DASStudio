@@ -13601,8 +13601,24 @@ img{max-width:100%}
         status: String(rec.status || 'pending').slice(0, 20),
         createdAt: Number(rec.createdAt || Date.now())
       };
-      db().collection('feedback').doc(doc.ticket || ('fb' + doc.createdAt)).set(doc)
-        .then(function () { note('Ticket ' + doc.ticket + ' delivered to the cloud.'); })
+      /* attachments ride along as a data URL, inside Firestore's 1 MiB document limit */
+      var att = rec.attachment;
+      if (att && att.data && typeof att.data === 'string') {
+        if (att.data.length < 900000) {
+          doc.attachmentData = att.data;
+          doc.attachmentName = String(att.name || 'file').slice(0, 120);
+          doc.attachmentType = String(att.type || '').slice(0, 60);
+          doc.attachmentSize = Number(att.size || 0);
+        } else {
+          doc.attachmentName = String(att.name || 'file').slice(0, 100) + ' (too large to sync)';
+        }
+      }
+      /* the ticket number restarts at 001 in every browser, so key the document by its unique id */
+      db().collection('feedback').doc(String(rec.id || ('fb' + doc.createdAt))).set(doc)
+        .then(function () {
+          note('Ticket ' + doc.ticket + ' delivered to the cloud' +
+            (doc.attachmentData ? ' with attachment.' : (att ? ' (attachment not synced).' : '.')));
+        })
         .catch(function (e) { note('Ticket upload failed: ' + (e.code || e.message), true); });
     }
 
@@ -13626,15 +13642,23 @@ img{max-width:100%}
         .then(function (snap) {
           var local = [];
           try { local = JSON.parse(localStorage.getItem('das_studio_feedbacks') || '[]'); } catch (e) {}
-          var byTicket = {};
-          local.forEach(function (f) { byTicket[f.ticket || f.id] = true; });
+          var seen = {};
+          local.forEach(function (f) {
+            if (f.id) seen[f.id] = true;
+            if (f.ticket) seen['t:' + f.ticket] = true;
+          });
           var added = 0;
           snap.forEach(function (doc) {
             var f = doc.data();
+            var recId = 'cloud_' + doc.id;
+            if (seen[recId]) return;
             var key = f.ticket || doc.id;
-            if (byTicket[key]) return;
+            /* ticket numbers restart in every browser — keep them apart on screen */
+            if (seen['t:' + key]) key = key + '·' + String(doc.id).slice(-3);
+            seen[recId] = true;
+            seen['t:' + key] = true;
             local.unshift({
-              id: 'fb_' + (f.createdAt || Date.now()) + '_' + Math.random().toString(36).slice(2, 6),
+              id: recId,
               ticket: key,
               name: f.name || 'Visitor',
               email: f.email || '',
@@ -13644,6 +13668,13 @@ img{max-width:100%}
               date: new Date(f.createdAt || Date.now()).toLocaleString(),
               createdAt: f.createdAt || Date.now(),
               status: f.status || 'pending',
+              attachment: f.attachmentData ? {
+                name: f.attachmentName || 'attachment',
+                type: f.attachmentType || '',
+                size: Number(f.attachmentSize || 0),
+                data: f.attachmentData
+              } : null,
+              replies: [], thread: [], unread: true, spam: false, spamScore: 0, spamReasons: [],
               cloud: true
             });
             added++;
