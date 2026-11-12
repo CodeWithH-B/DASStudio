@@ -1,0 +1,11195 @@
+/* ==================================================================
+   main application script
+   ================================================================== */
+(function () {
+  'use strict';
+
+  /* ============================================================
+     APP VERSION & SCHEMA CONSTANTS
+     ============================================================ */
+  var APP_VERSION = '2.0.0';
+  var SCHEMA_VERSION = 1;
+
+  /* ============================================================
+     DEFAULT DATA
+     ============================================================ */
+  var defaultTools = [
+    { id: 1, category: 'media', keywords: 'photo edit image photo editor picture', accent: '#4A90E2', header: 'IMAGE EDITOR', link: 'https://codewithh-b.github.io/PhotoCraft/', image: 'hero.webp', icon: 'icon.webp', titleMain: 'Photo', titleAccent: 'Craft', desc: 'The open-source image editor you already know how to use.', hidden: false },
+    { id: 2, category: 'design', keywords: 'vector illustration design', accent: '#F5A623', header: 'VECTOR ILLUSTRATION', link: 'https://codewithh-b.github.io/VectorCraft/', image: 'hero (1).webp', icon: 'icon (1).webp', titleMain: 'Vector', titleAccent: 'Craft', desc: 'Fast, open-source vector illustration, reimagined in pure Rust.', hidden: false },
+    { id: 3, category: 'media', keywords: 'video edit video editor film', accent: '#9B59B6', header: 'VIDEO EDITOR', link: 'https://codewithh-b.github.io/FilmCraft/', image: 'color.webp', icon: 'icon2.webp', titleMain: 'Film', titleAccent: 'Craft', desc: 'Professional, open-source video editing, rebuilt from scratch in Rust.', hidden: false },
+    { id: 4, category: 'media', keywords: 'raw photo library photo picture', accent: '#F1C40F', header: 'PHOTO LIBRARY & RAW', link: 'https://codewithh-b.github.io/LightCraft/', image: 'hero (2).webp', icon: 'icon (2).webp', titleMain: 'Light', titleAccent: 'Craft', desc: 'An open-source photo library and raw developer that runs on your machine.', hidden: false },
+    { id: 5, category: 'office', keywords: 'pdf merge split document', accent: '#1ABC9C', header: 'PDF WORKBENCH', link: 'https://codewithh-b.github.io/PdfCraft/', image: 'hero (3).webp', icon: 'icon (3).webp', titleMain: 'Pdf', titleAccent: 'Craft', desc: 'The open-source PDF workbench: read, organize, combine, split and secure.', hidden: false },
+    { id: 6, category: 'media', keywords: 'vfx motion graphics effect motion', accent: '#E91E63', header: 'MOTION GRAPHICS & VFX', link: 'https://codewithh-b.github.io/EffectCraft/', image: 'hero (4).webp', icon: 'icon (4).webp', titleMain: 'Effect', titleAccent: 'Craft', desc: 'Open-source motion graphics and visual effects, built in pure Rust.', hidden: false },
+    { id: 7, category: 'design', keywords: 'layout publishing page layout publishing', accent: '#A2D149', header: 'PAGE LAYOUT & PUBLISHING', link: 'https://codewithh-b.github.io/DesignCraft/', image: 'hero (5).webp', icon: 'icon (5).webp', titleMain: 'Design', titleAccent: 'Craft', desc: 'Open-source page layout and publishing, rebuilt in pure Rust.', hidden: false },
+    { id: 8, category: 'design', keywords: 'ui ux interface prototype', accent: '#2ECC71', header: 'INTERFACE DESIGN', link: 'https://codewithh-b.github.io/FigCraft/', image: 'hero (6).webp', icon: 'icon (6).webp', titleMain: 'Fig', titleAccent: 'Craft', desc: 'Open-source interface design and prototyping, rebuilt in pure Rust.', hidden: false },
+    { id: 9, category: 'office', keywords: 'word document writing document', accent: '#3498DB', header: 'WORD PROCESSING', link: 'https://codewithh-b.github.io/WordCraft/', image: 'hero (7).webp', icon: 'icon (7).webp', titleMain: 'Word', titleAccent: 'Craft', desc: 'Fast, open-source word processing, rebuilt in pure Rust.', hidden: false },
+    { id: 10, category: 'audio', keywords: 'audio mixing recording', accent: '#16A085', header: 'DIGITAL AUDIO WORKSTATION', link: 'https://codewithh-b.github.io/SoundCraft/', image: 'hero (8).webp', icon: 'icon (8).webp', titleMain: 'Sound', titleAccent: 'Craft', desc: 'Professional audio recording, editing and mixing in pure Rust.', hidden: false },
+    { id: 11, category: 'office', keywords: 'slide presentation', accent: '#E67E22', header: 'PRESENTATIONS & SLIDES', link: 'https://codewithh-b.github.io/DeckCraft/', image: 'hero (9).webp', icon: 'icon (9).webp', titleMain: 'Deck', titleAccent: 'Craft', desc: 'Build and deliver dynamic slide presentations, in pure Rust.', hidden: false },
+    { id: 12, category: 'design', keywords: 'cad drafting design', accent: '#2980B9', header: 'COMPUTER-AIDED DESIGN', link: 'https://codewithh-b.github.io/CADCraft/', image: 'hero (10).webp', icon: 'icon (10).webp', titleMain: 'CAD', titleAccent: 'Craft', desc: 'Fast, open-source computer-aided design and drafting in pure Rust.', hidden: false },
+    { id: 13, category: 'office', keywords: 'spreadsheet data excel sheet data', accent: '#27AE60', header: 'SPREADSHEETS & DATA', link: 'https://codewithh-b.github.io/GridCraft/', image: 'hero (11).webp', icon: 'icon (11).webp', titleMain: 'Grid', titleAccent: 'Craft', desc: 'Fast, open-source spreadsheets and data analysis, rebuilt in pure Rust.', hidden: false },
+    { id: 14, category: '3D', keywords: '3D texture painting', accent: '#f07934', header: '3D TEXTURE PAINTING', link: 'https://codewithh-b.github.io/TextureCraft/', image: 'hero (12).webp', icon: 'icon12.webp', titleMain: 'Texture', titleAccent: 'Craft', desc: 'Open-source 3D texture painting, rebuilt in pure Rust.', hidden: false },
+    { id: 15, category: 'software', keywords: 'software works and build your own version', accent: '#1b5fdd', header: 'SOFTWARE EXPLORATION & CREATION', link: 'https://codewithh-b.github.io/CraftAnything/', image: 'make.webp', icon: 'icon (12).webp', titleMain: 'Craft', titleAccent: 'Anything', desc: 'Explore how software works and build your own version.', hidden: false },
+    { id: 16, category: '3D', keywords: '3D CAD application built in pure Rust', accent: '#1b5fdd', header: '3D CAD', link: 'https://docs.solidcraft.io/app/', image: 'rover-poster.jpg', icon: 'io.tangencylabs.solidcraft.png', titleMain: 'Solid', titleAccent: 'Craft', desc: 'An open-source parametric 3D CAD application built in pure Rust.', hidden: false },
+    { id: 17, category: '3D', keywords: 'Procedural materials, node by node', accent: '#11bbc4', header: 'PROCEDURAL MATERIALS', link: 'https://codewithh-b.github.io/MaterialCraft/', image: 'hero (13).webp', icon: 'icon (13).webp', titleMain: 'Material', titleAccent: 'Craft', desc: 'Open-source, node-based procedural materials, built in pure Rust.', hidden: false }
+  ];
+
+  var defaultSettings = {
+    title: 'DAS Studio',
+    desc: 'Edit photos, effects, design, video, audio, PDF, 3D, software exploration or vector — all the essential tools in one click.',
+    heroHeading: '<span class="grad">DAS</span> Studio',
+    heroText: 'Edit photos, effects, design, video, audio, PDF, 3D, software exploration or vector — all the essential tools in one click. No installation needed, work directly in your browser.',
+    maintenance: false,
+    noticeActive: false, noticeText: '🎉 New tool SolidCraft released!', noticeBg: '#6366f1',
+    noticeType: 'info', noticeTextBn: '', noticeLang: 'both',
+    noticeStart: '', noticeEnd: '', noticeActionText: '', noticeActionUrl: '',
+    noticeActionNewTab: true, noticeDismissible: false, noticeDismissHours: 24,
+    announcements: [],
+    color1: '#6366f1', color2: '#ec4899',
+    headerOrder: ['brand', 'nav', 'search', 'controls'], headerAlign: 'space-between',
+    headerSticky: false, headerSearch: 'hero', navItems: null,
+    footerCols: 3, footerQuick: 'on', footerNews: 'off',
+    footerColMap: { social: 1, contact: 1, quick: 2, legal: 3, news: 4 },
+    btnCustom: false, btnBg1: '#6366f1', btnBg2: '#a855f7', btnFg: '#ffffff', btnHover: 'lift',
+    btnRadius: 12, btnPy: 9, btnPx: 16, btnWeight: 600,
+    cardBorderW: 1, cardBorderStyle: 'solid', cardBorderColor: '', cardHover: 'lift', cardShadowColor: '',
+    bgPattern: 'none', bgImage: '', bgOpacity: 30, bgSize: 'cover', bgBlur: 0, sections: null,
+    fontFamily: 'inter', fontSize: 100, cardRadius: 14, glassAlpha: 100, glassBlur: 0, shadowStrength: 70,
+    blobOpacity: 50, blob1: '', blob2: '', blob3: '#06b6d4', blob4: '#f59e0b',
+    customCss: '', themePreset: 'default',
+    logoUrl: 'ds.png', faviconUrl: 'ds.png',
+    metaKeywords: 'photo editor, video editor, design tools, audio editor, pdf tools, 3d tools, vector design',
+    authorName: 'DAS Studio', ogImage: '',
+    facebook: '', twitter: '', github: '', telegram: '', supportEmail: '',
+    footerText: '© ' + new Date().getFullYear() + ' DAS Studio. All rights reserved.',
+    siteLang: 'en', showLangSwitcher: false, timezone: 'Asia/Kolkata',
+    contactAddress: '', contactPhone: '', contactHours: '', contactMapUrl: '',
+    baseUrl: '', canonicalUrl: '', gscCode: '',
+    robotsTxt: '', sitemapChangefreq: 'weekly', sitemapPriority: '0.8', sitemapLegal: 'yes', sitemapExternal: false,
+    cookieEnabled: false, cookieText: 'We use cookies to improve your experience and analyse traffic.',
+    cookieAcceptText: 'Accept', cookieRejectText: 'Reject', cookiePosition: 'bottom',
+    cookieExpiry: 180, cookieLinkText: 'Read our Privacy Policy',
+    privacyTitle: 'Privacy Policy', privacyUpdated: '', privacyHtml: '',
+    termsTitle: 'Terms & Conditions', termsUpdated: '', termsHtml: '',
+    maintenanceTitle: '🚧 Under Maintenance',
+    maintenanceMessage: '<p>We are currently updating our tools. Please check back soon!</p>',
+    maintenanceEta: '', maintenanceEmail: '',
+    headCode: '', bodyCode: ''
+  };
+
+  /* ============================================================
+     UTILITIES
+     ============================================================ */
+  function escapeHtml(str) {
+    return String(str == null ? '' : str).replace(/[&<>"']/g, function(c) {
+      return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+    });
+  }
+
+  /* ============================================================
+     FAVORITES
+     ============================================================ */
+  var favorites = [];
+  try { favorites = JSON.parse(localStorage.getItem('das_studio_favs') || '[]'); } catch(e){}
+
+  function isFavorite(id) { return favorites.indexOf(id) !== -1; }
+
+  function toggleFavorite(id) {
+    var idx = favorites.indexOf(id);
+    if (idx === -1) favorites.push(id); else favorites.splice(idx, 1);
+    try { localStorage.setItem('das_studio_favs', JSON.stringify(favorites)); } catch(e){}
+    renderGrid();
+  }
+
+  /* ============================================================
+     LOAD SETTINGS
+     ============================================================ */
+  var settings = Object.assign({}, defaultSettings);
+  try {
+    var storedSettings = localStorage.getItem('das_studio_settings');
+    if (storedSettings) settings = Object.assign({}, defaultSettings, JSON.parse(storedSettings));
+  } catch(e){}
+
+  /* ============================================================
+     META / CUSTOM CODE HELPERS
+     ============================================================ */
+  function updateMetaTag(attrName, attrValue, content) {
+    var selector = 'meta[' + attrName + '="' + attrValue + '"]';
+    var el = document.querySelector(selector);
+    if (!el) { el = document.createElement('meta'); el.setAttribute(attrName, attrValue); document.head.appendChild(el); }
+    el.setAttribute('content', content);
+  }
+
+  function injectCustomCode(code, target) {
+    var prev = target.querySelectorAll('[data-custom-injected]');
+    for (var i = 0; i < prev.length; i++) prev[i].remove();
+    if (!code || !code.trim()) return;
+    var temp = document.createElement('div');
+    temp.innerHTML = code;
+    Array.prototype.slice.call(temp.childNodes).forEach(function(node) {
+      if (node.nodeType === 1 && node.tagName === 'SCRIPT') {
+        var s = document.createElement('script');
+        Array.from(node.attributes).forEach(function(a){ s.setAttribute(a.name, a.value); });
+        s.textContent = node.textContent;
+        s.setAttribute('data-custom-injected', 'true');
+        target.appendChild(s);
+      } else if (node.nodeType === 1) {
+        var clone = node.cloneNode(true);
+        clone.setAttribute('data-custom-injected', 'true');
+        target.appendChild(clone);
+      }
+    });
+  }
+
+  function renderFooterSocial() {
+    var container = document.getElementById('footerSocial');
+    if (!container) return;
+    container.innerHTML = '';
+    var links = [];
+    if (settings.facebook)    links.push({ url: settings.facebook,  label: 'Facebook',    icon: '📘' });
+    if (settings.twitter)     links.push({ url: settings.twitter,   label: 'Twitter / X', icon: '🐦' });
+    if (settings.github)      links.push({ url: settings.github,    label: 'GitHub',      icon: '💻' });
+    if (settings.telegram)    links.push({ url: settings.telegram,  label: 'Telegram',    icon: '✈️' });
+    if (settings.supportEmail) links.push({ url: 'mailto:' + settings.supportEmail, label: 'Email', icon: '✉️' });
+    links.forEach(function(l) {
+      var a = document.createElement('a');
+      a.href = l.url; a.target = '_blank'; a.rel = 'noopener';
+      a.className = 'footer-social-link'; a.title = l.label;
+      a.setAttribute('aria-label', l.label); a.textContent = l.icon;
+      container.appendChild(a);
+    });
+  }
+
+  /* ============================================================
+     NOTICE BAR ENGINE
+     ============================================================ */
+  var noticeTimer = null;
+  var ANN_STATS_KEY = 'das_studio_notice_stats';
+  var ANN_DISMISS_KEY = 'das_studio_ann_dismissed';
+  var ANN_PRIORITY_RANK = { emergency: 0, high: 1, medium: 2, low: 3 };
+  var ANN_PRIORITY_LABEL = { emergency: 'Emergency', high: 'High', medium: 'Medium', low: 'Low' };
+  var ANN_SEEN = {};
+  var ANN_VISITOR = null;
+
+  function annList() {
+    if (!Array.isArray(settings.announcements)) settings.announcements = [];
+    return settings.announcements;
+  }
+  function annById(id) {
+    var hit = null;
+    annList().forEach(function (a) { if (String(a.id) === String(id)) hit = a; });
+    return hit;
+  }
+  function annStats() {
+    try { return JSON.parse(localStorage.getItem(ANN_STATS_KEY) || '{}') || {}; } catch (e) { return {}; }
+  }
+  function annStatOf(id) {
+    var s = annStats()[id];
+    return s || { views: 0, clicks: 0 };
+  }
+  function annBump(id, kind) {
+    var all = annStats();
+    var s = all[id] || { views: 0, clicks: 0 };
+    s[kind] = (s[kind] || 0) + 1;
+    if (kind === 'views') s.lastView = Date.now(); else s.lastClick = Date.now();
+    all[id] = s;
+    try { localStorage.setItem(ANN_STATS_KEY, JSON.stringify(all)); } catch (e) {}
+  }
+  function annDismissMap() {
+    try { return JSON.parse(localStorage.getItem(ANN_DISMISS_KEY) || '{}') || {}; } catch (e) { return {}; }
+  }
+  function annIsDismissed(a, kind) {
+    if (!a || !a.dismissible) return false;
+    var m = annDismissMap();
+    var until = m[(kind || 'bar') + '_' + a.id];
+    return !!until && Date.now() < until;
+  }
+  function annDismiss(a, kind) {
+    var hours = Number(a.dismissHours) || 0;
+    var m = annDismissMap();
+    m[(kind || 'bar') + '_' + a.id] = Date.now() + hours * 3600000;
+    try { localStorage.setItem(ANN_DISMISS_KEY, JSON.stringify(m)); } catch (e) {}
+  }
+  function annInSchedule(a) {
+    var now = Date.now();
+    if (a.start) { var st = new Date(a.start).getTime(); if (!isNaN(st) && now < st) return false; }
+    if (a.end) { var en = new Date(a.end).getTime(); if (!isNaN(en) && now > en) return false; }
+    return true;
+  }
+  function annVisitor() {
+    var v = null;
+    try { v = JSON.parse(localStorage.getItem('das_visitor') || 'null'); } catch (e) {}
+    if (!v || typeof v !== 'object') v = { first: Date.now(), visits: 0 };
+    v.visits = (Number(v.visits) || 0) + 1;
+    try { localStorage.setItem('das_visitor', JSON.stringify(v)); } catch (e) {}
+    return v;
+  }
+  function annMatchesAudience(a) {
+    var aud = a.audience || 'all';
+    if (aud === 'all') return true;
+    if (aud === 'admin') return !!isAdmin;
+    if (aud === 'mobile') return window.innerWidth <= 760;
+    if (aud === 'desktop') return window.innerWidth > 760;
+    if (!ANN_VISITOR) ANN_VISITOR = annVisitor();
+    if (aud === 'new') return ANN_VISITOR.visits <= 1;
+    if (aud === 'returning') return ANN_VISITOR.visits > 1;
+    return true;
+  }
+  function annMatchesPage(a) {
+    var q = String(a.pageMatch || '').trim().toLowerCase();
+    if (!q) return true;
+    var hay = '';
+    try { hay = (location.href + ' ' + (location.hash || '')).toLowerCase(); } catch (e) {}
+    var last = '';
+    try { last = (localStorage.getItem('das_last_tool') || '').toLowerCase(); } catch (e) {}
+    return hay.indexOf(q) !== -1 || last.indexOf(q) !== -1;
+  }
+  function annCandidates() {
+    return annList().filter(function (a) {
+      return a && !a.archived && a.active && annInSchedule(a) &&
+             annMatchesAudience(a) && annMatchesPage(a);
+    }).sort(function (x, y) {
+      var rx = ANN_PRIORITY_RANK[x.priority] == null ? 9 : ANN_PRIORITY_RANK[x.priority];
+      var ry = ANN_PRIORITY_RANK[y.priority] == null ? 9 : ANN_PRIORITY_RANK[y.priority];
+      if (rx !== ry) return rx - ry;
+      return (y.createdAt || 0) - (x.createdAt || 0);
+    });
+  }
+  function annText(a) {
+    var en = String(a.text || '').trim();
+    var bn = String(a.textBn || '').trim();
+    var lang = a.lang || 'both';
+    if (lang === 'en') return en || bn;
+    if (lang === 'bn') return bn || en;
+    if (en && bn && en !== bn) return en + '  |  ' + bn;
+    return en || bn;
+  }
+  function annIcon(type) {
+    return { info: 'ℹ️', success: '✅', warning: '⚠️', offer: '🎁', custom: '📢' }[type] || '📢';
+  }
+  function annBarClass(a) {
+    if (a.priority === 'emergency') return 'notice-emergency';
+    if (a.priority === 'high') return 'notice-high';
+    return 'notice-' + (a.type || 'info');
+  }
+
+  /* ---- schedule the next automatic transition ---- */
+  function scheduleNextNoticeCheck() {
+    if (noticeTimer) { clearTimeout(noticeTimer); noticeTimer = null; }
+    var now = Date.now(), next = Infinity;
+    annList().forEach(function (a) {
+      if (a.archived) return;
+      ['start', 'end'].forEach(function (k) {
+        if (!a[k]) return;
+        var t = new Date(a[k]).getTime();
+        if (!isNaN(t) && t > now) next = Math.min(next, t);
+      });
+    });
+    if (next !== Infinity) {
+      var diff = next - now;
+      if (diff > 0 && diff < 2147483647) noticeTimer = setTimeout(renderNoticeBar, diff + 1000);
+    }
+  }
+
+  /* ---- top bar ---- */
+  function renderAnnBar(bar, a) {
+    bar.className = annBarClass(a);
+    if (a.type === 'custom') bar.style.background = a.bg || '#6366f1';
+    var wrapEl = document.createElement('span');
+    wrapEl.className = 'notice-text';
+
+    var ic = document.createElement('span');
+    ic.textContent = annIcon(a.type);
+    ic.style.fontSize = '15px';
+    wrapEl.appendChild(ic);
+
+    if (a.priority === 'high' || a.priority === 'emergency') {
+      var pri = document.createElement('span');
+      pri.className = 'notice-pri';
+      pri.textContent = a.priority === 'emergency' ? '🔴 Emergency' : '🟠 Important';
+      wrapEl.appendChild(pri);
+    }
+
+    var txt = document.createElement('span');
+    txt.textContent = annText(a);
+    wrapEl.appendChild(txt);
+
+    if (a.actionText && a.actionUrl) {
+      var link = document.createElement('a');
+      link.className = 'notice-btn';
+      link.href = a.actionUrl;
+      link.textContent = a.actionText;
+      if (a.actionNewTab !== false) { link.target = '_blank'; link.rel = 'noopener'; }
+      link.addEventListener('click', function () { annBump(a.id, 'clicks'); });
+      wrapEl.appendChild(link);
+    }
+    bar.appendChild(wrapEl);
+
+    if (a.dismissible) {
+      var cb = document.createElement('button');
+      cb.className = 'notice-close';
+      cb.type = 'button';
+      cb.setAttribute('aria-label', 'Dismiss announcement');
+      cb.innerHTML = '✕';
+      cb.addEventListener('click', function () {
+        annDismiss(a, 'bar');
+        bar.style.display = 'none';
+        renderNoticeBar();
+      });
+      bar.appendChild(cb);
+    }
+    bar.style.display = 'flex';
+
+    if (!ANN_SEEN['bar_' + a.id]) {
+      ANN_SEEN['bar_' + a.id] = true;
+      annBump(a.id, 'views');
+    }
+  }
+
+  /* ---- popup ---- */
+  function renderAnnPopup(list) {
+    var pop = document.getElementById('annPopup');
+    if (!pop) return;
+    var pick = null;
+    for (var i = 0; i < list.length; i++) {
+      var a = list[i];
+      if (a.display === 'popup' || a.display === 'both') {
+        if (!annIsDismissed(a, 'popup') && !ANN_SEEN['popup_' + a.id]) { pick = a; break; }
+      }
+    }
+    if (!pick) { pop.classList.remove('show'); return; }
+
+    var pri = document.getElementById('annPopPri');
+    pri.className = 'ann-pop-pri ' + (pick.priority || 'low');
+    pri.textContent = ANN_PRIORITY_LABEL[pick.priority] || 'Medium';
+    pri.style.display = (pick.priority === 'low') ? 'none' : 'inline-block';
+    document.getElementById('annPopIcon').textContent = annIcon(pick.type);
+    document.getElementById('annPopTitle').textContent = pick.popupTitle || pick.title || 'Announcement';
+    document.getElementById('annPopBody').innerHTML = pick.popupBody ||
+      ('<p>' + escapeHtml(annText(pick)) + '</p>');
+
+    var actions = document.getElementById('annPopActions');
+    actions.innerHTML = '';
+    if (pick.actionText && pick.actionUrl) {
+      var go = document.createElement('a');
+      go.className = 'btn-primary';
+      go.href = pick.actionUrl;
+      go.textContent = pick.actionText;
+      go.style.textDecoration = 'none';
+      if (pick.actionNewTab !== false) { go.target = '_blank'; go.rel = 'noopener'; }
+      go.addEventListener('click', function () { annBump(pick.id, 'clicks'); });
+      actions.appendChild(go);
+    }
+    var close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'btn-secondary';
+    close.textContent = pick.dismissible ? 'Dismiss' : 'Close';
+    close.addEventListener('click', function () {
+      if (pick.dismissible) annDismiss(pick, 'popup');
+      pop.classList.remove('show');
+      ANN_SEEN['popup_' + pick.id] = true;
+    });
+    actions.appendChild(close);
+
+    ANN_SEEN['popup_' + pick.id] = true;
+    annBump(pick.id, 'views');
+    setTimeout(function () { pop.classList.add('show'); }, pick.priority === 'emergency' ? 600 : 1400);
+  }
+
+  /* ---- main entry point ---- */
+  function renderNoticeBar() {
+    var bar = document.getElementById('announcementBar');
+    if (!bar) return;
+    if (noticeTimer) { clearTimeout(noticeTimer); noticeTimer = null; }
+    bar.className = '';
+    bar.style.background = '';
+    bar.style.display = 'none';
+    bar.innerHTML = '';
+
+    var list = annCandidates();
+    var barPick = null;
+    for (var i = 0; i < list.length; i++) {
+      if (list[i].display !== 'popup' && !annIsDismissed(list[i], 'bar')) { barPick = list[i]; break; }
+    }
+    if (barPick) renderAnnBar(bar, barPick);
+    renderAnnPopup(list);
+    scheduleNextNoticeCheck();
+  }
+
+  /* ---- one-time migration from the old single-notice settings ---- */
+  (function annMigrate() {
+    if (!Array.isArray(settings.announcements)) settings.announcements = [];
+    if (settings.announcements.length) return;
+    if (!settings.noticeText && !settings.noticeTextBn) return;
+    settings.announcements.push({
+      id: 'ann_legacy',
+      title: 'Imported announcement',
+      text: settings.noticeText || '',
+      textBn: settings.noticeTextBn || '',
+      lang: settings.noticeLang || 'both',
+      type: settings.noticeType || 'info',
+      bg: settings.noticeBg || '#6366f1',
+      priority: 'medium',
+      active: !!settings.noticeActive,
+      display: 'bar',
+      audience: 'all',
+      pageMatch: '',
+      start: settings.noticeStart || '',
+      end: settings.noticeEnd || '',
+      dismissible: !!settings.noticeDismissible,
+      dismissHours: settings.noticeDismissHours != null ? settings.noticeDismissHours : 24,
+      actionText: settings.noticeActionText || '',
+      actionUrl: settings.noticeActionUrl || '',
+      actionNewTab: settings.noticeActionNewTab !== false,
+      popupTitle: '', popupBody: '',
+      createdAt: Date.now(), archived: false
+    });
+    try { localStorage.setItem('das_studio_settings', JSON.stringify(settings)); } catch (e) {}
+  })();
+  /* ============================================================
+     SITE SETTINGS ENGINE — language · timezone · robots · sitemap
+     canonical · search console · cookies · legal pages · contact
+     maintenance message
+     ============================================================ */
+  var SS_LANG = 'en';
+  var SS_I18N = {
+    en: { search: 'Search tools', all: 'All Tools', fav: '❤️ Favorites', media: '📸 Image & Video',
+          design: '🎨 Design', office: '📄 Documents', audio: '🎵 Audio', three: '🎲 3D',
+          software: '💻 Software', empty: '😕 No tools found. Try a different search.',
+          feedback: '💬 Feedback / Bug Report', pill: 'All tools completely free & browser-based',
+          privacy: 'Privacy Policy', terms: 'Terms & Conditions', contact: 'Contact' },
+    bn: { search: 'টুল খুঁজুন', all: 'সব টুল', fav: '❤️ প্রিয়', media: '📸 ছবি ও ভিডিও',
+          design: '🎨 ডিজাইন', office: '📄 ডকুমেন্ট', audio: '🎵 অডিও', three: '🎲 থ্রিডি',
+          software: '💻 সফটওয়্যার', empty: '😕 কোনো টুল পাওয়া যায়নি। অন্য কিছু খুঁজে দেখুন।',
+          feedback: '💬 মতামত / বাগ রিপোর্ট', pill: 'সব টুল সম্পূর্ণ ফ্রি ও ব্রাউজার-ভিত্তিক',
+          privacy: 'প্রাইভেসি পলিসি', terms: 'শর্তাবলী', contact: 'যোগাযোগ' }
+  };
+  function ssT(key) {
+    var pack = SS_I18N[SS_LANG] || SS_I18N.en;
+    var v = pack[key];
+    return (v != null) ? v : SS_I18N.en[key];
+  }
+  function ssCountText(n) {
+    return SS_LANG === 'bn'
+      ? (n + 'টি টুল · সব এক জায়গায়')
+      : (n + ' creative tools · all in one place');
+  }
+
+  function ssUpdateLangButtons() {
+    var box = document.getElementById('langSwitch');
+    if (!box) return;
+    box.style.display = settings.showLangSwitcher ? 'inline-flex' : 'none';
+    Array.prototype.forEach.call(box.querySelectorAll('button'), function (b) {
+      b.classList.toggle('active', b.getAttribute('data-lang') === SS_LANG);
+    });
+  }
+
+  function applyLanguage(lang, persistVisitor) {
+    SS_LANG = (lang === 'bn') ? 'bn' : 'en';
+    document.documentElement.setAttribute('lang', SS_LANG);
+    var s = document.getElementById('search');
+    if (s) s.placeholder = ssT('search');
+    Array.prototype.forEach.call(document.querySelectorAll('#filters .chip'), function (chip) {
+      var f = chip.getAttribute('data-filter');
+      var key = (f === '3D') ? 'three' : f;
+      if (SS_I18N.en[key]) chip.textContent = ssT(key);
+    });
+    var emptyEl = document.getElementById('empty');
+    if (emptyEl) emptyEl.textContent = ssT('empty');
+    var fbBtn = document.getElementById('openFeedbackModalBtn');
+    if (fbBtn) fbBtn.textContent = ssT('feedback');
+    var pill = document.querySelector('.hero .pill');
+    if (pill) pill.innerHTML = '<span class="dot"></span> ' + escapeHtml(ssT('pill'));
+    ssRenderFooterExtras();
+    ssUpdateLangButtons();
+    try { renderGrid(); } catch (e) {}
+    if (persistVisitor) { try { localStorage.setItem('das_lang', SS_LANG); } catch (e) {} }
+  }
+
+  /* ---- timezone aware formatting ---- */
+  function ssFmtDateTime(ts) {
+    var d = (ts instanceof Date) ? ts : new Date(ts);
+    if (isNaN(d.getTime())) return '—';
+    try {
+      return new Intl.DateTimeFormat('en-GB', {
+        timeZone: settings.timezone || 'Asia/Kolkata',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', hour12: true
+      }).format(d);
+    } catch (e) { return d.toLocaleString(); }
+  }
+  function ssFmtDateOnly(v) {
+    if (!v) return '';
+    var d = new Date(v);
+    if (isNaN(d.getTime())) return String(v);
+    try {
+      return new Intl.DateTimeFormat('en-GB', { timeZone: settings.timezone || 'Asia/Kolkata',
+        year: 'numeric', month: 'long', day: 'numeric' }).format(d);
+    } catch (e) { return d.toLocaleDateString(); }
+  }
+  function ssTzNow() {
+    try {
+      return new Intl.DateTimeFormat('en-GB', {
+        timeZone: settings.timezone || 'Asia/Kolkata',
+        weekday: 'short', day: '2-digit', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
+      }).format(new Date());
+    } catch (e) { return 'Invalid timezone'; }
+  }
+
+  /* ---- base URL helpers ---- */
+  function ssBase() {
+    var b = String(settings.baseUrl || '').trim();
+    if (!b) {
+      try { b = location.origin + location.pathname.replace(/[^/]*$/, ''); }
+      catch (e) { b = 'https://example.com/'; }
+    }
+    if (!/^https?:\/\//i.test(b)) b = 'https://' + b.replace(/^\/+/, '');
+    if (!/\/$/.test(b)) b += '/';
+    return b;
+  }
+
+  /* ---- maintenance overlay ---- */
+  function ssRenderMaintenance() {
+    var t = document.getElementById('maintTitle');
+    if (!t) return;
+    var icon = document.querySelector('#maintenanceBox .mo-icon');
+    var title = String(settings.maintenanceTitle || '🚧 Under Maintenance');
+    var m = /^([\u2190-\u2BFF\uD800-\uDFFF\uFE0F\s]+)/.exec(title);
+    if (icon) icon.textContent = m ? m[1].trim() : '🚧';
+    if (m) title = title.slice(m[1].length);
+    t.textContent = title.trim() || 'Under Maintenance';
+    var msg = document.getElementById('maintMsg');
+    if (msg) msg.innerHTML = settings.maintenanceMessage ||
+      '<p>We are currently updating our tools. Please check back soon!</p>';
+    var extra = document.getElementById('maintExtra');
+    if (!extra) return;
+    var html = '';
+    if (settings.maintenanceEta) {
+      var d = new Date(settings.maintenanceEta);
+      if (!isNaN(d.getTime())) html += '<div class="mo-eta">⏱ Expected back: ' + escapeHtml(ssFmtDateTime(d)) + '</div>';
+    }
+    if (settings.maintenanceEmail) {
+      html += '<p class="mo-mail">Need help? Email <a href="mailto:' + escapeHtml(settings.maintenanceEmail) + '">' +
+        escapeHtml(settings.maintenanceEmail) + '</a></p>';
+    }
+    extra.innerHTML = html;
+  }
+
+  /* ---- footer contact + legal links ---- */
+  function ssRenderFooterExtras() {
+    var c = document.getElementById('footerContact');
+    if (c) {
+      var parts = [];
+      if (settings.contactAddress) parts.push('<span>📍 ' + escapeHtml(settings.contactAddress) + '</span>');
+      if (settings.contactPhone) {
+        parts.push('<span>📞 <a href="tel:' + escapeHtml(String(settings.contactPhone).replace(/[^\d+]/g, '')) + '">' +
+          escapeHtml(settings.contactPhone) + '</a></span>');
+      }
+      if (settings.supportEmail) {
+        parts.push('<span>✉️ <a href="mailto:' + escapeHtml(settings.supportEmail) + '">' +
+          escapeHtml(settings.supportEmail) + '</a></span>');
+      }
+      if (settings.contactHours) parts.push('<span>🕒 ' + escapeHtml(settings.contactHours) + '</span>');
+      if (settings.contactMapUrl) {
+        parts.push('<span>🗺️ <a href="' + escapeHtml(settings.contactMapUrl) + '" target="_blank" rel="noopener">View on map</a></span>');
+      }
+      c.innerHTML = parts.join('');
+    }
+    var l = document.getElementById('footerLegal');
+    if (l) {
+      l.innerHTML =
+        '<button type="button" data-legal="privacy">' + escapeHtml(ssT('privacy')) + '</button>' +
+        '<button type="button" data-legal="terms">' + escapeHtml(ssT('terms')) + '</button>' +
+        '<button type="button" data-legal="contact">' + escapeHtml(ssT('contact')) + '</button>';
+    }
+  }
+
+  function ssContactHtml() {
+    var rows = '';
+    function row(label, value, href) {
+      if (!value) return;
+      rows += '<div class="legal-contact-row"><b>' + label + '</b><span>' +
+        (href ? '<a href="' + escapeHtml(href) + '" target="_blank" rel="noopener">' + escapeHtml(value) + '</a>'
+              : escapeHtml(value)) + '</span></div>';
+    }
+    row('Address', settings.contactAddress);
+    row('Phone', settings.contactPhone, settings.contactPhone ? 'tel:' + String(settings.contactPhone).replace(/[^\d+]/g, '') : '');
+    row('Email', settings.supportEmail, settings.supportEmail ? 'mailto:' + settings.supportEmail : '');
+    row('Support hours', settings.contactHours);
+    row('Map', settings.contactMapUrl ? 'Open in Google Maps' : '', settings.contactMapUrl);
+    return rows ? ('<p>We are happy to hear from you.</p>' + rows)
+                : '<p>Contact details have not been filled in yet. Add them in <b>Admin → Site Settings → Contact Information</b>.</p>';
+  }
+
+  function openLegalPage(kind) {
+    var modalEl = document.getElementById('legalModal');
+    if (!modalEl) return;
+    var title = '', html = '', upd = '';
+    if (kind === 'privacy') {
+      title = settings.privacyTitle || 'Privacy Policy';
+      html = settings.privacyHtml || '<p>This privacy policy has not been written yet.</p>';
+      upd = settings.privacyUpdated || '';
+    } else if (kind === 'terms') {
+      title = settings.termsTitle || 'Terms & Conditions';
+      html = settings.termsHtml || '<p>These terms have not been written yet.</p>';
+      upd = settings.termsUpdated || '';
+    } else {
+      title = 'Contact';
+      html = ssContactHtml();
+    }
+    document.getElementById('legalTitle').textContent = title;
+    var meta = document.getElementById('legalMeta');
+    if (upd) { meta.textContent = 'Last updated: ' + ssFmtDateOnly(upd); meta.style.display = 'block'; }
+    else { meta.textContent = ''; meta.style.display = 'none'; }
+    document.getElementById('legalBody').innerHTML = html;
+    if (typeof anPageView === 'function') anPageView(title);
+    modalEl.classList.add('active');
+  }
+
+  /* ---- cookie consent ---- */
+  var COOKIE_KEY = 'das_cookie_consent';
+  function ssCookieState() {
+    try { return JSON.parse(localStorage.getItem(COOKIE_KEY) || 'null'); } catch (e) { return null; }
+  }
+  function ssConsentValid() {
+    var c = ssCookieState();
+    if (!c) return false;
+    var days = Number(settings.cookieExpiry) || 180;
+    return (Date.now() - (c.t || 0)) < days * 86400000;
+  }
+  function ssRenderCookieBanner(force) {
+    var banner = document.getElementById('cookieBanner');
+    if (!banner) return;
+    if (!settings.cookieEnabled) { banner.classList.remove('show'); return; }
+    if (!force && ssConsentValid()) { banner.classList.remove('show'); return; }
+    banner.classList.toggle('top', settings.cookiePosition === 'top');
+    var txt = document.getElementById('cbText');
+    txt.innerHTML = escapeHtml(settings.cookieText || 'We use cookies to improve your experience and analyse traffic.') +
+      ' <button type="button" class="cb-link" id="cbPolicy">' +
+      escapeHtml(settings.cookieLinkText || 'Read our Privacy Policy') + '</button>';
+    document.getElementById('cbAccept').textContent = settings.cookieAcceptText || 'Accept';
+    document.getElementById('cbReject').textContent = settings.cookieRejectText || 'Reject';
+    var pol = document.getElementById('cbPolicy');
+    if (pol) pol.onclick = function () { openLegalPage('privacy'); };
+    banner.classList.add('show');
+  }
+  function ssApplyAnalyticsConsent() {
+    var c = ssCookieState();
+    var allowed = !settings.cookieEnabled || (ssConsentValid() && c && c.choice === 'accept');
+    var ids = ['G-XXXXXXXXXX'];
+    try { var seo = lsGet('das_studio_seo', null); if (seo && seo.ga) ids.push(seo.ga); } catch (e) {}
+    ids.forEach(function (id) { window['ga-disable-' + id] = !allowed; });
+  }
+  function ssSetConsent(choice) {
+    try { localStorage.setItem(COOKIE_KEY, JSON.stringify({ choice: choice, t: Date.now() })); } catch (e) {}
+    var banner = document.getElementById('cookieBanner');
+    if (banner) banner.classList.remove('show');
+    ssApplyAnalyticsConsent();
+    ssUpdateCookieState();
+    try { logAct('privacy', 'Cookie consent: ' + choice); } catch (e) {}
+  }
+  function ssUpdateCookieState() {
+    var el = document.getElementById('ssCookieState');
+    if (!el) return;
+    var c = ssCookieState();
+    if (!c) { el.textContent = 'No consent recorded in this browser yet.'; return; }
+    el.textContent = 'This browser answered “' + c.choice + '” on ' + ssFmtDateTime(c.t) +
+      (ssConsentValid() ? ' — the banner will not show again until it expires.' : ' — that answer has expired.');
+  }
+
+  /* ---- robots.txt ---- */
+  var SS_ROBOTS_DEFAULT =
+    'User-agent: *\nAllow: /\n\n# Private areas\nDisallow: /admin/\nDisallow: /private/\n\n# Sitemap\nSitemap: __BASE__sitemap.xml\n';
+  function ssRobotsDefault() { return SS_ROBOTS_DEFAULT.replace('__BASE__', ssBase()); }
+  function ssValidateRobots(text) {
+    var t = String(text || '');
+    var problems = [], notes = [];
+    if (!/user-agent\s*:/i.test(t)) problems.push('No “User-agent:” line — crawlers will ignore the whole file.');
+    if (/disallow\s*:\s*\/\s*$/im.test(t) && /allow\s*:\s*\/\s*$/im.test(t)) {
+      problems.push('“Disallow: /” blocks the entire site even though “Allow: /” is present — remove one of them.');
+    }
+    if (/sitemap\s*:\s*$/im.test(t)) problems.push('A “Sitemap:” line has no URL after it.');
+    var sm = /sitemap\s*:\s*(\S+)/i.exec(t);
+    if (sm && !/^https?:\/\//i.test(sm[1])) problems.push('The sitemap URL must be absolute (start with https://).');
+    if (sm && sm[1].indexOf(ssBase()) !== 0) notes.push('The sitemap URL does not start with your canonical base URL (' + ssBase() + ').');
+    if (!sm) notes.push('No “Sitemap:” line found — adding one helps search engines discover the sitemap.');
+    if (!/disallow\s*:\s*\/(admin|private|dashboard)/i.test(t)) notes.push('Consider blocking private areas such as /admin/.');
+    return { problems: problems, notes: notes };
+  }
+
+  /* ---- sitemap.xml ---- */
+  function ssBuildSitemap() {
+    var base = ssBase();
+    var today = new Date().toISOString().slice(0, 10);
+    var freq = settings.sitemapChangefreq || 'weekly';
+    var pri = settings.sitemapPriority || '0.8';
+    var rows = [{ loc: base, pri: '1.0', freq: 'daily' }];
+    var skipped = 0;
+    tools.forEach(function (t) {
+      if (toolStatusOf(t) !== 'published' || !/^https?:/i.test(t.link || '')) return;
+      var sameHost = false;
+      try { sameHost = (new URL(t.link)).host === (new URL(base)).host; } catch (e) { sameHost = false; }
+      if (!sameHost && !settings.sitemapExternal) { skipped++; return; }
+      rows.push({ loc: t.link, pri: pri, freq: freq });
+    });
+    if (settings.sitemapLegal !== 'no') {
+      rows.push({ loc: base + '#privacy', pri: '0.4', freq: 'yearly' });
+      rows.push({ loc: base + '#terms', pri: '0.4', freq: 'yearly' });
+      rows.push({ loc: base + '#contact', pri: '0.4', freq: 'yearly' });
+    }
+    var xml = '<?xml version="1.0" encoding="UTF-8"?>\n' +
+      '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
+      rows.map(function (r) {
+        return '  <url>\n    <loc>' + String(r.loc).replace(/&/g, '&amp;') + '</loc>\n' +
+          '    <lastmod>' + today + '</lastmod>\n' +
+          '    <changefreq>' + r.freq + '</changefreq>\n' +
+          '    <priority>' + r.pri + '</priority>\n  </url>';
+      }).join('\n') + '\n</urlset>\n';
+    return { xml: xml, count: rows.length, skipped: skipped };
+  }
+  function ssRefreshSitemap() {
+    var ta = document.getElementById('settingSitemapPreview');
+    if (!ta) return;
+    var res = ssBuildSitemap();
+    ta.value = res.xml;
+    var msg = document.getElementById('ssSitemapMsg');
+    if (msg) {
+      msg.style.display = 'block';
+      msg.className = 'ss-msg ok';
+      msg.innerHTML = '✅ ' + res.count + ' URL(s) in the sitemap' +
+        (res.skipped ? ' · ' + res.skipped + ' external tool link(s) skipped (tick “Include external tool links” to add them)' : '') + '.';
+    }
+  }
+
+  /* ---- head tag injection: canonical + search console ---- */
+  function ssUpsertHeadLink(rel, href) {
+    var el = document.querySelector('link[rel="' + rel + '"][data-ss="1"]');
+    if (!href) { if (el) el.remove(); return; }
+    if (!el) { el = document.createElement('link'); el.rel = rel; el.setAttribute('data-ss', '1'); document.head.appendChild(el); }
+    el.setAttribute('href', href);
+  }
+  function ssUpsertMeta(name, content) {
+    var el = document.querySelector('meta[name="' + name + '"][data-ss="1"]');
+    if (!content) { if (el) el.remove(); return; }
+    if (!el) { el = document.createElement('meta'); el.name = name; el.setAttribute('data-ss', '1'); document.head.appendChild(el); }
+    el.setAttribute('content', content);
+  }
+  function ssGscCode() {
+    var raw = String(settings.gscCode || '').trim();
+    var m = /content\s*=\s*["']([^"']+)["']/i.exec(raw);
+    return m ? m[1].trim() : raw;
+  }
+  function ssInjectSeo() {
+    ssUpsertHeadLink('canonical', String(settings.canonicalUrl || settings.baseUrl || '').trim());
+    ssUpsertMeta('google-site-verification', ssGscCode());
+  }
+
+  /* ---- populate / read the new settings fields ---- */
+  function ssPopulate() {
+    function set(id, val) { var el = document.getElementById(id); if (el) el.value = (val == null ? '' : val); }
+    function check(id, val) { var el = document.getElementById(id); if (el) el.checked = !!val; }
+    set('settingSiteLang', settings.siteLang || 'en');
+    set('settingTimezone', settings.timezone || 'Asia/Kolkata');
+    check('settingShowLangSwitcher', settings.showLangSwitcher);
+    set('settingContactAddress', settings.contactAddress);
+    set('settingContactPhone', settings.contactPhone);
+    set('settingContactHours', settings.contactHours);
+    set('settingContactMap', settings.contactMapUrl);
+    set('settingBaseUrl', settings.baseUrl);
+    set('settingCanonical', settings.canonicalUrl);
+    set('settingGsc', settings.gscCode);
+    set('settingRobots', settings.robotsTxt || ssRobotsDefault());
+    set('settingSitemapFreq', settings.sitemapChangefreq || 'weekly');
+    set('settingSitemapPriority', settings.sitemapPriority || '0.8');
+    set('settingSitemapLegal', settings.sitemapLegal || 'yes');
+    check('settingSitemapExternal', settings.sitemapExternal);
+    check('settingCookieEnabled', settings.cookieEnabled);
+    set('settingCookieText', settings.cookieText);
+    set('settingCookieAccept', settings.cookieAcceptText);
+    set('settingCookieReject', settings.cookieRejectText);
+    set('settingCookiePosition', settings.cookiePosition || 'bottom');
+    set('settingCookieExpiry', settings.cookieExpiry || 180);
+    set('settingCookieLinkText', settings.cookieLinkText);
+    set('settingPrivacyTitle', settings.privacyTitle);
+    set('settingPrivacyUpdated', settings.privacyUpdated);
+    set('settingPrivacyHtml', settings.privacyHtml);
+    set('settingTermsTitle', settings.termsTitle);
+    set('settingTermsUpdated', settings.termsUpdated);
+    set('settingTermsHtml', settings.termsHtml);
+    set('settingMaintTitle', settings.maintenanceTitle);
+    set('settingMaintMessage', settings.maintenanceMessage);
+    set('settingMaintEta', settings.maintenanceEta);
+    set('settingMaintEmail', settings.maintenanceEmail);
+    var now = document.getElementById('ssTzNow');
+    if (now) now.textContent = 'Current time in ' + (settings.timezone || 'Asia/Kolkata') + ': ' + ssTzNow();
+    ssUpdateCookieState();
+    ssRefreshSitemap();
+  }
+
+  function ssReadForm() {
+    function v(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+    function c(id) { var el = document.getElementById(id); return !!(el && el.checked); }
+    settings.siteLang = v('settingSiteLang') || 'en';
+    settings.timezone = v('settingTimezone').trim() || 'Asia/Kolkata';
+    settings.showLangSwitcher = c('settingShowLangSwitcher');
+    settings.contactAddress = v('settingContactAddress').trim();
+    settings.contactPhone = v('settingContactPhone').trim();
+    settings.contactHours = v('settingContactHours').trim();
+    settings.contactMapUrl = v('settingContactMap').trim();
+    settings.baseUrl = v('settingBaseUrl').trim();
+    settings.canonicalUrl = v('settingCanonical').trim();
+    settings.gscCode = v('settingGsc').trim();
+    settings.robotsTxt = v('settingRobots');
+    settings.sitemapChangefreq = v('settingSitemapFreq') || 'weekly';
+    settings.sitemapPriority = v('settingSitemapPriority') || '0.8';
+    settings.sitemapLegal = v('settingSitemapLegal') || 'yes';
+    settings.sitemapExternal = c('settingSitemapExternal');
+    settings.cookieEnabled = c('settingCookieEnabled');
+    settings.cookieText = v('settingCookieText').trim();
+    settings.cookieAcceptText = v('settingCookieAccept').trim() || 'Accept';
+    settings.cookieRejectText = v('settingCookieReject').trim() || 'Reject';
+    settings.cookiePosition = v('settingCookiePosition') || 'bottom';
+    settings.cookieExpiry = Number(v('settingCookieExpiry')) || 180;
+    settings.cookieLinkText = v('settingCookieLinkText').trim();
+    settings.privacyTitle = v('settingPrivacyTitle').trim() || 'Privacy Policy';
+    settings.privacyUpdated = v('settingPrivacyUpdated');
+    settings.privacyHtml = v('settingPrivacyHtml');
+    settings.termsTitle = v('settingTermsTitle').trim() || 'Terms & Conditions';
+    settings.termsUpdated = v('settingTermsUpdated');
+    settings.termsHtml = v('settingTermsHtml');
+    settings.maintenanceTitle = v('settingMaintTitle').trim() || '🚧 Under Maintenance';
+    settings.maintenanceMessage = v('settingMaintMessage');
+    settings.maintenanceEta = v('settingMaintEta');
+    settings.maintenanceEmail = v('settingMaintEmail').trim();
+  }
+
+  var SS_PRIVACY_TPL =
+    '<h2>1. Information we collect</h2>\n<p>We collect only what is needed to run this website: the feedback you send us, anonymous usage statistics and technical data such as your browser type.</p>\n' +
+    '<h2>2. How we use it</h2>\n<p>Your data is used to improve the tools, answer your messages and keep the site secure. We never sell personal data.</p>\n' +
+    '<h2>3. Cookies</h2>\n<p>We use cookies for analytics and to remember your preferences. You can accept or reject them from the banner, and change your choice at any time.</p>\n' +
+    '<h2>4. Third parties</h2>\n<p>We may use Google Analytics to understand traffic. Those services have their own privacy policies.</p>\n' +
+    '<h2>5. Your rights</h2>\n<p>You can ask us to show, correct or delete the information you have sent us by emailing the support address below.</p>\n' +
+    '<h2>6. Contact</h2>\n<p>Questions about this policy? Write to us at the support email shown in the footer.</p>';
+  var SS_TERMS_TPL =
+    '<h2>1. Acceptance of terms</h2>\n<p>By using this website you agree to these terms. If you do not agree, please stop using the site.</p>\n' +
+    '<h2>2. Use of the tools</h2>\n<p>The tools are provided free of charge for personal and commercial work. You may not use them for anything illegal or harmful.</p>\n' +
+    '<h2>3. Your content</h2>\n<p>Files you open in the tools are processed in your browser and are not uploaded to us. You keep all rights to your own content.</p>\n' +
+    '<h2>4. Copyright</h2>\n<p>All site design, text and branding belong to the site owner. Open-source components keep their own licences.</p>\n' +
+    '<h2>5. No warranty</h2>\n<p>The tools are provided “as is”, without warranty of any kind. Always keep your own backup of important files.</p>\n' +
+    '<h2>6. Changes</h2>\n<p>We may update these terms. The date at the top of this page shows the latest revision.</p>';
+
+  function ssToast(msg) {
+    var el = document.createElement('div');
+    el.textContent = msg;
+    el.style.cssText = 'position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:10001;' +
+      'background:rgba(16,185,129,.95);color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;' +
+      'font-weight:600;box-shadow:0 12px 30px -12px rgba(0,0,0,.8);transition:opacity .3s';
+    document.body.appendChild(el);
+    setTimeout(function () { el.style.opacity = '0'; setTimeout(function () { el.remove(); }, 350); }, 2200);
+  }
+
+  /* ---- bind every control in the Site Settings tab ---- */
+  (function bindSiteSettingsExtras() {
+    var langBox = document.getElementById('langSwitch');
+    if (langBox) {
+      langBox.addEventListener('click', function (e) {
+        var b = e.target.closest('button[data-lang]');
+        if (!b) return;
+        applyLanguage(b.getAttribute('data-lang'), true);
+      });
+    }
+
+    var legalBox = document.getElementById('footerLegal');
+    if (legalBox) {
+      legalBox.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-legal]');
+        if (b) openLegalPage(b.getAttribute('data-legal'));
+      });
+    }
+    var lm = document.getElementById('legalModal');
+    if (lm) {
+      function closeLegal() { lm.classList.remove('active'); }
+      var c1 = document.getElementById('legalClose'), c2 = document.getElementById('legalOk');
+      if (c1) c1.addEventListener('click', closeLegal);
+      if (c2) c2.addEventListener('click', closeLegal);
+      lm.addEventListener('click', function (e) { if (e.target === lm) closeLegal(); });
+    }
+
+    var cbA = document.getElementById('cbAccept'), cbR = document.getElementById('cbReject');
+    if (cbA) cbA.addEventListener('click', function () { ssSetConsent('accept'); });
+    if (cbR) cbR.addEventListener('click', function () { ssSetConsent('reject'); });
+
+    function on(id, fn) { var el = document.getElementById(id); if (el) el.addEventListener('click', fn); }
+    function txt(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+    function setTxt(id, val) { var el = document.getElementById(id); if (el) el.value = val; }
+
+    on('ssRobotsDefault', function () { setTxt('settingRobots', ssRobotsDefault()); ssToast('Recommended robots.txt loaded'); });
+    on('ssRobotsSitemap', function () {
+      var t = txt('settingRobots');
+      if (/sitemap\s*:/i.test(t)) { ssToast('A Sitemap line already exists'); return; }
+      setTxt('settingRobots', (t.replace(/\s*$/, '') + '\n\nSitemap: ' + ssBase() + 'sitemap.xml\n'));
+      ssToast('Sitemap line added');
+    });
+    on('ssRobotsCheck', function () {
+      var res = ssValidateRobots(txt('settingRobots'));
+      var box = document.getElementById('ssRobotsMsg');
+      if (!box) return;
+      box.style.display = 'block';
+      if (res.problems.length) {
+        box.className = 'ss-msg bad';
+        box.innerHTML = '✕ <b>' + res.problems.length + ' problem(s):</b><br>• ' + res.problems.join('<br>• ');
+      } else if (res.notes.length) {
+        box.className = 'ss-msg warn';
+        box.innerHTML = '⚠️ Valid, with suggestions:<br>• ' + res.notes.join('<br>• ');
+      } else {
+        box.className = 'ss-msg ok';
+        box.innerHTML = '✅ robots.txt looks good.';
+      }
+    });
+    on('ssRobotsDownload', function () {
+      downloadText('robots.txt', txt('settingRobots') || ssRobotsDefault(), 'text/plain');
+      try { logAct('seo', 'robots.txt downloaded'); } catch (e) {}
+    });
+
+    on('ssSitemapGen', function () { ssRefreshSitemap(); ssToast('Sitemap regenerated'); });
+    on('ssSitemapDownload', function () {
+      var res = ssBuildSitemap();
+      downloadText('sitemap.xml', res.xml, 'application/xml');
+      try { logAct('seo', 'sitemap.xml downloaded (' + res.count + ' URLs)'); } catch (e) {}
+    });
+    on('ssSitemapCopy', function () { fbCopy(ssBuildSitemap().xml, 'sitemap.xml copied to clipboard.'); });
+    ['settingSitemapFreq', 'settingSitemapPriority', 'settingSitemapLegal', 'settingSitemapExternal', 'settingBaseUrl']
+      .forEach(function (id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('change', function () {
+          settings.baseUrl = txt('settingBaseUrl').trim();
+          settings.sitemapChangefreq = txt('settingSitemapFreq');
+          settings.sitemapPriority = txt('settingSitemapPriority');
+          settings.sitemapLegal = txt('settingSitemapLegal');
+          settings.sitemapExternal = !!(document.getElementById('settingSitemapExternal') || {}).checked;
+          ssRefreshSitemap();
+        });
+      });
+
+    on('ssPreviewHead', function () {
+      var box = document.getElementById('ssHeadPreview');
+      if (!box) return;
+      var canon = String(settings.canonicalUrl || document.getElementById('settingCanonical').value ||
+        document.getElementById('settingBaseUrl').value || '').trim();
+      var gsc = ssGscCode();
+      var html = (canon ? '&lt;link rel="canonical" href="' + escapeHtml(canon) + '"&gt;<br>' : '') +
+        (gsc ? '&lt;meta name="google-site-verification" content="' + escapeHtml(gsc) + '"&gt;' : '');
+      box.style.display = 'block';
+      box.className = 'ss-msg ' + (html ? 'ok' : 'warn');
+      box.innerHTML = html ? ('These tags are injected into &lt;head&gt;:<br><code>' + html + '</code>')
+        : 'Nothing to inject yet — add a canonical URL or a Search Console code, then save.';
+    });
+    on('ssGscHelp', function () {
+      alert('Google Search Console verification\n\n' +
+        '1. Open search.google.com/search-console and add your site as a property.\n' +
+        '2. Choose the "HTML tag" verification method.\n' +
+        '3. Copy the meta tag it shows and paste it into the field above (the whole tag or just the content value).\n' +
+        '4. Save settings, upload the updated page, then click Verify in Search Console.\n\n' +
+        'The tag is added to the page head automatically once saved.');
+    });
+
+    on('ssCookiePreview', function () {
+      ssRenderCookieBanner(true);
+      ssToast('Cookie banner preview — nothing is saved');
+    });
+    on('ssCookieReset', function () {
+      try { localStorage.removeItem(COOKIE_KEY); } catch (e) {}
+      ssUpdateCookieState();
+      ssRenderCookieBanner();
+      ssToast('Consent cleared — the banner will show again');
+    });
+
+    on('ssPrivacyPreview', function () {
+      settings.privacyTitle = txt('settingPrivacyTitle');
+      settings.privacyHtml = txt('settingPrivacyHtml');
+      settings.privacyUpdated = txt('settingPrivacyUpdated');
+      openLegalPage('privacy');
+    });
+    on('ssTermsPreview', function () {
+      settings.termsTitle = txt('settingTermsTitle');
+      settings.termsHtml = txt('settingTermsHtml');
+      settings.termsUpdated = txt('settingTermsUpdated');
+      openLegalPage('terms');
+    });
+    on('ssPrivacyTemplate', function () {
+      if (txt('settingPrivacyHtml').trim() && !confirm('Replace the current privacy policy text with the starter template?')) return;
+      setTxt('settingPrivacyHtml', SS_PRIVACY_TPL);
+      if (!txt('settingPrivacyTitle').trim()) setTxt('settingPrivacyTitle', 'Privacy Policy');
+      ssToast('Starter privacy policy inserted');
+    });
+    on('ssTermsTemplate', function () {
+      if (txt('settingTermsHtml').trim() && !confirm('Replace the current terms text with the starter template?')) return;
+      setTxt('settingTermsHtml', SS_TERMS_TPL);
+      if (!txt('settingTermsTitle').trim()) setTxt('settingTermsTitle', 'Terms & Conditions');
+      ssToast('Starter terms inserted');
+    });
+
+    on('ssMaintPreview', function () {
+      settings.maintenanceTitle = txt('settingMaintTitle');
+      settings.maintenanceMessage = txt('settingMaintMessage');
+      settings.maintenanceEta = txt('settingMaintEta');
+      settings.maintenanceEmail = txt('settingMaintEmail');
+      ssRenderMaintenance();
+      var ov = document.getElementById('maintenanceOverlay');
+      if (!ov) return;
+      ov.style.display = 'flex';
+      setTimeout(function () { ov.style.display = settings.maintenance ? 'flex' : 'none'; }, 10000);
+    });
+
+    var tzEl = document.getElementById('settingTimezone');
+    if (tzEl) {
+      tzEl.addEventListener('change', function () {
+        settings.timezone = this.value.trim() || 'Asia/Kolkata';
+        var now = document.getElementById('ssTzNow');
+        if (now) now.textContent = 'Current time in ' + settings.timezone + ': ' + ssTzNow();
+      });
+    }
+
+    /* initial paint */
+    try {
+      var visitorLang = localStorage.getItem('das_lang');
+      applyLanguage(visitorLang || settings.siteLang || 'en', false);
+    } catch (e) { applyLanguage(settings.siteLang || 'en', false); }
+    ssApplyAnalyticsConsent();
+    setTimeout(function () { ssRenderCookieBanner(); }, 900);
+  })();
+  /* ============================================================
+     APPLY SETTINGS TO DOM
+     ============================================================ */
+  function applySettingsToDOM() {
+    document.getElementById('siteMetaTitle').textContent = settings.title;
+    document.getElementById('siteMetaDesc').setAttribute('content', settings.desc);
+    document.getElementById('heroHeading').innerHTML = settings.heroHeading;
+    document.getElementById('heroParagraph').textContent = settings.heroText;
+    document.getElementById('brandTitleText').textContent = settings.title;
+
+    var logoEl = document.getElementById('siteLogo');
+    if (logoEl && settings.logoUrl && logoEl.getAttribute('src') !== settings.logoUrl) logoEl.setAttribute('src', settings.logoUrl);
+
+    var favEl = document.getElementById('siteFavicon');
+    if (favEl && settings.faviconUrl && favEl.getAttribute('href') !== settings.faviconUrl) {
+      favEl.setAttribute('href', settings.faviconUrl);
+      favEl.removeAttribute('integrity');
+    }
+
+    updateMetaTag('name', 'keywords', settings.metaKeywords || '');
+    updateMetaTag('name', 'author', settings.authorName || '');
+    updateMetaTag('property', 'og:title', settings.title || '');
+    updateMetaTag('property', 'og:description', settings.desc || '');
+    updateMetaTag('property', 'og:type', 'website');
+    updateMetaTag('property', 'og:image', settings.ogImage || '');
+    updateMetaTag('name', 'twitter:card', 'summary_large_image');
+    updateMetaTag('name', 'twitter:title', settings.title || '');
+    updateMetaTag('name', 'twitter:description', settings.desc || '');
+    updateMetaTag('name', 'twitter:image', settings.ogImage || '');
+
+    var footerTextEl = document.getElementById('footerText');
+    if (footerTextEl) footerTextEl.textContent = settings.footerText ||
+      ('© ' + new Date().getFullYear() + ' ' + settings.title + '. All rights reserved.');
+    renderFooterSocial();
+    ssRenderFooterExtras();
+    ssUpdateLangButtons();
+    ssInjectSeo();
+
+    ssRenderMaintenance();
+    document.getElementById('maintenanceOverlay').style.display = settings.maintenance ? 'flex' : 'none';
+    renderNoticeBar();
+
+    var r = document.documentElement;
+    r.style.setProperty('--accent-grad-1', settings.color1 || '#6366f1');
+    r.style.setProperty('--accent-grad-2', settings.color2 || '#ec4899');
+    applyAppearance();
+    if (typeof apApplyDesign === 'function' && typeof DESIGN_DEFAULTS !== 'undefined') apApplyDesign();
+
+    injectCustomCode(settings.headCode || '', document.head);
+    injectCustomCode(settings.bodyCode || '', document.body);
+  }
+  /* ============================================================
+     APPEARANCE CORE — fonts, cards, glow, custom CSS, presets
+     ============================================================ */
+  var FONT_STACKS = {
+    inter:  "'Inter',system-ui,-apple-system,'Noto Sans Bengali','Hind Siliguri',sans-serif",
+    roboto: "'Roboto','Inter',system-ui,'Noto Sans Bengali','Hind Siliguri',sans-serif",
+    poppins:"'Poppins','Inter',system-ui,'Noto Sans Bengali','Hind Siliguri',sans-serif",
+    manrope:"'Manrope','Inter',system-ui,'Noto Sans Bengali','Hind Siliguri',sans-serif",
+    hind:   "'Hind Siliguri','Noto Sans Bengali','Inter',system-ui,sans-serif",
+    notobn: "'Noto Sans Bengali','Hind Siliguri','Inter',system-ui,sans-serif",
+    system: "system-ui,-apple-system,'Segoe UI',Roboto,sans-serif",
+    mono:   "'JetBrains Mono',ui-monospace,'Courier New',monospace"
+  };
+  var FONT_LINKS = {
+    roboto: 'Roboto:wght@400;500;700',
+    poppins: 'Poppins:wght@400;600;700',
+    manrope: 'Manrope:wght@400;600;800',
+    hind: 'Hind+Siliguri:wght@400;600;700',
+    notobn: 'Noto+Sans+Bengali:wght@400;600;700'
+  };
+  function ensureFontLoaded(key) {
+    var spec = FONT_LINKS[key];
+    if (!spec) return;
+    var id = 'das-font-' + key;
+    if (document.getElementById(id)) return;
+    var link = document.createElement('link');
+    link.id = id;
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=' + spec + '&display=swap';
+    document.head.appendChild(link);
+  }
+
+  var THEME_PRESETS = [
+    { id: 'default', name: 'Indigo Studio', desc: 'The original DAS look', sw: ['#6366f1', '#ec4899', '#06b6d4'],
+      v: { color1: '#6366f1', color2: '#ec4899', blob1: '', blob2: '', blob3: '#06b6d4', blob4: '#f59e0b',
+           blobOpacity: 50, fontFamily: 'inter', fontSize: 100, cardRadius: 14, glassAlpha: 100, glassBlur: 0, shadowStrength: 70 } },
+    { id: 'cyberpunk', name: 'Cyberpunk', desc: 'Neon yellow, magenta & cyan', sw: ['#facc15', '#ff2e88', '#00e5ff'],
+      v: { color1: '#facc15', color2: '#ff2e88', blob1: '#ff2e88', blob2: '#00e5ff', blob3: '#7c3aed', blob4: '#facc15',
+           blobOpacity: 70, fontFamily: 'mono', fontSize: 100, cardRadius: 4, glassAlpha: 78, glassBlur: 8, shadowStrength: 95 } },
+    { id: 'neonpurple', name: 'Neon Purple', desc: 'Violet glow on deep ink', sw: ['#a855f7', '#22d3ee', '#ec4899'],
+      v: { color1: '#a855f7', color2: '#22d3ee', blob1: '#a855f7', blob2: '#ec4899', blob3: '#6366f1', blob4: '#22d3ee',
+           blobOpacity: 65, fontFamily: 'poppins', fontSize: 100, cardRadius: 20, glassAlpha: 85, glassBlur: 10, shadowStrength: 85 } },
+    { id: 'ocean', name: 'Ocean Blue', desc: 'Calm blue & teal gradients', sw: ['#0ea5e9', '#14b8a6', '#6366f1'],
+      v: { color1: '#0ea5e9', color2: '#14b8a6', blob1: '#0ea5e9', blob2: '#22d3ee', blob3: '#14b8a6', blob4: '#3b82f6',
+           blobOpacity: 45, fontFamily: 'manrope', fontSize: 100, cardRadius: 18, glassAlpha: 92, glassBlur: 4, shadowStrength: 60 } },
+    { id: 'slate', name: 'Minimal Slate', desc: 'Quiet grey, almost no glow', sw: ['#64748b', '#94a3b8', '#cbd5e1'],
+      v: { color1: '#64748b', color2: '#94a3b8', blob1: '#475569', blob2: '#64748b', blob3: '#334155', blob4: '#94a3b8',
+           blobOpacity: 18, fontFamily: 'system', fontSize: 100, cardRadius: 8, glassAlpha: 100, glassBlur: 0, shadowStrength: 35 } },
+    { id: 'sunset', name: 'Sunset Gold', desc: 'Warm amber & rose', sw: ['#f59e0b', '#f43f5e', '#fb923c'],
+      v: { color1: '#f59e0b', color2: '#f43f5e', blob1: '#f59e0b', blob2: '#f43f5e', blob3: '#fb7185', blob4: '#fbbf24',
+           blobOpacity: 55, fontFamily: 'poppins', fontSize: 100, cardRadius: 22, glassAlpha: 95, glassBlur: 2, shadowStrength: 75 } },
+    { id: 'bangla', name: 'Bengali Classic', desc: 'Hind Siliguri, deep teal & saffron', sw: ['#0f766e', '#f59e0b', '#2563eb'],
+      v: { color1: '#0f766e', color2: '#f59e0b', blob1: '#0f766e', blob2: '#2563eb', blob3: '#14b8a6', blob4: '#f59e0b',
+           blobOpacity: 42, fontFamily: 'hind', fontSize: 102, cardRadius: 16, glassAlpha: 96, glassBlur: 3, shadowStrength: 65 } }
+  ];
+
+  var AP_DEFAULTS = {
+    fontFamily: 'inter', fontSize: 100, cardRadius: 14, glassAlpha: 100, glassBlur: 0,
+    shadowStrength: 70, blobOpacity: 50, blob1: '', blob2: '', blob3: '#06b6d4', blob4: '#f59e0b',
+    customCss: '', themePreset: 'default'
+  };
+
+  function apValuesFromSettings() {
+    return {
+      fontFamily: settings.fontFamily || AP_DEFAULTS.fontFamily,
+      fontSize: settings.fontSize == null ? AP_DEFAULTS.fontSize : Number(settings.fontSize),
+      cardRadius: settings.cardRadius == null ? AP_DEFAULTS.cardRadius : Number(settings.cardRadius),
+      glassAlpha: settings.glassAlpha == null ? AP_DEFAULTS.glassAlpha : Number(settings.glassAlpha),
+      glassBlur: settings.glassBlur == null ? AP_DEFAULTS.glassBlur : Number(settings.glassBlur),
+      shadowStrength: settings.shadowStrength == null ? AP_DEFAULTS.shadowStrength : Number(settings.shadowStrength),
+      blobOpacity: settings.blobOpacity == null ? AP_DEFAULTS.blobOpacity : Number(settings.blobOpacity),
+      blob1: settings.blob1 || '',
+      blob2: settings.blob2 || '',
+      blob3: settings.blob3 || AP_DEFAULTS.blob3,
+      blob4: settings.blob4 || AP_DEFAULTS.blob4,
+      customCss: settings.customCss || ''
+    };
+  }
+
+  function applyAppearanceValues(v) {
+    var r = document.documentElement;
+    ensureFontLoaded(v.fontFamily);
+    r.style.setProperty('--font-sans', FONT_STACKS[v.fontFamily] || FONT_STACKS.inter);
+    r.style.setProperty('--card-radius', Number(v.cardRadius) + 'px');
+    r.style.setProperty('--glass-alpha', Number(v.glassAlpha) + '%');
+    r.style.setProperty('--glass-blur', Number(v.glassBlur) + 'px');
+    r.style.setProperty('--blob-opacity', String(Number(v.blobOpacity) / 100));
+    r.style.setProperty('--blob-1', v.blob1 || settings.color1 || '#6366f1');
+    r.style.setProperty('--blob-2', v.blob2 || settings.color2 || '#ec4899');
+    r.style.setProperty('--blob-3', v.blob3 || AP_DEFAULTS.blob3);
+    r.style.setProperty('--blob-4', v.blob4 || AP_DEFAULTS.blob4);
+
+    var st = Math.max(0, Math.min(100, Number(v.shadowStrength))) / 100;
+    r.style.setProperty('--card-shadow',
+      '0 ' + (5 + Math.round(st * 10)) + 'px ' + (16 + Math.round(st * 26)) + 'px -14px rgba(0,0,0,' + (st * 0.55).toFixed(2) + ')');
+    r.style.setProperty('--card-shadow-hover',
+      '0 ' + (11 + Math.round(st * 17)) + 'px ' + (26 + Math.round(st * 34)) + 'px -14px rgba(0,0,0,' + Math.min(0.95, st * 0.7 + 0.15).toFixed(2) + ')');
+
+    var scale = Math.max(0.5, Math.min(2, Number(v.fontSize) / 100));
+    if (document.body) document.body.style.zoom = (Math.abs(scale - 1) < 0.005) ? '' : String(scale);
+
+    var cssEl = document.getElementById('dasCustomCss');
+    if (!cssEl) {
+      cssEl = document.createElement('style');
+      cssEl.id = 'dasCustomCss';
+      document.head.appendChild(cssEl);
+    }
+    if (cssEl.textContent !== (v.customCss || '')) cssEl.textContent = v.customCss || '';
+  }
+
+  function applyAppearance() { applyAppearanceValues(apValuesFromSettings()); }
+  applySettingsToDOM();
+
+  /* ============================================================
+     THEME TOGGLE
+     ============================================================ */
+  var root = document.documentElement;
+  var themeBtn = document.getElementById('themeBtn');
+  function applyTheme(theme) {
+    root.setAttribute('data-theme', theme);
+    themeBtn.textContent = theme === 'light' ? '☀️' : '🌙';
+    try { localStorage.setItem('arna-theme', theme); } catch (e) {}
+  }
+  var saved = 'dark';
+  try {
+    saved = localStorage.getItem('arna-theme') ||
+      (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+  } catch (e) {}
+  applyTheme(saved);
+  themeBtn.addEventListener('click', function() {
+    applyTheme(root.getAttribute('data-theme') === 'light' ? 'dark' : 'light');
+  });
+
+  /* ============================================================
+     ANALYTICS
+     ============================================================ */
+  var AN_KEY = 'das_studio_analytics';
+  var analyticsData = { visits: 0, uniques: 0, clicks: {}, queries: {}, devices: {}, browsers: {},
+    referrers: {}, filterClicks: {}, totalDuration: 0, daily: {}, sessions: [], geo: {}, pages: {},
+    conversions: {}, firstSeen: 0 };
+  try {
+    var storedAnalytics = localStorage.getItem(AN_KEY);
+    if (storedAnalytics) {
+      var parsedAnalytics = JSON.parse(storedAnalytics);
+      for (var pk in parsedAnalytics) analyticsData[pk] = parsedAnalytics[pk];
+    }
+  } catch(e){}
+  ['clicks', 'queries', 'devices', 'browsers', 'referrers', 'filterClicks', 'daily', 'geo', 'pages', 'conversions']
+    .forEach(function (k) { if (!analyticsData[k] || typeof analyticsData[k] !== 'object') analyticsData[k] = {}; });
+  if (!Array.isArray(analyticsData.sessions)) analyticsData.sessions = [];
+  if (!analyticsData.firstSeen) analyticsData.firstSeen = Date.now();
+
+  function anSave() {
+    try { localStorage.setItem(AN_KEY, JSON.stringify(analyticsData)); } catch(e){}
+  }
+  function anPad(n) { return (n < 10 ? '0' : '') + n; }
+  function anDayKey(ts) {
+    var d = ts ? new Date(ts) : new Date();
+    return d.getFullYear() + '-' + anPad(d.getMonth() + 1) + '-' + anPad(d.getDate());
+  }
+  function anDay(ts) {
+    var k = anDayKey(ts);
+    if (!analyticsData.daily[k]) analyticsData.daily[k] = { visits: 0, uniques: 0, clicks: 0, seconds: 0, conversions: 0 };
+    var d = analyticsData.daily[k];
+    if (d.uniques == null) d.uniques = 0;
+    if (d.clicks == null) d.clicks = 0;
+    if (d.seconds == null) d.seconds = 0;
+    if (d.conversions == null) d.conversions = 0;
+    return d;
+  }
+  function anInc(obj, key, by) { if (!key) key = 'Unknown'; obj[key] = (obj[key] || 0) + (by || 1); }
+
+  /* ---- identity ---- */
+  var AN_VISITOR_ID = null, AN_IS_NEW_VISITOR = false;
+  try {
+    AN_VISITOR_ID = localStorage.getItem('das_visitor_id');
+    if (!AN_VISITOR_ID) {
+      AN_VISITOR_ID = 'v_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+      localStorage.setItem('das_visitor_id', AN_VISITOR_ID);
+      localStorage.setItem('das_visitor_first', String(Date.now()));
+      AN_IS_NEW_VISITOR = true;
+    }
+  } catch(e) { AN_VISITOR_ID = 'v_anon'; }
+
+  var AN_SESSION_ID = null, anSessionStart = Date.now();
+  try {
+    AN_SESSION_ID = sessionStorage.getItem('das_session_id');
+    anSessionStart = Number(sessionStorage.getItem('das_session_start')) || Date.now();
+    if (!AN_SESSION_ID) {
+      AN_SESSION_ID = 's_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      sessionStorage.setItem('das_session_id', AN_SESSION_ID);
+      sessionStorage.setItem('das_session_start', String(Date.now()));
+      anSessionStart = Date.now();
+    }
+  } catch(e) { AN_SESSION_ID = 's_' + Date.now(); }
+
+  /* ---- geography (from the time zone — no network call, no IP stored) ---- */
+  var AN_TZ_GEO = {
+    'Asia/Kolkata': ['India', 'Kolkata'], 'Asia/Calcutta': ['India', 'Kolkata'],
+    'Asia/Dhaka': ['Bangladesh', 'Dhaka'], 'Asia/Karachi': ['Pakistan', 'Karachi'],
+    'Asia/Kathmandu': ['Nepal', 'Kathmandu'], 'Asia/Colombo': ['Sri Lanka', 'Colombo'],
+    'Asia/Dubai': ['United Arab Emirates', 'Dubai'], 'Asia/Singapore': ['Singapore', 'Singapore'],
+    'Asia/Tokyo': ['Japan', 'Tokyo'], 'Asia/Shanghai': ['China', 'Shanghai'],
+    'Asia/Hong_Kong': ['Hong Kong', 'Hong Kong'], 'Asia/Jakarta': ['Indonesia', 'Jakarta'],
+    'Asia/Manila': ['Philippines', 'Manila'], 'Asia/Bangkok': ['Thailand', 'Bangkok'],
+    'Asia/Riyadh': ['Saudi Arabia', 'Riyadh'], 'Asia/Seoul': ['South Korea', 'Seoul'],
+    'Europe/London': ['United Kingdom', 'London'], 'Europe/Berlin': ['Germany', 'Berlin'],
+    'Europe/Paris': ['France', 'Paris'], 'Europe/Madrid': ['Spain', 'Madrid'],
+    'Europe/Rome': ['Italy', 'Rome'], 'Europe/Amsterdam': ['Netherlands', 'Amsterdam'],
+    'Europe/Moscow': ['Russia', 'Moscow'], 'Europe/Istanbul': ['Turkey', 'Istanbul'],
+    'America/New_York': ['United States', 'New York'], 'America/Chicago': ['United States', 'Chicago'],
+    'America/Denver': ['United States', 'Denver'], 'America/Los_Angeles': ['United States', 'Los Angeles'],
+    'America/Toronto': ['Canada', 'Toronto'], 'America/Vancouver': ['Canada', 'Vancouver'],
+    'America/Sao_Paulo': ['Brazil', 'Sao Paulo'], 'America/Mexico_City': ['Mexico', 'Mexico City'],
+    'America/Argentina/Buenos_Aires': ['Argentina', 'Buenos Aires'],
+    'Australia/Sydney': ['Australia', 'Sydney'], 'Australia/Melbourne': ['Australia', 'Melbourne'],
+    'Africa/Cairo': ['Egypt', 'Cairo'], 'Africa/Lagos': ['Nigeria', 'Lagos'],
+    'Africa/Johannesburg': ['South Africa', 'Johannesburg'], 'Africa/Nairobi': ['Kenya', 'Nairobi'],
+    'Pacific/Auckland': ['New Zealand', 'Auckland'], 'UTC': ['Unknown', 'Unknown']
+  };
+  function anGeo() {
+    var tz = 'UTC';
+    try { tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'; } catch(e){}
+    var hit = AN_TZ_GEO[tz];
+    if (hit) return { country: hit[0], city: hit[1], tz: tz };
+    var parts = tz.split('/');
+    var city = (parts[parts.length - 1] || 'Unknown').replace(/_/g, ' ');
+    var region = parts[0] || 'Unknown';
+    var regionName = { Asia: 'Asia (other)', Europe: 'Europe (other)', America: 'Americas (other)',
+      Africa: 'Africa (other)', Australia: 'Australia (other)', Pacific: 'Pacific (other)' }[region] || 'Unknown';
+    return { country: regionName, city: city, tz: tz };
+  }
+
+  function getBrowser() {
+    var ua = navigator.userAgent;
+    if (ua.indexOf('Edg') > -1) return 'Edge';
+    if (ua.indexOf('OPR') > -1 || ua.indexOf('Opera') > -1) return 'Opera';
+    if (ua.indexOf('Chrome') > -1) return 'Chrome';
+    if (ua.indexOf('Safari') > -1) return 'Safari';
+    if (ua.indexOf('Firefox') > -1) return 'Firefox';
+    return 'Other';
+  }
+  function getDeviceType() {
+    var ua = navigator.userAgent;
+    if (/Tablet|iPad/i.test(ua)) return 'Tablet';
+    if (/Mobi|Android/i.test(ua)) return 'Mobile';
+    return 'Desktop';
+  }
+  function getDeviceInfo() { return getDeviceType() + ' (' + getBrowser() + ')'; }
+  function getReferrerSource() {
+    var ref = document.referrer;
+    if (!ref) return 'Direct / None';
+    if (ref.indexOf('google.') > -1) return 'Google Search';
+    if (ref.indexOf('bing.') > -1) return 'Bing Search';
+    if (ref.indexOf('facebook.') > -1 || ref.indexOf('fb.me') > -1) return 'Facebook';
+    if (ref.indexOf('t.me') > -1 || ref.indexOf('telegram.') > -1) return 'Telegram';
+    if (ref.indexOf('twitter.') > -1 || ref.indexOf('x.com') > -1) return 'Twitter / X';
+    if (ref.indexOf('instagram.') > -1) return 'Instagram';
+    if (ref.indexOf('linkedin.') > -1) return 'LinkedIn';
+    if (ref.indexOf('youtube.') > -1) return 'YouTube';
+    try { return new URL(ref).hostname || 'Other Referral'; } catch(e) { return 'Other Referral'; }
+  }
+
+  /* ---- session record ---- */
+  function anSession() {
+    var s = null;
+    for (var i = 0; i < analyticsData.sessions.length; i++) {
+      if (analyticsData.sessions[i].id === AN_SESSION_ID) { s = analyticsData.sessions[i]; break; }
+    }
+    if (!s) {
+      var geo = anGeo();
+      s = { id: AN_SESSION_ID, start: anSessionStart, lastSeen: Date.now(), pages: [], clicks: 0,
+            conversions: 0, device: getDeviceType(), browser: getBrowser(),
+            source: getReferrerSource(), country: geo.country, city: geo.city };
+      analyticsData.sessions.unshift(s);
+      analyticsData.sessions = analyticsData.sessions.slice(0, 100);
+    }
+    s.lastSeen = Date.now();
+    return s;
+  }
+  function anPageView(name) {
+    if (!name) return;
+    anInc(analyticsData.pages, name);
+    var s = anSession();
+    if (s.pages.indexOf(name) === -1) s.pages.push(name);
+    anSave();
+  }
+  function anTrackConversion(kind) {
+    if (!kind) return;
+    anInc(analyticsData.conversions, kind);
+    anDay().conversions = (anDay().conversions || 0) + 1;
+    var s = anSession();
+    s.conversions = (s.conversions || 0) + 1;
+    anSave();
+    if (typeof gtag === 'function') { try { gtag('event', 'conversion_' + kind); } catch(e){} }
+  }
+
+  /* ---- first paint: count the visit ---- */
+  analyticsData.visits = (analyticsData.visits || 0) + 1;
+  var anDev = getDeviceInfo();
+  anInc(analyticsData.devices, anDev);
+  anInc(analyticsData.browsers, getBrowser());
+  anInc(analyticsData.referrers, getReferrerSource());
+  var anGeoInfo = anGeo();
+  anInc(analyticsData.geo, anGeoInfo.country + '||' + anGeoInfo.city);
+
+  var anToday = anDay();
+  anToday.visits += 1;
+  try {
+    var countedDay = localStorage.getItem('das_counted_day');
+    if (countedDay !== anDayKey()) {
+      anToday.uniques += 1;
+      localStorage.setItem('das_counted_day', anDayKey());
+    }
+    if (AN_IS_NEW_VISITOR) analyticsData.uniques = (analyticsData.uniques || 0) + 1;
+  } catch(e) { anToday.uniques += 1; }
+
+  anSession();
+  anPageView('Home');
+  anSave();
+
+  var anLastBeat = Date.now();
+  setInterval(function () {
+    var s = anSession();
+    s.lastSeen = Date.now();
+    var secs = Math.floor((Date.now() - anSessionStart) / 1000);
+    if (secs > 0 && Date.now() - anLastBeat > 5000) {
+      anDay().seconds = (anDay().seconds || 0) + Math.max(0, Math.round((Date.now() - anLastBeat) / 1000));
+      anLastBeat = Date.now();
+      anSave();
+    }
+  }, 15000);
+
+  window.addEventListener('beforeunload', function () {
+    var secs = Math.floor((Date.now() - anSessionStart) / 1000);
+    analyticsData.totalDuration = (analyticsData.totalDuration || 0) + secs;
+    anDay().seconds = (anDay().seconds || 0) + Math.max(0, Math.round((Date.now() - anLastBeat) / 1000));
+    var s = anSession();
+    s.duration = secs;
+    anSave();
+  });
+
+  function trackToolClick(t) {
+    if (!analyticsData.clicks) analyticsData.clicks = {};
+    if (!analyticsData.clicks[t]) analyticsData.clicks[t] = { count: 0, lastClicked: '' };
+    analyticsData.clicks[t].count += 1;
+    analyticsData.clicks[t].lastClicked = new Date().toLocaleString();
+    anDay().clicks = (anDay().clicks || 0) + 1;
+    var s = anSession();
+    s.clicks = (s.clicks || 0) + 1;
+    if (s.pages.indexOf(t) === -1) s.pages.push(t);
+    try { localStorage.setItem('das_last_tool', t); } catch(e) {}
+    anSave();
+    if (typeof gtag === 'function') gtag('event', 'select_content', { content_type: 'tool', item_id: t });
+  }
+  function trackSearchQuery(q) {
+    if (!q || q.length < 2) return;
+    if (!analyticsData.queries) analyticsData.queries = {};
+    analyticsData.queries[q] = (analyticsData.queries[q] || 0) + 1;
+    anSave();
+  }
+  function trackFilterClick(f) {
+    if (!analyticsData.filterClicks) analyticsData.filterClicks = {};
+    analyticsData.filterClicks[f] = (analyticsData.filterClicks[f] || 0) + 1;
+    anSave();
+  }
+
+  /* ---- derived metrics ---- */
+  function anLiveSessions(seconds) {
+    var cutoff = Date.now() - (seconds || 90) * 1000;
+    return analyticsData.sessions.filter(function (s) { return (s.lastSeen || 0) >= cutoff; });
+  }
+  function anBounce() {
+    var done = analyticsData.sessions.filter(function (s) {
+      return (Date.now() - (s.start || 0)) > 15000;
+    });
+    if (!done.length) return { rate: 0, bounced: 0, total: 0 };
+    var bounced = done.filter(function (s) { return !(s.clicks > 0) && !(s.conversions > 0); }).length;
+    return { rate: Math.round((bounced / done.length) * 100), bounced: bounced, total: done.length };
+  }
+  function anAvgDuration() {
+    var total = 0, n = 0;
+    analyticsData.sessions.forEach(function (s) {
+      var d = s.duration != null ? s.duration : Math.round(((s.lastSeen || s.start || 0) - (s.start || 0)) / 1000);
+      if (d > 0) { total += d; n++; }
+    });
+    if (!n) {
+      var secs = Math.floor((Date.now() - anSessionStart) / 1000);
+      return secs > 0 ? secs : 0;
+    }
+    return Math.round(total / n);
+  }
+  function anFmtDur(sec) {
+    sec = Math.max(0, Math.round(sec || 0));
+    if (sec < 60) return sec + 's';
+    var m = Math.floor(sec / 60), s = sec % 60;
+    if (m < 60) return m + 'm ' + s + 's';
+    return Math.floor(m / 60) + 'h ' + (m % 60) + 'm';
+  }
+  function anRangeDays(n) {
+    var out = [];
+    for (var i = n - 1; i >= 0; i--) {
+      var d = new Date();
+      d.setDate(d.getDate() - i);
+      var k = anDayKey(d.getTime());
+      out.push({ key: k, label: d.getDate() + '/' + (d.getMonth() + 1), data: analyticsData.daily[k] || { visits: 0, uniques: 0, clicks: 0, seconds: 0 } });
+    }
+    return out;
+  }
+  function anSum(n, field) {
+    return anRangeDays(n).reduce(function (a, r) { return a + (r.data[field] || 0); }, 0);
+  }
+  /* ============================================================
+     TOOLS DATA
+     ============================================================ */
+  var tools = [];
+  try { var stored = localStorage.getItem('das_studio_tools'); tools = stored ? JSON.parse(stored) : defaultTools; }
+  catch(e) { tools = defaultTools; }
+
+  var isAdmin = false;
+  var grid = document.getElementById('grid');
+  var toolCountEl = document.getElementById('toolCount');
+  var draggedItemIndex = null;
+
+  function saveToolsToStorage() {
+    try { localStorage.setItem('das_studio_tools', JSON.stringify(tools)); } catch(e){}
+  }
+
+  function renderGrid() {
+    grid.innerHTML = '';
+    var publicTools = tools.filter(function(item) { return isAdmin || toolStatusOf(item) === 'published'; });
+    /* featured tools are pinned to the top of the grid */
+    publicTools.sort(function(a, b) { return (b.featured ? 1 : 0) - (a.featured ? 1 : 0); });
+    toolCountEl.textContent = ssCountText(publicTools.length);
+
+    publicTools.forEach(function(item, index) {
+      var numStr = (index + 1 < 10 ? '0' : '') + (index + 1);
+      var favActive = isFavorite(item.id);
+      var st = toolStatusOf(item);
+      var card = document.createElement('a');
+      card.className = 'card';
+      if (item.featured) card.classList.add('is-featured');
+      if (st !== 'published') card.style.opacity = '0.55';
+      card.setAttribute('data-category', item.category);
+      card.setAttribute('data-keywords', (item.keywords || '') + ' ' + toolTagsOf(item).join(' '));
+      card.setAttribute('data-id', item.id);
+      card.style.setProperty('--accent', item.accent || '#6366f1');
+      card.href = item.link; card.target = '_blank'; card.rel = 'noopener';
+      if (isAdmin) card.setAttribute('draggable', 'true');
+
+      card.innerHTML = mmCardInner(item, numStr, isAdmin, favActive);
+
+      card.querySelector('.fav-btn').addEventListener('click', function(e) {
+        e.preventDefault(); e.stopPropagation(); toggleFavorite(item.id);
+      });
+      card.addEventListener('click', function(e) {
+        if (!e.target.closest('.card-admin-actions') && !e.target.closest('.fav-btn')) {
+          trackToolClick(item.titleMain + item.titleAccent);
+        }
+      });
+      if (isAdmin) {
+        card.addEventListener('dragstart', function() {
+          draggedItemIndex = tools.findIndex(function(t){ return t.id === item.id; });
+          card.classList.add('dragging');
+        });
+        card.addEventListener('dragend', function(){ card.classList.remove('dragging'); });
+        card.addEventListener('dragover', function(e){ e.preventDefault(); });
+        card.addEventListener('drop', function(e) {
+          e.preventDefault();
+          var targetIndex = tools.findIndex(function(t){ return t.id === item.id; });
+          if (draggedItemIndex !== null && targetIndex !== -1 && draggedItemIndex !== targetIndex) {
+            var moved = tools.splice(draggedItemIndex, 1)[0];
+            tools.splice(targetIndex, 0, moved);
+            saveToolsToStorage(); renderGrid();
+          }
+        });
+      }
+      grid.appendChild(card);
+    });
+
+    if (isAdmin) {
+      document.body.classList.add('admin-logged-in');
+      renderAddCardButton();
+    } else {
+      document.body.classList.remove('admin-logged-in');
+    }
+    applyFilters();
+  }
+  function renderAddCardButton() {
+    var addBtn = document.createElement('div');
+    addBtn.className = 'card';
+    addBtn.style.cssText = '--accent:#6366f1;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;min-height:280px;text-align:center;padding:20px;';
+    addBtn.innerHTML = '<div style="font-size:40px;margin-bottom:10px;">➕</div><b style="font-size:18px;">Add New Tool</b>';
+    addBtn.addEventListener('click', function() { openModal(); });
+    grid.appendChild(addBtn);
+  }
+
+  /* ============================================================
+     ADMIN TABS
+     ============================================================ */
+  var adminBtn = document.getElementById('adminToggleBtn');
+  var modal = document.getElementById('adminModal');
+  var modalClose = document.getElementById('modalClose');
+  var modalCancel = document.getElementById('modalCancel');
+  var toolForm = document.getElementById('toolForm');
+
+  var tabBtns = ['tabToolsBtn', 'tabSettingsBtn', 'tabNoticeBtn', 'tabAppearanceBtn', 'tabAnalyticsBtn', 'tabMsgsBtn'];
+  var tabContents = ['tabTools', 'tabSettings', 'tabNotice', 'tabAppearance', 'tabAnalytics', 'tabMsgs'];
+
+  function switchTab(activeBtnId, activeContentId) {
+    tabBtns.forEach(function(bId) { document.getElementById(bId).classList.toggle('active', bId === activeBtnId); });
+    tabContents.forEach(function(cId) { document.getElementById(cId).classList.toggle('active', cId === activeContentId); });
+  }
+
+  document.getElementById('tabToolsBtn').addEventListener('click', function() { switchTab('tabToolsBtn', 'tabTools'); });
+
+  document.getElementById('tabSettingsBtn').addEventListener('click', function() {
+    switchTab('tabSettingsBtn', 'tabSettings');
+    document.getElementById('settingTitle').value = settings.title;
+    document.getElementById('settingDesc').value = settings.desc;
+    document.getElementById('settingHeroHeading').value = settings.heroHeading;
+    document.getElementById('settingHeroText').value = settings.heroText;
+    document.getElementById('settingMaintenance').checked = settings.maintenance;
+    document.getElementById('settingLogoUrl').value = settings.logoUrl || '';
+    document.getElementById('settingFaviconUrl').value = settings.faviconUrl || '';
+    document.getElementById('settingMetaKeywords').value = settings.metaKeywords || '';
+    document.getElementById('settingAuthor').value = settings.authorName || '';
+    document.getElementById('settingOgImage').value = settings.ogImage || '';
+    document.getElementById('settingFacebook').value = settings.facebook || '';
+    document.getElementById('settingTwitter').value = settings.twitter || '';
+    document.getElementById('settingGithub').value = settings.github || '';
+    document.getElementById('settingTelegram').value = settings.telegram || '';
+    document.getElementById('settingSupportEmail').value = settings.supportEmail || '';
+    document.getElementById('settingFooterText').value = settings.footerText || '';
+    document.getElementById('settingHeadCode').value = settings.headCode || '';
+    document.getElementById('settingBodyCode').value = settings.bodyCode || '';
+
+    // language, timezone, SEO files, cookies, legal pages, contact, maintenance
+    ssPopulate();
+
+    // NEW: refresh version labels + safety backup info
+    document.getElementById('appVersionLabel').textContent = APP_VERSION;
+    document.getElementById('schemaVersionLabel').textContent = 'v' + SCHEMA_VERSION;
+    updateSafetyBackupInfo();
+  });
+  document.getElementById('tabNoticeBtn').addEventListener('click', function() {
+    switchTab('tabNoticeBtn', 'tabNotice');
+    document.getElementById('brandColor1').value = settings.color1 || '#6366f1';
+    document.getElementById('brandColor2').value = settings.color2 || '#ec4899';
+    annRender();
+    annEditorLoad(null);
+  });
+  /* ============================================================
+     APPEARANCE TAB — UI WIRING
+     ============================================================ */
+  function apReadUI() {
+    function num(id, dflt) { var el = document.getElementById(id); return el ? Number(el.value) : dflt; }
+    function val(id, dflt) { var el = document.getElementById(id); return el ? el.value : dflt; }
+    return {
+      fontFamily: val('apFontFamily', 'inter'),
+      fontSize: num('apFontSize', 100),
+      cardRadius: num('apRadius', 14),
+      glassAlpha: num('apGlass', 100),
+      glassBlur: num('apBlur', 0),
+      shadowStrength: num('apShadow', 70),
+      blobOpacity: num('apBlobOpacity', 50),
+      blob1: val('apBlob1', ''),
+      blob2: val('apBlob2', ''),
+      blob3: val('apBlob3', '#06b6d4'),
+      blob4: val('apBlob4', '#f59e0b'),
+      customCss: val('apCustomCss', '')
+    };
+  }
+
+  function apLabels() {
+    var fs = document.getElementById('apFontSize').value;
+    document.getElementById('apFontSizeVal').textContent = fs + '%';
+    document.getElementById('apRadiusVal').textContent = document.getElementById('apRadius').value + 'px';
+    document.getElementById('apGlassVal').textContent = document.getElementById('apGlass').value + '%';
+    document.getElementById('apBlurVal').textContent = document.getElementById('apBlur').value + 'px';
+    document.getElementById('apShadowVal').textContent = document.getElementById('apShadow').value + '%';
+    document.getElementById('apBlobVal').textContent = document.getElementById('apBlobOpacity').value + '%';
+    var fam = document.getElementById('apFontFamily');
+    var famLabel = fam.options[fam.selectedIndex] ? fam.options[fam.selectedIndex].text : 'Inter';
+    document.getElementById('apFontPreviewMeta').textContent = famLabel + ' · ' + fs + '% scale';
+    var css = document.getElementById('apCustomCss').value;
+    var lines = css.trim() ? css.trim().split('\n').length : 0;
+    document.getElementById('apCssStatus').textContent = lines
+      ? ('Live CSS active — ' + lines + ' line' + (lines === 1 ? '' : 's') + ', ' + css.length + ' characters')
+      : 'No custom CSS';
+  }
+
+  function apFillUI() {
+    var v = apValuesFromSettings();
+    document.getElementById('apFontFamily').value = v.fontFamily;
+    document.getElementById('apFontSize').value = v.fontSize;
+    document.getElementById('apRadius').value = v.cardRadius;
+    document.getElementById('apGlass').value = v.glassAlpha;
+    document.getElementById('apBlur').value = v.glassBlur;
+    document.getElementById('apShadow').value = v.shadowStrength;
+    document.getElementById('apBlobOpacity').value = v.blobOpacity;
+    document.getElementById('apBlob1').value = v.blob1 || settings.color1 || '#6366f1';
+    document.getElementById('apBlob2').value = v.blob2 || settings.color2 || '#ec4899';
+    document.getElementById('apBlob3').value = v.blob3;
+    document.getElementById('apBlob4').value = v.blob4;
+    document.getElementById('apCustomCss').value = v.customCss;
+    apLabels();
+    apMarkPreset(settings.themePreset || 'default');
+  }
+
+  function apMarkPreset(id) {
+    var cards = document.querySelectorAll('.preset-card');
+    Array.prototype.forEach.call(cards, function (c) {
+      var on = c.getAttribute('data-preset') === id;
+      c.classList.toggle('active', on);
+      var tick = c.querySelector('.preset-check');
+      if (tick) tick.style.display = on ? 'block' : 'none';
+    });
+  }
+
+  function renderPresetGrid() {
+    var grid = document.getElementById('presetGrid');
+    if (!grid) return;
+    grid.innerHTML = THEME_PRESETS.map(function (p) {
+      return '<button type="button" class="preset-card" data-preset="' + p.id + '">' +
+        '<span class="preset-check" style="display:none;">✓</span>' +
+        '<div class="preset-sw">' + p.sw.map(function (c) {
+          return '<span style="background:' + c + '"></span>';
+        }).join('') + '</div>' +
+        '<div class="preset-name">' + p.name + '</div>' +
+        '<div class="preset-desc">' + p.desc + '</div></button>';
+    }).join('');
+    apMarkPreset(settings.themePreset || 'default');
+  }
+
+  function apPersist() {
+    try { localStorage.setItem('das_studio_settings', JSON.stringify(settings)); } catch (e) {}
+  }
+
+  function apApplyPreset(id) {
+    var preset = null;
+    THEME_PRESETS.forEach(function (p) { if (p.id === id) preset = p; });
+    if (!preset) return;
+    var v = preset.v;
+    settings.color1 = v.color1;
+    settings.color2 = v.color2;
+    settings.fontFamily = v.fontFamily;
+    settings.fontSize = v.fontSize;
+    settings.cardRadius = v.cardRadius;
+    settings.glassAlpha = v.glassAlpha;
+    settings.glassBlur = v.glassBlur;
+    settings.shadowStrength = v.shadowStrength;
+    settings.blobOpacity = v.blobOpacity;
+    settings.blob1 = v.blob1;
+    settings.blob2 = v.blob2;
+    settings.blob3 = v.blob3;
+    settings.blob4 = v.blob4;
+    settings.themePreset = preset.id;
+    apPersist();
+    applySettingsToDOM();
+    apFillUI();
+    var b1 = document.getElementById('brandColor1');
+    var b2 = document.getElementById('brandColor2');
+    if (b1) b1.value = settings.color1;
+    if (b2) b2.value = settings.color2;
+  }
+
+  var apCssTimer = null;
+  function apLive() {
+    apLabels();
+    var v = apReadUI();
+    if (v.fontFamily !== settings.fontFamily) ensureFontLoaded(v.fontFamily);
+    applyAppearanceValues(v);
+    /* the moment the admin changes something by hand it is a custom look */
+    if (settings.themePreset !== 'custom') {
+      settings.themePreset = 'custom';
+      apMarkPreset('custom');
+    }
+  }
+
+  document.getElementById('tabAppearanceBtn').addEventListener('click', function() {
+    switchTab('tabAppearanceBtn', 'tabAppearance');
+    renderPresetGrid();
+    apFillUI();
+    apFillDesign();
+  });
+
+  ['apFontFamily', 'apFontSize', 'apRadius', 'apGlass', 'apBlur', 'apShadow',
+   'apBlobOpacity', 'apBlob1', 'apBlob2', 'apBlob3', 'apBlob4'].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', apLive);
+    el.addEventListener('change', apLive);
+  });
+
+  document.getElementById('apCustomCss').addEventListener('input', function() {
+    var el = this;
+    clearTimeout(apCssTimer);
+    apCssTimer = setTimeout(function () {
+      applyAppearanceValues(Object.assign(apReadUI(), { customCss: el.value }));
+      apLabels();
+    }, 220);
+    apLabels();
+  });
+
+  document.getElementById('apCssClear').addEventListener('click', function() {
+    document.getElementById('apCustomCss').value = '';
+    applyAppearanceValues(Object.assign(apReadUI(), { customCss: '' }));
+    apLabels();
+  });
+
+  document.getElementById('apBlobMatch').addEventListener('click', function() {
+    document.getElementById('apBlob1').value = settings.color1 || '#6366f1';
+    document.getElementById('apBlob2').value = settings.color2 || '#ec4899';
+    document.getElementById('apBlob3').value = settings.color2 || '#ec4899';
+    document.getElementById('apBlob4').value = settings.color1 || '#6366f1';
+    apLive();
+  });
+
+  document.getElementById('presetGrid').addEventListener('click', function(e) {
+    var card = e.target.closest ? e.target.closest('.preset-card') : null;
+    if (!card) return;
+    apApplyPreset(card.getAttribute('data-preset'));
+  });
+
+  document.getElementById('appearanceForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var v = apReadUI();
+    settings.fontFamily = v.fontFamily;
+    settings.fontSize = v.fontSize;
+    settings.cardRadius = v.cardRadius;
+    settings.glassAlpha = v.glassAlpha;
+    settings.glassBlur = v.glassBlur;
+    settings.shadowStrength = v.shadowStrength;
+    settings.blobOpacity = v.blobOpacity;
+    settings.blob1 = v.blob1;
+    settings.blob2 = v.blob2;
+    settings.blob3 = v.blob3;
+    settings.blob4 = v.blob4;
+    settings.customCss = v.customCss;
+    apSaveDesign();
+    apPersist();
+    applySettingsToDOM();
+    apFillUI();
+    apFillDesign();
+    alert('Appearance saved — your site now uses this look.');
+  });
+
+  document.getElementById('apResetBtn').addEventListener('click', function() {
+    if (!confirm('Reset all appearance settings (font, cards, buttons, layout, background, glow and custom CSS) back to the default look?')) return;
+    Object.keys(DESIGN_DEFAULTS).forEach(function (k) { delete settings[k]; });
+    for (var k in AP_DEFAULTS) settings[k] = AP_DEFAULTS[k];
+    settings.color1 = '#6366f1';
+    settings.color2 = '#ec4899';
+    apPersist();
+    applySettingsToDOM();
+    apFillUI();
+    apFillDesign();
+    var b1 = document.getElementById('brandColor1');
+    var b2 = document.getElementById('brandColor2');
+    if (b1) b1.value = settings.color1;
+    if (b2) b2.value = settings.color2;
+  });
+  document.getElementById('tabAnalyticsBtn').addEventListener('click', function() {
+    switchTab('tabAnalyticsBtn', 'tabAnalytics');
+    renderAnalytics();
+    anStartLive();
+  });
+  document.getElementById('tabMsgsBtn').addEventListener('click', function() {
+    switchTab('tabMsgsBtn', 'tabMsgs'); renderFeedbacks();
+  });
+
+  /* ============================================================
+     ANALYTICS DASHBOARD RENDERER
+     ============================================================ */
+  var anRange = 7;
+  var anLiveTimer = null;
+
+  function anKpi(label, value, sub, cls) {
+    return '<div class="an-kpi ' + (cls || '') + '"><h4>' + label + '</h4><b>' + value + '</b>' +
+      (sub ? '<span>' + sub + '</span>' : '') + '</div>';
+  }
+
+  function anTopTool() {
+    var best = '-', n = 0;
+    for (var t in (analyticsData.clicks || {})) {
+      var c = analyticsData.clicks[t].count || 0;
+      if (c > n) { n = c; best = t; }
+    }
+    return { name: best, count: n };
+  }
+
+  function anRenderKpis() {
+    var box = document.getElementById('anKpis');
+    if (!box) return;
+    var today = anDay();
+    var v7 = anSum(7, 'visits'), v30 = anSum(30, 'visits');
+    var u7 = anSum(7, 'uniques');
+    var totalClicks = 0;
+    for (var t in (analyticsData.clicks || {})) totalClicks += analyticsData.clicks[t].count || 0;
+    var top = anTopTool();
+    var bounce = anBounce();
+    var avg = anAvgDuration();
+
+    box.innerHTML =
+      anKpi('Total visits', analyticsData.visits || 0, 'since ' + ssFmtDateOnly(new Date(analyticsData.firstSeen || Date.now()))) +
+      anKpi('Unique visitors', analyticsData.uniques || 0, 'one per browser') +
+      anKpi('Visitors today', today.visits || 0, (today.uniques || 0) + ' unique') +
+      anKpi('Last 7 days', v7, v30 + ' in 30 days') +
+      anKpi('Tool clicks', totalClicks, 'across all tools') +
+      anKpi('Avg. time on site', anFmtDur(avg), 'per session') +
+      anKpi('Most popular tool', top.count ? escapeHtml(top.name) : '—', top.count ? top.count + ' clicks' : 'no clicks yet') +
+      anKpi('Bounce rate', bounce.total ? bounce.rate + '%' : '—',
+        bounce.total ? (bounce.bounced + ' of ' + bounce.total + ' sessions') : 'needs more sessions',
+        bounce.total ? (bounce.rate > 70 ? 'bad' : bounce.rate > 45 ? 'warn' : 'good') : '');
+  }
+
+  function anBarsHtml(rows, unit) {
+    var max = 1;
+    rows.forEach(function (r) { if (r.value > max) max = r.value; });
+    return rows.map(function (r) {
+      var pct = Math.max(2, Math.round((r.value / max) * 100));
+      return '<div class="an-rowbar"><span class="lbl" title="' + escapeHtml(r.label) + '">' + escapeHtml(r.label) + '</span>' +
+        '<span class="track"><span class="fill" style="width:' + pct + '%"></span></span>' +
+        '<span class="num">' + r.value + (unit || '') + '</span></div>';
+    }).join('');
+  }
+
+  function anRenderList(containerId, obj, limit, unit, emptyMsg) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    var rows = [];
+    for (var k in (obj || {})) rows.push({ label: k, value: obj[k] });
+    rows.sort(function (a, b) { return b.value - a.value; });
+    if (limit) rows = rows.slice(0, limit);
+    el.innerHTML = rows.length ? anBarsHtml(rows, unit) : '<div class="an-empty">' + (emptyMsg || 'No data yet.') + '</div>';
+  }
+
+  function anRenderTrafficChart() {
+    var box = document.getElementById('anTrafficChart');
+    if (!box) return;
+    var days = anRangeDays(anRange);
+    var max = 1;
+    days.forEach(function (d) { if ((d.data.visits || 0) > max) max = d.data.visits; });
+    box.innerHTML = days.map(function (d) {
+      var h = Math.round(((d.data.visits || 0) / max) * 100);
+      var tip = d.key + ' — ' + (d.data.visits || 0) + ' visits, ' + (d.data.uniques || 0) + ' unique, ' + (d.data.clicks || 0) + ' clicks';
+      return '<div class="an-bar-wrap" title="' + escapeHtml(tip) + '">' +
+        '<div class="an-bar" style="height:' + Math.max(3, h) + 'px"></div>' +
+        '<div class="an-bar-lbl">' + (anRange <= 7 ? d.label : (d.label.split('/')[0])) + '</div></div>';
+    }).join('');
+    var note = document.getElementById('anTrafficNote');
+    if (note) {
+      note.textContent = anSum(anRange, 'visits') + ' visits · ' + anSum(anRange, 'uniques') +
+        ' unique · ' + anSum(anRange, 'clicks') + ' tool clicks in the last ' + anRange + ' days.';
+    }
+  }
+
+  function anRenderLiveChart() {
+    var box = document.getElementById('anLiveChart');
+    if (!box) return;
+    var now = new Date();
+    var buckets = [];
+    var todayKey = anDayKey();
+    var todayVisits = (analyticsData.daily[todayKey] || {}).visits || 0;
+    for (var i = 11; i >= 0; i--) {
+      var d = new Date(now.getTime() - i * 3600 * 1000);
+      buckets.push({ hour: anPad(d.getHours()) + ':00', value: 0 });
+    }
+    /* this browser's sessions, bucketed by hour */
+    analyticsData.sessions.forEach(function (s) {
+      var start = new Date(s.start || 0);
+      var diffH = Math.floor((now.getTime() - start.getTime()) / 3600000);
+      if (diffH >= 0 && diffH <= 11) buckets[11 - diffH].value += 1;
+    });
+    if (todayVisits > 0 && buckets[11].value === 0) buckets[11].value = 1;
+    var max = 1;
+    buckets.forEach(function (b) { if (b.value > max) max = b.value; });
+    box.innerHTML = buckets.map(function (b) {
+      var h = Math.round((b.value / max) * 100);
+      return '<div class="an-bar-wrap" title="' + b.hour + ' — ' + b.value + ' session(s)"><div class="an-bar" style="height:' +
+        Math.max(3, h) + 'px"></div><div class="an-bar-lbl">' + b.hour.slice(0, 2) + '</div></div>';
+    }).join('');
+    var tag = document.getElementById('anTodayTag');
+    if (tag) tag.textContent = todayVisits + ' visit(s) today';
+  }
+
+  function anRenderGeo() {
+    var countries = {}, cities = {};
+    for (var k in (analyticsData.geo || {})) {
+      var parts = String(k).split('||');
+      countries[parts[0] || 'Unknown'] = (countries[parts[0] || 'Unknown'] || 0) + analyticsData.geo[k];
+      cities[parts[1] || 'Unknown'] = (cities[parts[1] || 'Unknown'] || 0) + analyticsData.geo[k];
+    }
+    anRenderList('anCountries', countries, 8, '', 'No country data yet.');
+    anRenderList('anCities', cities, 8, '', 'No city data yet.');
+  }
+
+  function anRenderPages() {
+    var el = document.getElementById('anPages');
+    if (!el) return;
+    var rows = [];
+    for (var p in (analyticsData.pages || {})) rows.push({ label: p, value: analyticsData.pages[p] });
+    rows.sort(function (a, b) { return b.value - a.value; });
+    if (!rows.length) { el.innerHTML = '<div class="an-empty">No page views recorded yet.</div>'; return; }
+    el.innerHTML = '<table class="an-table"><thead><tr><th>Page / section</th><th>Views</th><th>Share</th></tr></thead><tbody>' +
+      rows.slice(0, 12).map(function (r) {
+        var total = rows.reduce(function (a, x) { return a + x.value; }, 0) || 1;
+        var pct = Math.round((r.value / total) * 100);
+        return '<tr><td><b>' + escapeHtml(r.label) + '</b></td><td>' + r.value + '</td><td>' +
+          '<span class="track" style="display:inline-block;width:90px;height:7px;border-radius:99px;background:var(--border);overflow:hidden;vertical-align:middle;">' +
+          '<span style="display:block;height:100%;width:' + pct + '%;background:linear-gradient(90deg,var(--accent-grad-1),var(--accent-grad-2))"></span></span> ' + pct + '%</td></tr>';
+      }).join('') + '</tbody></table>';
+  }
+
+  function anRenderConversions() {
+    var el = document.getElementById('anConversions');
+    if (!el) return;
+    var labels = { tool_click: '🖱️ Tool opened', feedback_submitted: '💬 Feedback submitted',
+      newsletter: '📧 Newsletter signup', download: '⬇️ File downloaded', external_link: '🔗 External link' };
+    var rows = [];
+    for (var k in (analyticsData.conversions || {})) rows.push({ label: labels[k] || k, value: analyticsData.conversions[k] });
+    rows.sort(function (a, b) { return b.value - a.value; });
+    var total = rows.reduce(function (a, r) { return a + r.value; }, 0);
+    el.innerHTML = (rows.length ? anBarsHtml(rows) : '<div class="an-empty">No conversions recorded yet.</div>') +
+      (rows.length ? '<p class="an-note">' + total + ' total conversion event(s).</p>' : '');
+  }
+
+  function anRenderSessions() {
+    var el = document.getElementById('anSessions');
+    if (!el) return;
+    var list = analyticsData.sessions.slice(0, 20);
+    if (!list.length) { el.innerHTML = '<div class="an-empty">No sessions recorded yet.</div>'; return; }
+    el.innerHTML = '<table class="an-table"><thead><tr><th>Started</th><th>Device</th><th>Source</th><th>Location</th><th>Journey</th><th>Time</th></tr></thead><tbody>' +
+      list.map(function (s) {
+        var dur = s.duration != null ? s.duration : Math.round(((s.lastSeen || Date.now()) - (s.start || Date.now())) / 1000);
+        var live = (Date.now() - (s.lastSeen || 0)) < 90000;
+        var journey = (s.pages || []).slice(0, 4).map(function (p) { return '<span class="an-tag">' + escapeHtml(p) + '</span>'; }).join(' ') || '—';
+        return '<tr><td>' + escapeHtml(ssFmtDateTime(s.start)) + (live ? ' <span class="an-tag" style="color:#10b981;border-color:rgba(16,185,129,.4)">live</span>' : '') + '</td>' +
+          '<td>' + escapeHtml(s.device || '—') + ' · ' + escapeHtml(s.browser || '—') + '</td>' +
+          '<td>' + escapeHtml(s.source || '—') + '</td>' +
+          '<td>' + escapeHtml((s.city || '—') + (s.country ? ', ' + s.country : '')) + '</td>' +
+          '<td>' + journey + '</td><td>' + anFmtDur(dur) + '</td></tr>';
+      }).join('') + '</tbody></table>';
+  }
+
+  function anRenderTools() {
+    var tbody = document.getElementById('analyticsTableBody');
+    if (!tbody) return;
+    var clicks = analyticsData.clicks || {};
+    var rows = Object.keys(clicks).map(function (k) { return { name: k, count: clicks[k].count || 0, last: clicks[k].lastClicked || '—' }; });
+    rows.sort(function (a, b) { return b.count - a.count; });
+    tbody.innerHTML = rows.length
+      ? rows.map(function (r) {
+          return '<tr><td><b>' + escapeHtml(r.name) + '</b></td><td>' + r.count + '</td><td>' + escapeHtml(r.last) + '</td></tr>';
+        }).join('')
+      : '<tr><td colspan="3" style="text-align:center;padding:14px;">No tool clicks yet.</td></tr>';
+  }
+
+  function anRenderLiveBar() {
+    var live = anLiveSessions(90);
+    var el = document.getElementById('anLiveCount');
+    if (el) el.textContent = live.length;
+    var meta = document.getElementById('anLiveMeta');
+    if (meta) {
+      var last = analyticsData.sessions[0];
+      meta.textContent = 'Last activity: ' + (last ? ssFmtDateTime(last.lastSeen || last.start) : '—') +
+        ' · session started ' + anFmtDur((Date.now() - anSessionStart) / 1000) + ' ago';
+    }
+  }
+
+  function renderAnalytics() {
+    if (!document.getElementById('anKpis')) return;
+    anRenderKpis();
+    anRenderTrafficChart();
+    anRenderLiveChart();
+    anRenderLiveBar();
+    anRenderList('anDevices', analyticsData.devices, 8, '', 'No device data yet.');
+    anRenderList('anSources', analyticsData.referrers, 8, '', 'No traffic sources yet.');
+    anRenderList('anQueries', analyticsData.queries, 10, '', 'No searches yet.');
+    anRenderList('anFilters', analyticsData.filterClicks, 10, '', 'No filter clicks yet.');
+    anRenderGeo();
+    anRenderPages();
+    anRenderConversions();
+    anRenderSessions();
+    anRenderTools();
+  }
+
+  function anStartLive() {
+    if (anLiveTimer) return;
+    anLiveTimer = setInterval(function () {
+      var tab = document.getElementById('tabAnalytics');
+      if (!tab || !tab.classList.contains('active')) return;
+      anSession();
+      anSave();
+      renderAnalytics();
+    }, 5000);
+  }
+
+  (function bindAnalyticsUI() {
+    var seg = document.getElementById('anRangeSeg');
+    if (seg) seg.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-range]');
+      if (!b) return;
+      anRange = Number(b.getAttribute('data-range')) || 7;
+      Array.prototype.forEach.call(seg.querySelectorAll('button'), function (x) { x.classList.toggle('active', x === b); });
+      anRenderTrafficChart();
+    });
+    var rf = document.getElementById('anRefresh');
+    if (rf) rf.addEventListener('click', function () { renderAnalytics(); });
+    anStartLive();
+  })();
+  /* ============================================================
+     USER FEEDBACK & BUG TRACKER
+     status · priority · email reply · attachment viewer · search/sort
+     ============================================================ */
+  var FB_KEY = 'das_studio_feedbacks';
+  var FB_STATUSES = [
+    { id: 'pending',    label: 'Pending',     icon: '🕒' },
+    { id: 'inprogress', label: 'In Progress', icon: '🔧' },
+    { id: 'resolved',   label: 'Resolved',    icon: '✅' },
+    { id: 'closed',     label: 'Closed',      icon: '🔒' }
+  ];
+  var FB_PRIORITIES = [
+    { id: 'low',      label: 'Low',      icon: '🟢' },
+    { id: 'medium',   label: 'Medium',   icon: '🟡' },
+    { id: 'high',     label: 'High',     icon: '🟠' },
+    { id: 'critical', label: 'Critical', icon: '🔴' }
+  ];
+  var FB_TYPES = [
+    { id: 'bug',      label: 'Bug Report',      icon: '🐞' },
+    { id: 'feedback', label: 'Feedback',        icon: '💬' },
+    { id: 'feature',  label: 'Feature Request', icon: '✨' }
+  ];
+  var fbFilter = { q: '', status: 'all', priority: 'all', type: 'all', sort: 'newest', view: 'all', assignee: 'all' };
+  var fbAttachmentDraft = null;
+  var fbReplyTarget = null;
+
+  function fbMetaOf(list, id) {
+    for (var i = 0; i < list.length; i++) if (list[i].id === id) return list[i];
+    return { id: id, label: id, icon: '•' };
+  }
+  function fbStatusMeta(id)   { return fbMetaOf(FB_STATUSES, id); }
+  function fbPriorityMeta(id) { return fbMetaOf(FB_PRIORITIES, id); }
+  function fbTypeMeta(id)     { return fbMetaOf(FB_TYPES, id); }
+
+  function fbFmtSize(bytes) {
+    var b = Number(bytes) || 0;
+    if (b < 1024) return b + ' B';
+    if (b < 1048576) return (b / 1024).toFixed(0) + ' KB';
+    return (b / 1048576).toFixed(1) + ' MB';
+  }
+
+  function fbTicketNext() {
+    var year = new Date().getFullYear();
+    var seq = lsGet('das_ticket_seq', null) || { year: year, n: 0 };
+    if (seq.year !== year) seq = { year: year, n: 0 };
+    seq.n = (Number(seq.n) || 0) + 1;
+    lsSet('das_ticket_seq', seq);
+    return 'TK-' + year + '-' + ('000' + seq.n).slice(-3);
+  }
+
+  function fbEmailConfig() {
+    var d = {
+      provider: 'none', endpoint: '', token: '', service: '', template: '', publicKey: '',
+      fromName: 'DAS Studio Support', fromEmail: '', adminName: 'Admin', team: 'Admin',
+      autoConfirm: false, statusNotify: false,
+      confirmSubject: 'We received your message ({ticket})',
+      confirmBody: 'Hi {name},\n\nThank you for contacting {site}. Your ticket {ticket} has been created and our team will get back to you soon.\n\n— {site} Support'
+    };
+    var stored = lsGet('das_studio_email', null);
+    if (stored && typeof stored === 'object') { for (var k in stored) if (stored[k] !== undefined) d[k] = stored[k]; }
+    return d;
+  }
+  function fbSaveEmailConfig(cfg) { lsSet('das_studio_email', cfg); }
+  function fbMailLog() { var l = lsGet('das_studio_mail_log', []); return Array.isArray(l) ? l : []; }
+  function fbPushMailLog(e) { var l = fbMailLog(); l.unshift(e); lsSet('das_studio_mail_log', l.slice(0, 50)); }
+
+  function fbSendEmail(opts) {
+    var cfg = fbEmailConfig();
+    var entry = { at: Date.now(), to: opts.to || '', subject: opts.subject || '', ticket: opts.ticket || '',
+      provider: cfg.provider, ok: false, error: '' };
+    function fail(msg) {
+      entry.error = msg; fbPushMailLog(entry);
+      return Promise.resolve({ ok: false, error: msg });
+    }
+    if (!opts.to || !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(opts.to)) return fail('No valid recipient email');
+    if (cfg.provider === 'none') return fail('No delivery method configured');
+    var url, body, headers = { 'Content-Type': 'application/json' };
+    if (cfg.provider === 'emailjs') {
+      if (!cfg.service || !cfg.template || !cfg.publicKey) return fail('EmailJS is not fully configured');
+      url = 'https://api.emailjs.com/api/v1.0/email/send';
+      body = { service_id: cfg.service, template_id: cfg.template, user_id: cfg.publicKey,
+        template_params: { to_email: opts.to, subject: opts.subject, message: opts.text,
+          ticket: opts.ticket || '', from_name: cfg.fromName || 'Support' } };
+    } else {
+      if (!cfg.endpoint) return fail('Webhook endpoint is not configured');
+      url = cfg.endpoint;
+      if (cfg.token) headers['Authorization'] = 'Bearer ' + cfg.token;
+      body = { to: opts.to, subject: opts.subject, text: opts.text, html: opts.html || '',
+        ticket: opts.ticket || '', from: cfg.fromEmail || '' };
+    }
+    return fetch(url, { method: 'POST', headers: headers, body: JSON.stringify(body) })
+      .then(function (r) {
+        entry.ok = r.ok;
+        if (!r.ok) entry.error = 'HTTP ' + r.status;
+        fbPushMailLog(entry);
+        return { ok: r.ok, error: entry.error };
+      }, function (err) {
+        entry.error = (err && err.message) || 'Network error';
+        fbPushMailLog(entry);
+        return { ok: false, error: entry.error };
+      });
+  }
+
+  function fbSpamScore(rec, all) {
+    var score = 0, reasons = [];
+    var msg = String(rec.message || '');
+    var lower = msg.toLowerCase();
+    var links = (msg.match(/https?:\/\//gi) || []).length;
+    if (links >= 3) { score += 2; reasons.push(links + ' links'); }
+    ['viagra', 'casino', 'payday loan', 'seo services', 'buy followers', 'crypto giveaway', 'porn', 'xxx', 'bitcoin doubler']
+      .forEach(function (w) { if (lower.indexOf(w) > -1) { score += 3; reasons.push('keyword “' + w + '”'); } });
+    if (msg.length > 30) {
+      var caps = msg.replace(/[^A-Z]/g, '').length, letters = msg.replace(/[^A-Za-z]/g, '').length;
+      if (letters > 20 && (caps / letters) > 0.6) { score += 2; reasons.push('mostly capitals'); }
+    }
+    if (rec.honeypot) { score += 5; reasons.push('hidden field filled (bot)'); }
+    var dup = (all || []).some(function (x) { return x.id !== rec.id && x.message === msg && msg.length > 20; });
+    if (dup) { score += 3; reasons.push('duplicate message'); }
+    return { score: score, reasons: reasons, spam: score >= 3 };
+  }
+
+  function loadFeedbacks() {
+    var arr = [];
+    try { arr = JSON.parse(localStorage.getItem(FB_KEY) || '[]'); } catch (e) { arr = []; }
+    if (!Array.isArray(arr)) arr = [];
+    return arr.map(function (it, i) {
+      var created = it.createdAt || (Date.parse(it.date) || 0);
+      var thread = Array.isArray(it.thread) ? it.thread.slice() : [];
+      if (!thread.length && Array.isArray(it.replies)) {
+        it.replies.forEach(function (r, j) {
+          thread.push({ id: 'm_legacy_' + i + '_' + j, kind: 'admin', author: 'Admin',
+            text: r.text || '', at: Date.parse(r.date) || created, channel: 'manual', sent: false });
+        });
+      }
+      return {
+        id: it.id || ('fb_legacy_' + i),
+        ticket: it.ticket || '',
+        name: it.name || '',
+        email: it.email || '',
+        type: (it.type === 'bug' || it.type === 'feature') ? it.type : 'feedback',
+        message: it.message || '',
+        date: it.date || '',
+        createdAt: created,
+        status: (it.status === 'inprogress' || it.status === 'resolved' || it.status === 'closed') ? it.status : 'pending',
+        priority: (it.priority === 'low' || it.priority === 'high' || it.priority === 'critical') ? it.priority : 'medium',
+        attachment: it.attachment || null,
+        replies: Array.isArray(it.replies) ? it.replies : [],
+        thread: thread,
+        unread: it.unread === true,
+        assignedTo: it.assignedTo || '',
+        spam: it.spam === true,
+        spamScore: Number(it.spamScore) || 0,
+        spamReasons: Array.isArray(it.spamReasons) ? it.spamReasons : [],
+        lastUserReply: Number(it.lastUserReply) || 0
+      };
+    });
+  }
+
+  function saveFeedbacks(list) {
+    try {
+      localStorage.setItem(FB_KEY, JSON.stringify(list));
+      return true;
+    } catch (err) {
+      return false;
+    }
+  }
+
+  function fbUnreadCount() {
+    var n = 0;
+    loadFeedbacks().forEach(function (it) { if (it.unread && !it.spam) n++; });
+    return n;
+  }
+  function fbMarkRead(id, read) {
+    var list = loadFeedbacks();
+    list.forEach(function (it) { if (String(it.id) === String(id)) it.unread = !read; });
+    saveFeedbacks(list);
+  }
+  function updateFeedback(id, patch) {
+    var list = loadFeedbacks(), hit = false;
+    list.forEach(function (it) {
+      if (String(it.id) === String(id)) { for (var k in patch) it[k] = patch[k]; hit = true; }
+    });
+    if (!hit) return;
+    if (saveFeedbacks(list)) renderFeedbacks();
+    else alert('Could not save — browser storage is full. Try deleting an old item with attachments.');
+    if (patch && patch.status && typeof fbOnStatusChange === 'function') fbOnStatusChange(id, patch.status);
+  }
+
+  function fbBadge(kind, id) {
+    var m = kind === 'status' ? fbStatusMeta(id) : (kind === 'priority' ? fbPriorityMeta(id) : fbTypeMeta(id));
+    return '<span class="fb-badge ' + kind + '-' + id + '">' + m.icon + ' ' + escapeHtml(m.label) + '</span>';
+  }
+
+  function fbRefCode(it) {
+    return '#' + String(it.id).replace(/^fb_/, '').replace(/\D/g, '').slice(-6);
+  }
+
+  function fbMatches(it) {
+    if (fbFilter.view === 'unread' && !it.unread) return false;
+    if (fbFilter.view === 'spam') { if (!it.spam) return false; }
+    else if (it.spam) return false;
+    if (fbFilter.status !== 'all' && it.status !== fbFilter.status) return false;
+    if (fbFilter.priority !== 'all' && it.priority !== fbFilter.priority) return false;
+    if (fbFilter.type !== 'all' && it.type !== fbFilter.type) return false;
+    if (fbFilter.assignee !== 'all') {
+      if (fbFilter.assignee === '__none') { if (it.assignedTo) return false; }
+      else if (it.assignedTo !== fbFilter.assignee) return false;
+    }
+    if (fbFilter.q) {
+      var hay = (it.ticket + ' ' + it.name + ' ' + it.email + ' ' + it.message + ' ' + it.assignedTo + ' ' +
+        (it.attachment && it.attachment.name ? it.attachment.name : '')).toLowerCase();
+      if (hay.indexOf(fbFilter.q) === -1) return false;
+    }
+    return true;
+  }
+
+  function fbSortList(list) {
+    var rank = { critical: 0, high: 1, medium: 2, low: 3 };
+    return list.slice().sort(function (a, b) {
+      if (fbFilter.sort === 'unread') {
+        if (!!a.unread !== !!b.unread) return a.unread ? -1 : 1;
+        return b.createdAt - a.createdAt;
+      }
+      if (fbFilter.sort === 'oldest') return a.createdAt - b.createdAt;
+      if (fbFilter.sort === 'name') {
+        return String(a.name || 'zzz').toLowerCase().localeCompare(String(b.name || 'zzz').toLowerCase());
+      }
+      if (fbFilter.sort === 'priority') {
+        var d = (rank[a.priority] == null ? 9 : rank[a.priority]) - (rank[b.priority] == null ? 9 : rank[b.priority]);
+        if (d !== 0) return d;
+      }
+      return b.createdAt - a.createdAt;
+    });
+  }
+
+  function fbCardHtml(it) {
+    var initial = (it.name || '?').trim().charAt(0).toUpperCase() || '?';
+    var threadCount = (it.thread || []).length;
+    var html = '<div class="fb-card' + (it.unread ? ' is-unread' : '') + '" data-status="' + it.status +
+      '" data-priority="' + it.priority + '"' + (it.unread ? ' style="box-shadow:inset 0 0 0 1px rgba(239,68,68,.35)"' : '') + '>';
+
+    html += '<div class="fb-top"><div class="fb-who">' +
+      (it.unread ? '<span class="fb-unread" title="Unread"></span>' : '') +
+      '<span class="fb-avatar">' + escapeHtml(initial) + '</span><div>' +
+      '<div class="fb-name">' + escapeHtml(it.name || 'Anonymous') +
+      ' <span class="fb-ticket">' + escapeHtml(it.ticket || fbRefCode(it)) + '</span>' +
+      (it.spam ? ' <span class="fb-spam">spam</span>' : '') + '</div>' +
+      (it.email ? '<div class="fb-email">' + escapeHtml(it.email) + '</div>'
+                : '<div class="fb-email">no email provided</div>') +
+      '</div></div><div class="fb-badges">' + fbBadge('type', it.type) + fbBadge('priority', it.priority) +
+      fbBadge('status', it.status) + '</div></div>';
+
+    html += '<p class="fb-msg">' + escapeHtml(it.message) + '</p>';
+
+    if (it.attachment) {
+      var nm = escapeHtml(it.attachment.name || 'attachment');
+      var sz = fbFmtSize(it.attachment.size);
+      if (/^image\//.test(it.attachment.type || '')) {
+        html += '<button type="button" class="fb-thumb" data-act="view-attach" data-id="' + it.id + '">' +
+          '<img src="' + it.attachment.data + '" alt="attachment preview"><span>🔍 ' + nm + ' · ' + sz + '<br>Click to preview</span></button>';
+      } else {
+        html += '<button type="button" class="fb-file-chip" data-act="view-attach" data-id="' + it.id + '">' +
+          '📎 ' + nm + ' · ' + sz + ' — click to open</button>';
+      }
+    }
+
+    if (threadCount) {
+      var last = it.thread[threadCount - 1];
+      var kindLabel = last.kind === 'user' ? '👤 User' : (last.kind === 'note' ? '📝 Note' : '✉️ You');
+      html += '<div class="fb-reply-log"><b>' + kindLabel + '</b> (' + escapeHtml(ssFmtDateTime(last.at)) + '): ' +
+        escapeHtml(String(last.text || '').slice(0, 150)) + (String(last.text || '').length > 150 ? '…' : '') + '</div>';
+    }
+    if (it.lastUserReply && Date.now() - it.lastUserReply < 7 * 86400000) {
+      html += '<div class="fb-newreply">🔔 New reply from the user · ' + escapeHtml(ssFmtDateTime(it.lastUserReply)) + '</div>';
+    }
+
+    html += '<div class="fb-foot">' +
+      '<span>📅 ' + escapeHtml(it.date || ssFmtDateTime(it.createdAt)) + '</span>' +
+      '<span style="display:flex;gap:8px;align-items:center;">' +
+      (it.assignedTo ? '<span class="fb-assign' + (it.assignedTo === fbEmailConfig().adminName ? ' mine' : '') + '">👤 ' + escapeHtml(it.assignedTo) + '</span>'
+                     : '<span class="fb-assign">unassigned</span>') +
+      (threadCount ? '<span class="fb-threadcount">💬 ' + threadCount + ' message' + (threadCount === 1 ? '' : 's') + '</span>' : '') +
+      '</span></div>';
+
+    html += '<div class="fb-actions">';
+    html += '<button type="button" class="fb-mini" data-act="thread" data-id="' + it.id + '">💬 Open thread' +
+      (threadCount ? ' (' + threadCount + ')' : '') + '</button>';
+    html += '<select class="fb-select" data-act="status" data-id="' + it.id + '" title="Change status">' +
+      FB_STATUSES.map(function (s) {
+        return '<option value="' + s.id + '"' + (it.status === s.id ? ' selected' : '') + '>' + s.icon + ' ' + s.label + '</option>';
+      }).join('') + '</select>';
+    html += '<select class="fb-select" data-act="priority" data-id="' + it.id + '" title="Change priority">' +
+      FB_PRIORITIES.map(function (p) {
+        return '<option value="' + p.id + '"' + (it.priority === p.id ? ' selected' : '') + '>' + p.icon + ' ' + p.label + '</option>';
+      }).join('') + '</select>';
+    if (it.spam) {
+      html += '<button type="button" class="fb-mini" data-act="notspam" data-id="' + it.id + '">✅ Not spam</button>';
+    } else if (it.email) {
+      html += '<button type="button" class="fb-mini" data-act="copy-email" data-id="' + it.id + '">📋 Email</button>';
+    }
+    html += '<button type="button" class="fb-mini danger" data-act="delete" data-id="' + it.id + '">🗑️</button>';
+    html += '</div></div>';
+    return html;
+  }
+
+  function renderFeedbacks() {
+    var container = document.getElementById('feedbackListContainer');
+    if (!container) return;
+    var all = loadFeedbacks();
+
+    var counts = { total: 0, unread: 0, pending: 0, inprogress: 0, resolved: 0, closed: 0, spam: 0 };
+    all.forEach(function (it) {
+      if (it.spam) { counts.spam++; return; }
+      counts.total++;
+      if (it.unread) counts.unread++;
+      if (counts[it.status] != null) counts[it.status]++;
+    });
+
+    var statsEl = document.getElementById('fbStats');
+    if (statsEl) {
+      statsEl.innerHTML = [
+        ['all', 'Inbox', counts.total, 'var(--text)'],
+        ['unread', 'Unread', counts.unread, '#ef4444'],
+        ['pending', 'Pending', counts.pending, '#f59e0b'],
+        ['inprogress', 'In Progress', counts.inprogress, '#3b82f6'],
+        ['resolved', 'Resolved', counts.resolved, '#10b981'],
+        ['spam', 'Spam', counts.spam, '#94a3b8']
+      ].map(function (s) {
+        var active = (s[0] === 'spam') ? fbFilter.view === 'spam'
+          : (s[0] === 'unread' ? fbFilter.view === 'unread'
+          : (s[0] === 'all' ? (fbFilter.view === 'all' && fbFilter.status === 'all')
+          : (fbFilter.view === 'all' && fbFilter.status === s[0])));
+        return '<button type="button" class="fb-stat' + (active ? ' active' : '') + '" data-stat="' + s[0] + '">' +
+          '<b style="color:' + s[3] + '">' + s[2] + '</b><span>' + s[1] + '</span></button>';
+      }).join('');
+    }
+
+    var tabBtn = document.getElementById('tabMsgsBtn');
+    if (tabBtn) {
+      tabBtn.innerHTML = '📩 Messages' + (counts.unread ? ' <span class="fb-tab-count">' + counts.unread + '</span>' : '');
+    }
+
+    var assigneeSel = document.getElementById('fbFilterAssignee');
+    if (assigneeSel) {
+      var team = String(fbEmailConfig().team || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+      var cur = fbFilter.assignee;
+      assigneeSel.innerHTML = '<option value="all">Anyone</option><option value="__none">Unassigned</option>' +
+        team.map(function (m) {
+          return '<option value="' + escapeHtml(m) + '">' + escapeHtml(m) + '</option>';
+        }).join('');
+      assigneeSel.value = cur;
+    }
+
+    var shown = fbSortList(all.filter(fbMatches));
+    var meta = document.getElementById('fbResultMeta');
+    if (meta) meta.textContent = shown.length + ' of ' + all.length + ' ticket' + (all.length === 1 ? '' : 's') + ' shown';
+
+    if (!all.length) {
+      container.innerHTML = '<div class="fb-empty">📭 No tickets yet.<br><span style="font-size:12px;">' +
+        'Anything submitted through the “Feedback / Bug Report” button becomes a ticket here.</span></div>';
+      return;
+    }
+    if (!shown.length) {
+      container.innerHTML = '<div class="fb-empty">🔍 No tickets match these filters.<br>' +
+        '<button type="button" class="fb-mini" data-act="reset-filters" style="margin-top:10px;">Reset filters</button></div>';
+      return;
+    }
+    container.innerHTML = shown.map(fbCardHtml).join('');
+  }
+
+  function exportFeedbacksCsv(asExcel) {
+    var list = loadFeedbacks();
+    if (!list.length) { alert('There is nothing to export yet.'); return; }
+    var cols = ['Ticket', 'Date', 'Name', 'Email', 'Type', 'Priority', 'Status', 'Assigned',
+      'Messages', 'Unread', 'Spam', 'Message', 'Last reply'];
+    var rows = list.map(function (it) {
+      var last = it.thread.length ? it.thread[it.thread.length - 1] : null;
+      return [it.ticket || fbRefCode(it), it.date || ssFmtDateTime(it.createdAt), it.name, it.email,
+        fbTypeMeta(it.type).label, fbPriorityMeta(it.priority).label, fbStatusMeta(it.status).label,
+        it.assignedTo || '', it.thread.length, it.unread ? 'yes' : 'no', it.spam ? 'yes' : 'no',
+        it.message, last ? last.text : ''];
+    });
+    if (asExcel) {
+      var html = '<html><head><meta charset="utf-8"></head><body><table border="1"><tr>' +
+        cols.map(function (c) { return '<th>' + escapeHtml(c) + '</th>'; }).join('') + '</tr>' +
+        rows.map(function (r) {
+          return '<tr>' + r.map(function (v) { return '<td>' + escapeHtml(v) + '</td>'; }).join('') + '</tr>';
+        }).join('') + '</table></body></html>';
+      downloadText('das-tickets-' + new Date().toISOString().slice(0, 10) + '.xls', html, 'application/vnd.ms-excel');
+    } else {
+      var csv = [cols.map(csvCell).join(',')].concat(rows.map(function (r) {
+        return r.map(csvCell).join(',');
+      })).join('\r\n');
+      downloadText('das-tickets-' + new Date().toISOString().slice(0, 10) + '.csv', '\ufeff' + csv, 'text/csv');
+    }
+    try { logAct('feedback', 'Tickets exported (' + list.length + ')'); } catch (e) {}
+  }
+  function fbResetFilters() {
+    fbFilter = { q: '', status: 'all', priority: 'all', type: 'all', sort: 'newest', view: 'all', assignee: 'all' };
+    var s1 = document.getElementById('fbSearch'), s2 = document.getElementById('fbFilterStatus'),
+        s3 = document.getElementById('fbFilterPriority'), s4 = document.getElementById('fbFilterType'),
+        s5 = document.getElementById('fbSort');
+    if (s1) s1.value = '';
+    if (s2) s2.value = 'all';
+    if (s3) s3.value = 'all';
+    if (s4) s4.value = 'all';
+    if (s5) s5.value = 'newest';
+    renderFeedbacks();
+  }
+
+  /* ---------- attachment lightbox ---------- */
+  function openAttachment(id) {
+    var it = null;
+    loadFeedbacks().forEach(function (x) { if (x.id === id) it = x; });
+    if (!it || !it.attachment) return;
+    var lb = document.getElementById('fbLightbox');
+    document.getElementById('fbLbTitle').textContent = it.attachment.name || 'Attachment';
+    var dl = document.getElementById('fbLbDownload');
+    dl.href = it.attachment.data;
+    dl.setAttribute('download', it.attachment.name || 'attachment');
+    var body = document.getElementById('fbLbBody');
+    if (/^image\//.test(it.attachment.type || '')) {
+      body.innerHTML = '<img src="' + it.attachment.data + '" alt="attachment">';
+    } else if (/^application\/pdf/.test(it.attachment.type || '')) {
+      body.innerHTML = '<iframe src="' + it.attachment.data + '" title="PDF preview"></iframe>';
+    } else if (/^text\//.test(it.attachment.type || '')) {
+      var txt = '';
+      try { txt = decodeURIComponent(it.attachment.data.split(',')[1] || ''); } catch (e) { txt = ''; }
+      body.innerHTML = '<pre style="text-align:left;white-space:pre-wrap;font-size:12px;color:var(--text);max-height:60vh;overflow:auto;">' +
+        escapeHtml(txt.slice(0, 20000)) + '</pre>';
+    } else {
+      body.innerHTML = '<div class="fb-lb-fallback">📎 No inline preview for this file type.<br>Use “Download” to open it.</div>';
+    }
+    lb.classList.add('active');
+  }
+  function closeAttachment() {
+    document.getElementById('fbLightbox').classList.remove('active');
+    document.getElementById('fbLbBody').innerHTML = '';
+  }
+
+  /* ---------- email reply ---------- */
+  function openReplyModal(id) {
+    var it = null;
+    loadFeedbacks().forEach(function (x) { if (x.id === id) it = x; });
+    if (!it) return;
+    fbReplyTarget = it;
+    var hasEmail = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(it.email || '');
+    document.getElementById('fbReplyTo').value = it.email || 'No email provided';
+    document.getElementById('fbReplyWarn').style.display = hasEmail ? 'none' : 'block';
+    document.getElementById('fbReplySubject').value =
+      'Re: ' + fbTypeMeta(it.type).label + ' — DAS Studio [' + fbRefCode(it) + ']';
+    var firstName = (it.name || '').trim().split(' ')[0] || 'there';
+    document.getElementById('fbReplyBody').value =
+      'Hi ' + firstName + ',\n\n' +
+      'Thank you for your ' + fbTypeMeta(it.type).label.toLowerCase() + ' about DAS Studio.\n\n' +
+      '[Write your answer or the solution here]\n\n' +
+      '— — —\n' +
+      'Original message (' + (it.date || '') + '):\n' +
+      '"' + (it.message || '') + '"\n\n' +
+      'Reference: ' + fbRefCode(it) + '\n' +
+      'DAS Studio Support';
+    document.getElementById('fbReplyModal').classList.add('active');
+    setTimeout(function () {
+      var ta = document.getElementById('fbReplyBody');
+      ta.focus();
+      ta.scrollTop = 0;
+      var marker = '[Write your answer or the solution here]';
+      var at = ta.value.indexOf(marker);
+      if (at !== -1) { try { ta.setSelectionRange(at, at + marker.length); } catch (e) {} }
+    }, 60);
+  }
+  function closeReplyModal() {
+    document.getElementById('fbReplyModal').classList.remove('active');
+    fbReplyTarget = null;
+  }
+  function fbMailtoLink() {
+    var to = document.getElementById('fbReplyTo').value.trim();
+    var subj = document.getElementById('fbReplySubject').value;
+    var body = document.getElementById('fbReplyBody').value;
+    return 'mailto:' + to + '?subject=' + encodeURIComponent(subj) + '&body=' + encodeURIComponent(body);
+  }
+  function saveReply(markStatus) {
+    if (!fbReplyTarget) return false;
+    var text = document.getElementById('fbReplyBody').value.trim();
+    if (!text) { alert('The reply message is empty.'); return false; }
+    var list = loadFeedbacks(), ok = false;
+    list.forEach(function (it) {
+      if (it.id === fbReplyTarget.id) {
+        it.replies = it.replies || [];
+        it.replies.push({
+          date: new Date().toLocaleString(),
+          subject: document.getElementById('fbReplySubject').value,
+          text: text
+        });
+        if (markStatus && it.status === 'pending') it.status = markStatus;
+        ok = true;
+      }
+    });
+    if (!ok) return false;
+    if (!saveFeedbacks(list)) { alert('Could not save the reply — browser storage is full.'); return false; }
+    closeReplyModal();
+    renderFeedbacks();
+    return true;
+  }
+  function fbCopy(text, doneMsg) {
+    function fallback() {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.cssText = 'position:fixed;left:-9999px;top:0;';
+      document.body.appendChild(ta);
+      ta.select();
+      try { document.execCommand('copy'); alert(doneMsg); } catch (e) { alert('Copy failed — please select and copy manually.'); }
+      ta.remove();
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(function () { alert(doneMsg); }, fallback);
+    } else fallback();
+  }
+
+  function fbDelete(id) {
+    var list = loadFeedbacks(), target = null;
+    list.forEach(function (it) { if (it.id === id) target = it; });
+    if (!target) return;
+    var who = target.name || 'Anonymous';
+    if (!confirm('Delete this report from ' + who + '?\n\n"' +
+      String(target.message).slice(0, 90) + (String(target.message).length > 90 ? '…' : '') + '"\n\nThis cannot be undone.')) return;
+    var next = list.filter(function (it) { return it.id !== id; });
+    if (saveFeedbacks(next)) renderFeedbacks();
+    else alert('Could not delete — please try again.');
+  }
+  /* ---------- wiring: toolbar ---------- */
+  (function () {
+    var panel = document.getElementById('tabMsgs');
+    if (!panel) return;
+
+    var searchEl = document.getElementById('fbSearch');
+    var fStatus = document.getElementById('fbFilterStatus');
+    var fPriority = document.getElementById('fbFilterPriority');
+    var fType = document.getElementById('fbFilterType');
+    var sortEl = document.getElementById('fbSort');
+    var assigneeEl = document.getElementById('fbFilterAssignee');
+
+    if (searchEl) searchEl.addEventListener('input', function () {
+      fbFilter.q = this.value.trim().toLowerCase();
+      renderFeedbacks();
+    });
+    if (fStatus) fStatus.addEventListener('change', function () { fbFilter.status = this.value; renderFeedbacks(); });
+    if (fPriority) fPriority.addEventListener('change', function () { fbFilter.priority = this.value; renderFeedbacks(); });
+    if (fType) fType.addEventListener('change', function () { fbFilter.type = this.value; renderFeedbacks(); });
+    if (sortEl) sortEl.addEventListener('change', function () { fbFilter.sort = this.value; renderFeedbacks(); });
+    if (assigneeEl) assigneeEl.addEventListener('change', function () { fbFilter.assignee = this.value; renderFeedbacks(); });
+
+    var exportBtn = document.getElementById('fbExportBtn');
+    if (exportBtn) exportBtn.addEventListener('click', function () { exportFeedbacksCsv(false); });
+
+    /* clicks inside the panel: stat cards + card actions */
+    panel.addEventListener('click', function (e) {
+      var el = e.target.closest ? e.target.closest('[data-stat],[data-act]') : null;
+      if (!el) return;
+
+      if (el.hasAttribute('data-stat')) {
+        var stv = el.getAttribute('data-stat');
+        if (stv === 'unread' || stv === 'spam') { fbFilter.view = stv; fbFilter.status = 'all'; }
+        else if (stv === 'all') { fbFilter.view = 'all'; fbFilter.status = 'all'; }
+        else { fbFilter.view = 'all'; fbFilter.status = stv; }
+        if (fStatus) fStatus.value = fbFilter.status;
+        renderFeedbacks();
+        return;
+      }
+      var act = el.getAttribute('data-act');
+      var id = el.getAttribute('data-id');
+
+      if (act === 'view-attach') { openAttachment(id); }
+      else if (act === 'reply') { openReplyModal(id); }
+      else if (act === 'copy-email') {
+        var mail = '';
+        loadFeedbacks().forEach(function (it) { if (it.id === id) mail = it.email; });
+        if (mail) fbCopy(mail, 'Email address copied: ' + mail);
+      }
+      else if (act === 'delete') { fbDelete(id); }
+      else if (act === 'reset-filters') { fbResetFilters(); }
+    });
+
+    /* status / priority selects inside cards */
+    panel.addEventListener('change', function (e) {
+      var el = e.target.closest ? e.target.closest('select[data-act]') : null;
+      if (!el) return;
+      var act = el.getAttribute('data-act');
+      var id = el.getAttribute('data-id');
+      if (act === 'status') updateFeedback(id, { status: el.value });
+      else if (act === 'priority') updateFeedback(id, { priority: el.value });
+    });
+
+    /* lightbox */
+    var lb = document.getElementById('fbLightbox');
+    if (lb) {
+      document.getElementById('fbLbClose').addEventListener('click', closeAttachment);
+      document.getElementById('fbLbCloseBtn').addEventListener('click', closeAttachment);
+      lb.addEventListener('click', function (e) { if (e.target === lb) closeAttachment(); });
+    }
+
+    /* reply modal */
+    var rm = document.getElementById('fbReplyModal');
+    if (rm) {
+      document.getElementById('fbReplyClose').addEventListener('click', closeReplyModal);
+      document.getElementById('fbReplyCancel').addEventListener('click', closeReplyModal);
+      document.getElementById('fbReplySave').addEventListener('click', function () { saveReply('inprogress'); });
+      document.getElementById('fbReplyCopy').addEventListener('click', function () {
+        fbCopy(document.getElementById('fbReplyBody').value, 'Reply text copied to clipboard.');
+      });
+      document.getElementById('fbReplySend').addEventListener('click', function () {
+        var to = document.getElementById('fbReplyTo').value.trim();
+        var valid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(to);
+        if (!valid) {
+          alert('This user did not give a valid email address. The reply will be saved as an internal note instead.');
+          saveReply('inprogress');
+          return;
+        }
+        var link = fbMailtoLink();
+        if (!saveReply('inprogress')) return;
+        var a = document.createElement('a');
+        a.href = link;
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      });
+    }
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Escape') return;
+      if (lb && lb.classList.contains('active')) closeAttachment();
+      else if (rm && rm.classList.contains('active')) closeReplyModal();
+    });
+  })();
+  adminBtn.addEventListener('click', function() {
+    if (!isAdmin) adminLogin(); else adminLogout('Manual logout');
+  });
+
+  function openModal(tool) {
+    modal.classList.add('active');
+    switchTab('tabToolsBtn', 'tabTools');
+    var titleEl = document.getElementById('toolFormTitle');
+    if (tool) {
+      document.getElementById('toolId').value = tool.id;
+      document.getElementById('toolTitleMain').value = tool.titleMain;
+      document.getElementById('toolTitleAccent').value = tool.titleAccent;
+      document.getElementById('toolHeader').value = tool.header;
+      document.getElementById('toolCategory').value = tool.category;
+      document.getElementById('toolAccent').value = tool.accent;
+      document.getElementById('toolLink').value = tool.link;
+      document.getElementById('toolImage').value = tool.image;
+      document.getElementById('toolIcon').value = tool.icon;
+      document.getElementById('toolDesc').value = tool.desc;
+      document.getElementById('toolKeywords').value = tool.keywords || '';
+      document.getElementById('toolStatus').value = toolStatusOf(tool);
+      document.getElementById('toolFeatured').checked = !!tool.featured;
+      document.getElementById('toolVersion').value = tool.version || '';
+      document.getElementById('toolReleaseNotes').value = tool.releaseNotes || '';
+      mmSetTags(toolTagsOf(tool));
+      if (titleEl) titleEl.textContent = '✏️ Edit Tool — ' + (tool.titleMain || '') + (tool.titleAccent || '');
+    } else {
+      toolForm.reset();
+      document.getElementById('toolId').value = '';
+      document.getElementById('toolStatus').value = 'published';
+      document.getElementById('toolFeatured').checked = false;
+      document.getElementById('toolVersion').value = '';
+      document.getElementById('toolReleaseNotes').value = '';
+      mmSetTags([]);
+      if (titleEl) titleEl.textContent = '➕ Add New Tool';
+    }
+    mmUpdateImagePreviews();
+  }
+  function closeModal() { modal.classList.remove('active'); }
+  modalClose.addEventListener('click', closeModal);
+  modalCancel.addEventListener('click', closeModal);
+
+  toolForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    var id = document.getElementById('toolId').value;
+    var toolData = mmFormData();
+    if (id) {
+      toolData.id = parseInt(id, 10);
+      var prev = toolById(toolData.id);
+      if (prev && prev.createdAt) toolData.createdAt = prev.createdAt;
+      tools = tools.map(function(t) { return t.id === toolData.id ? toolData : t; });
+    } else {
+      toolData.id = Date.now();
+      toolData.createdAt = Date.now();
+      tools.push(toolData);
+    }
+    saveToolsToStorage();
+    renderGrid();
+    mmRenderAll();
+    closeModal();
+    try { logAct('tools', (id ? 'Updated' : 'Added') + ' tool: ' + toolData.titleMain); } catch (err) {}
+  });
+  document.getElementById('settingsForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    settings.title = document.getElementById('settingTitle').value;
+    settings.desc = document.getElementById('settingDesc').value;
+    settings.heroHeading = document.getElementById('settingHeroHeading').value;
+    settings.heroText = document.getElementById('settingHeroText').value;
+    settings.maintenance = document.getElementById('settingMaintenance').checked;
+    settings.logoUrl = document.getElementById('settingLogoUrl').value;
+    settings.faviconUrl = document.getElementById('settingFaviconUrl').value;
+    settings.metaKeywords = document.getElementById('settingMetaKeywords').value;
+    settings.authorName = document.getElementById('settingAuthor').value;
+    settings.ogImage = document.getElementById('settingOgImage').value;
+    settings.facebook = document.getElementById('settingFacebook').value;
+    settings.twitter = document.getElementById('settingTwitter').value;
+    settings.github = document.getElementById('settingGithub').value;
+    settings.telegram = document.getElementById('settingTelegram').value;
+    settings.supportEmail = document.getElementById('settingSupportEmail').value;
+    settings.footerText = document.getElementById('settingFooterText').value;
+    settings.headCode = document.getElementById('settingHeadCode').value;
+    settings.bodyCode = document.getElementById('settingBodyCode').value;
+
+    var prevLang = settings.siteLang;
+    ssReadForm();
+    if (settings.timezone) {
+      try { new Intl.DateTimeFormat('en-GB', { timeZone: settings.timezone }); }
+      catch (err) {
+        alert('“' + settings.timezone + '” is not a valid timezone. Use a value such as Asia/Kolkata.');
+        return;
+      }
+    }
+    if (settings.baseUrl && !/^https?:\/\//i.test(settings.baseUrl)) {
+      alert('The canonical base URL must start with http:// or https://');
+      return;
+    }
+    try { localStorage.setItem('das_studio_settings', JSON.stringify(settings)); } catch(err){}
+    applySettingsToDOM();
+    if (prevLang !== settings.siteLang) {
+      try { localStorage.removeItem('das_lang'); } catch (err) {}
+    }
+    applyLanguage(settings.siteLang || 'en', false);
+    ssApplyAnalyticsConsent();
+    ssRenderCookieBanner();
+    ssRefreshSitemap();
+    ssPopulate();
+    try { logAct('settings', 'Site settings saved'); } catch (err) {}
+    alert('Site settings updated successfully!');
+  });
+  document.getElementById('noticeThemeForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    settings.color1 = document.getElementById('brandColor1').value;
+    settings.color2 = document.getElementById('brandColor2').value;
+    try { localStorage.setItem('das_studio_settings', JSON.stringify(settings)); } catch(e){}
+    applySettingsToDOM();
+    try { logAct('theme', 'Brand colours updated'); } catch(err) {}
+    alert('Brand colours applied.');
+  });
+  grid.addEventListener('click', function(e) {
+    var editBtn = e.target.closest('.edit-btn');
+    var hideBtn = e.target.closest('.hide-btn');
+    var deleteBtn = e.target.closest('.delete-btn');
+    var dupBtn = e.target.closest('.dup-btn');
+    if (editBtn) {
+      e.preventDefault();
+      var id = parseInt(editBtn.getAttribute('data-id'), 10);
+      var tool = tools.find(function(t) { return t.id === id; });
+      if (tool) openModal(tool);
+    } else if (dupBtn) {
+      e.preventDefault();
+      mmDuplicate(parseInt(dupBtn.getAttribute('data-id'), 10));
+    } else if (hideBtn) {
+      e.preventDefault();
+      var id2 = parseInt(hideBtn.getAttribute('data-id'), 10);
+      tools = tools.map(function(t) {
+        if (t.id === id2) {
+          var st = toolStatusOf(t);
+          t.status = st === 'published' ? 'draft' : 'published';
+          t.hidden = t.status !== 'published';
+          t.updatedAt = Date.now();
+        }
+        return t;
+      });
+      saveToolsToStorage(); renderGrid(); mmRenderAll();
+    } else if (deleteBtn) {
+      e.preventDefault();
+      var id3 = parseInt(deleteBtn.getAttribute('data-id'), 10);
+      if (confirm('Are you sure you want to delete this tool?')) {
+        tools = tools.filter(function(t) { return t.id !== id3; });
+        saveToolsToStorage(); renderGrid(); mmRenderAll();
+      }
+    }
+  });
+  /* ============================================================
+     ⭐ NEW: DATA IMPORT & RESTORE — ENHANCED FEATURES
+     ============================================================ */
+
+  /* --- (4) VALIDATION --- */
+  function validateBackup(data) {
+    var errors = [];
+    var warnings = [];
+    var info = { hasTools: false, hasSettings: false, hasAnalytics: false, hasFavorites: false };
+
+    if (!data || typeof data !== 'object' || Array.isArray(data)) {
+      return { valid: false, errors: ['File does not contain a valid JSON object.'], warnings: [], info: info, data: data };
+    }
+
+    // Version checks
+    if (data.schemaVersion !== undefined) {
+      if (typeof data.schemaVersion !== 'number') warnings.push('Schema version field is not a number.');
+      else if (data.schemaVersion > SCHEMA_VERSION) warnings.push('This backup was made with a newer schema version (v' + data.schemaVersion + '). Some data may not be compatible with v' + SCHEMA_VERSION + '.');
+    } else {
+      warnings.push('No schema version found — treating as a legacy backup.');
+    }
+
+    // Per-section type validation
+    if (data.tools !== undefined) {
+      if (!Array.isArray(data.tools)) errors.push('"tools" must be an array.');
+      else if (data.tools.some(function(t) { return !t || typeof t !== 'object'; }))
+        errors.push('One or more tools in the backup are not valid objects.');
+      else info.hasTools = true;
+    }
+    if (data.settings !== undefined) {
+      if (typeof data.settings !== 'object' || Array.isArray(data.settings)) errors.push('"settings" must be an object.');
+      else info.hasSettings = true;
+    }
+    if (data.analytics !== undefined) {
+      if (typeof data.analytics !== 'object' || Array.isArray(data.analytics)) errors.push('"analytics" must be an object.');
+      else info.hasAnalytics = true;
+    }
+    if (data.favorites !== undefined) {
+      if (!Array.isArray(data.favorites)) errors.push('"favorites" must be an array.');
+      else info.hasFavorites = true;
+    }
+
+    if (!info.hasTools && !info.hasSettings && !info.hasAnalytics && !info.hasFavorites) {
+      errors.push('No recognizable data sections (tools/settings/analytics/favorites) were found.');
+    }
+
+    return { valid: errors.length === 0, errors: errors, warnings: warnings, info: info, data: data };
+  }
+
+  /* --- (3) AUTO SAFETY BACKUP --- */
+  function createSafetyBackup() {
+    try {
+      var backup = {
+        schemaVersion: SCHEMA_VERSION,
+        appVersion: APP_VERSION,
+        exportDate: new Date().toISOString(),
+        tools: tools,
+        settings: settings,
+        analytics: analyticsData,
+        favorites: favorites
+      };
+      localStorage.setItem('das_studio_auto_backup', JSON.stringify(backup));
+      updateSafetyBackupInfo();
+      return true;
+    } catch(e) {
+      console.error('Safety backup failed:', e);
+      return false;
+    }
+  }
+
+  function updateSafetyBackupInfo() {
+    var el = document.getElementById('safetyBackupInfo');
+    var rbBtn = document.getElementById('rollbackBtn');
+    if (!el) return;
+    try {
+      var stored = localStorage.getItem('das_studio_auto_backup');
+      if (!stored) {
+        el.textContent = 'None available';
+        if (rbBtn) rbBtn.disabled = true;
+        return;
+      }
+      var parsed = JSON.parse(stored);
+      var when = parsed.exportDate ? new Date(parsed.exportDate).toLocaleString() : 'unknown';
+      var toolCount = parsed.tools ? parsed.tools.length : 0;
+      el.textContent = when + ' (' + toolCount + ' tools)';
+      if (rbBtn) rbBtn.disabled = false;
+    } catch(e) {
+      el.textContent = 'None available';
+      if (rbBtn) rbBtn.disabled = true;
+    }
+  }
+
+  /* --- (3b) ROLLBACK --- */
+  document.getElementById('rollbackBtn').addEventListener('click', function() {
+    var stored = localStorage.getItem('das_studio_auto_backup');
+    if (!stored) { alert('No safety backup found.'); return; }
+    var parsed;
+    try { parsed = JSON.parse(stored); } catch(e) { alert('Safety backup is corrupted.'); return; }
+
+    var v = validateBackup(parsed);
+    if (!v.valid) { alert('Safety backup is invalid:\n\n' + v.errors.join('\n')); return; }
+
+    var when = parsed.exportDate ? new Date(parsed.exportDate).toLocaleString() : 'unknown';
+    if (!confirm('Rollback to safety backup from ' + when + '?\n\nThis will REPLACE your current data (tools: ' +
+                 (tools.length) + ' → ' + (parsed.tools ? parsed.tools.length : 0) + ').')) return;
+
+    try {
+      if (parsed.tools) tools = parsed.tools;
+      if (parsed.settings) settings = Object.assign({}, defaultSettings, parsed.settings);
+      if (parsed.analytics) analyticsData = parsed.analytics;
+      if (parsed.favorites) favorites = parsed.favorites;
+
+      saveToolsToStorage();
+      localStorage.setItem('das_studio_settings', JSON.stringify(settings));
+      localStorage.setItem('das_studio_analytics', JSON.stringify(analyticsData));
+      localStorage.setItem('das_studio_favs', JSON.stringify(favorites));
+
+      applySettingsToDOM(); renderGrid(); updateSafetyBackupInfo();
+      alert('✅ Successfully rolled back to safety backup!');
+    } catch(e) {
+      alert('Rollback failed: ' + e.message);
+    }
+  });
+
+  /* --- (1) + (2) PREVIEW MODAL — SELECTIVE RESTORE --- */
+  var pendingRestoreData = null;
+
+  function showRestorePreview(parsedData, fileName) {
+    var validation = validateBackup(parsedData);
+    if (!validation.valid) {
+      alert('❌ Invalid backup file — restore cancelled:\n\n• ' + validation.errors.join('\n• '));
+      return;
+    }
+
+    pendingRestoreData = { validation: validation, fileName: fileName };
+
+    var d = parsedData;
+    var html = '';
+
+    // File meta
+    html += '<div style="margin-bottom:14px;">';
+    html += '<div class="preview-file-row">📁 File: <b style="color:var(--text);">' + escapeHtml(fileName) + '</b></div>';
+    if (d.exportDate) html += '<div class="preview-file-row">📅 Exported: <b style="color:var(--text);">' + escapeHtml(new Date(d.exportDate).toLocaleString()) + '</b></div>';
+    if (d.appVersion) html += '<div class="preview-file-row">📌 App Version: <b style="color:var(--text);">' + escapeHtml(d.appVersion) + '</b></div>';
+    if (d.schemaVersion !== undefined) html += '<div class="preview-file-row">🔧 Schema: <b style="color:var(--text);">v' + escapeHtml(String(d.schemaVersion)) + '</b></div>';
+    html += '</div>';
+
+    // Warnings
+    if (validation.warnings.length > 0) {
+      html += '<div class="preview-warning-box">⚠️ <b>Warnings:</b><br>• ' + validation.warnings.map(escapeHtml).join('<br>• ') + '</div>';
+    }
+
+    // Section checkboxes
+    html += '<div style="margin-bottom:12px;font-size:13px;font-weight:600;color:var(--text);">📋 Select what to restore:</div>';
+    var sections = [];
+    if (validation.info.hasTools) sections.push({ key: 'tools', label: '🛠️ Tools', desc: d.tools.length + ' tool(s) in backup', def: true });
+    if (validation.info.hasSettings) sections.push({ key: 'settings', label: '⚙️ Site Settings', desc: Object.keys(d.settings).length + ' setting field(s)', def: true });
+    if (validation.info.hasAnalytics) sections.push({ key: 'analytics', label: '📊 Analytics', desc: (d.analytics.visits || 0) + ' visits recorded', def: false });
+    if (validation.info.hasFavorites) sections.push({ key: 'favorites', label: '❤️ Favorites', desc: d.favorites.length + ' favorite tool(s)', def: false });
+
+    html += '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:14px;" id="previewSectionsWrap">';
+    sections.forEach(function(s) {
+      html += '<label class="preview-section-label">' +
+              '<input type="checkbox" class="restore-section-cb" data-key="' + s.key + '" ' + (s.def ? 'checked' : '') + '>' +
+              '<div><b>' + s.label + '</b><br><span style="color:var(--muted);font-size:12px;">' + escapeHtml(s.desc) + '</span></div>' +
+              '</label>';
+    });
+    html += '</div>';
+
+    // Auto-backup notice
+    html += '<div class="preview-info-box">💾 A <b>safety backup</b> of your current data will be created automatically before restore — you can rollback anytime from the Danger Zone.</div>';
+
+    // Current state summary
+    html += '<div style="font-size:12px;color:var(--muted);margin-top:8px;">📦 <b>Current state:</b> ' + tools.length + ' tools · ' + Object.keys(settings).length + ' settings · ' + (analyticsData.visits || 0) + ' visits · ' + favorites.length + ' favorites</div>';
+
+    document.getElementById('previewContent').innerHTML = html;
+    document.getElementById('restorePreviewModal').classList.add('active');
+
+    // Wire change events
+    var wrap = document.getElementById('previewSectionsWrap');
+    if (wrap) {
+      wrap.addEventListener('change', updateConfirmState);
+      // Also add a one-time listener on the modal so newly generated checkboxes work
+    }
+    var content = document.getElementById('previewContent');
+    content.onchange = updateConfirmState;
+    updateConfirmState();
+  }
+
+  function updateConfirmState() {
+    var btn = document.getElementById('previewConfirmBtn');
+    var checked = document.querySelectorAll('.restore-section-cb:checked');
+    if (btn) btn.disabled = checked.length === 0;
+  }
+
+  document.getElementById('previewCancelBtn').addEventListener('click', function() {
+    document.getElementById('restorePreviewModal').classList.remove('active');
+    pendingRestoreData = null;
+  });
+  document.getElementById('previewModalClose').addEventListener('click', function() {
+    document.getElementById('restorePreviewModal').classList.remove('active');
+    pendingRestoreData = null;
+  });
+
+  document.getElementById('previewConfirmBtn').addEventListener('click', function() {
+    if (!pendingRestoreData) return;
+    var data = pendingRestoreData.validation.data;
+
+    var checked = document.querySelectorAll('.restore-section-cb:checked');
+    var selected = Array.prototype.map.call(checked, function(cb) { return cb.getAttribute('data-key'); });
+    if (selected.length === 0) { alert('Please select at least one section to restore.'); return; }
+
+    // (3) Auto-backup before restore
+    if (!createSafetyBackup()) {
+      if (!confirm('Failed to create safety backup. Continue restoring anyway?')) return;
+    }
+
+    var applied = [];
+    try {
+      if (selected.indexOf('tools') !== -1 && data.tools) {
+        tools = data.tools;
+        saveToolsToStorage();
+        applied.push('Tools (' + data.tools.length + ')');
+      }
+      if (selected.indexOf('settings') !== -1 && data.settings) {
+        settings = Object.assign({}, defaultSettings, data.settings);
+        localStorage.setItem('das_studio_settings', JSON.stringify(settings));
+        applied.push('Settings');
+      }
+      if (selected.indexOf('analytics') !== -1 && data.analytics) {
+        analyticsData = data.analytics;
+        localStorage.setItem('das_studio_analytics', JSON.stringify(analyticsData));
+        applied.push('Analytics');
+      }
+      if (selected.indexOf('favorites') !== -1 && data.favorites) {
+        favorites = data.favorites;
+        localStorage.setItem('das_studio_favs', JSON.stringify(favorites));
+        applied.push('Favorites');
+      }
+
+      applySettingsToDOM();
+      renderGrid();
+      updateSafetyBackupInfo();
+
+      document.getElementById('restorePreviewModal').classList.remove('active');
+      pendingRestoreData = null;
+
+      alert('✅ Restore successful!\n\nRestored: ' + applied.join(', ') +
+            '\n\n💾 A safety backup of your previous data was created. You can rollback from the Data section if needed.');
+    } catch(err) {
+      alert('❌ Restore failed: ' + err.message);
+    }
+  });
+
+  /* --- (5) FACTORY RESET --- */
+  document.getElementById('factoryResetBtn').addEventListener('click', function() {
+    if (!confirm('⚠️ FACTORY RESET\n\nThis will PERMANENTLY DELETE:\n• All custom tools\n• All site settings\n• All analytics data\n• All favorites\n• All feedback messages\n\nThe site will be restored to its original default template.\n\nContinue?')) return;
+
+    if (!confirm('⚠️ FINAL WARNING — THIS CANNOT BE UNDONE\n\nA safety backup will still be created in case you change your mind.\n\nClick OK to CONFIRM the factory reset.')) return;
+
+    // (3) Preserve safety backup
+    createSafetyBackup();
+
+    try {
+      localStorage.removeItem('das_studio_tools');
+      localStorage.removeItem('das_studio_settings');
+      localStorage.removeItem('das_studio_analytics');
+      localStorage.removeItem('das_studio_favs');
+      localStorage.removeItem('das_studio_feedbacks');
+      localStorage.removeItem('das_studio_notice_dismissed');
+    } catch(e) {}
+
+    alert('✅ Factory reset complete. The page will reload with default settings.');
+    window.location.reload();
+  });
+
+  /* --- EXPORT (with version metadata) --- */
+  document.getElementById('exportBackupBtn').addEventListener('click', function() {
+    var backupObj = {
+      schemaVersion: SCHEMA_VERSION,
+      appVersion: APP_VERSION,
+      exportDate: new Date().toISOString(),
+      tools: tools,
+      settings: settings,
+      analytics: analyticsData,
+      favorites: favorites
+    };
+    var blob = new Blob([JSON.stringify(backupObj, null, 2)], { type: 'application/json' });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'das_studio_backup_' + new Date().toISOString().slice(0, 10) + '.json';
+    a.click();
+    setTimeout(function() { URL.revokeObjectURL(url); }, 1500);
+  });
+
+  /* --- IMPORT (triggers preview modal) --- */
+  document.getElementById('importFile').addEventListener('change', function(e) {
+    var file = e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function(evt) {
+      var parsed;
+      try {
+        parsed = JSON.parse(evt.target.result);
+      } catch(err) {
+        alert('❌ Invalid JSON file.\n\n' + err.message);
+        e.target.value = '';
+        return;
+      }
+      showRestorePreview(parsed, file.name);
+      e.target.value = ''; // allow re-selecting same file later
+    };
+    reader.readAsText(file);
+  });
+
+  /* ============================================================
+     RESET ANALYTICS / CLEAR FEEDBACK
+     ============================================================ */
+  document.getElementById('resetAnalyticsBtn').addEventListener('click', function() {
+    if (!confirm('Clear all analytics data?\n\nVisits, unique visitors, sessions, clicks, searches, conversions and history will be deleted.')) return;
+    analyticsData = { visits: 1, uniques: 0, clicks: {}, queries: {}, devices: {}, browsers: {},
+      referrers: {}, filterClicks: {}, totalDuration: 0, daily: {}, sessions: [], geo: {}, pages: {},
+      conversions: {}, firstSeen: Date.now() };
+    try { localStorage.removeItem('das_counted_day'); } catch(e) {}
+    anSession();
+    anPageView('Home');
+    anSave();
+    renderAnalytics();
+  });
+  document.getElementById('clearFeedbackBtn').addEventListener('click', function() {
+    if (confirm('Delete all feedback messages?')) {
+      localStorage.removeItem('das_studio_feedbacks');
+      renderFeedbacks();
+    }
+  });
+
+  /* ============================================================
+     USER FEEDBACK MODAL (submit form + attachment capture)
+     ============================================================ */
+  var fbModal = document.getElementById('userFeedbackModal');
+  document.getElementById('openFeedbackModalBtn').addEventListener('click', function() { fbModal.classList.add('active'); });
+  document.getElementById('feedbackModalClose').addEventListener('click', function() { fbModal.classList.remove('active'); });
+  document.getElementById('feedbackCancel').addEventListener('click', function() { fbModal.classList.remove('active'); });
+
+  function fbAttachPreviewHtml() {
+    if (!fbAttachmentDraft) return '';
+    var html = '';
+    if (/^image\//.test(fbAttachmentDraft.type || '')) html += '<img src="' + fbAttachmentDraft.data + '" alt="preview">';
+    html += '<div class="fb-attach-meta">📎 ' + escapeHtml(fbAttachmentDraft.name) + ' · ' +
+      fbFmtSize(fbAttachmentDraft.size) + ' <button type="button" id="fbAttachRemove">Remove</button></div>';
+    return html;
+  }
+  function fbRenderAttachPreview() {
+    var prev = document.getElementById('fbAttachPreview');
+    if (!prev) return;
+    prev.innerHTML = fbAttachPreviewHtml();
+    var rm = document.getElementById('fbAttachRemove');
+    if (rm) rm.addEventListener('click', function() {
+      fbAttachmentDraft = null;
+      var inp = document.getElementById('fbAttachment');
+      if (inp) inp.value = '';
+      fbRenderAttachPreview();
+    });
+  }
+
+  document.getElementById('fbAttachment').addEventListener('change', function() {
+    var file = this.files && this.files[0];
+    if (!file) { fbAttachmentDraft = null; fbRenderAttachPreview(); return; }
+    if (file.size > 3 * 1024 * 1024) {
+      alert('That file is too large. Please attach a file under 3 MB.');
+      this.value = '';
+      fbAttachmentDraft = null;
+      fbRenderAttachPreview();
+      return;
+    }
+    var reader = new FileReader();
+    if (/^image\//.test(file.type)) {
+      reader.onload = function(ev) {
+        var raw = ev.target.result;
+        var img = new Image();
+        img.onload = function() {
+          try {
+            var max = 1400, w = img.width, h = img.height;
+            if (w > max || h > max) {
+              var ratio = Math.min(max / w, max / h);
+              w = Math.round(w * ratio); h = Math.round(h * ratio);
+            }
+            var canvas = document.createElement('canvas');
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            var compressed = canvas.toDataURL('image/jpeg', 0.82);
+            var use = (compressed.length < raw.length) ? compressed : raw;
+            fbAttachmentDraft = {
+              name: file.name,
+              type: (use === compressed) ? 'image/jpeg' : file.type,
+              size: Math.round(use.length * 0.75),
+              data: use
+            };
+          } catch (err) {
+            fbAttachmentDraft = { name: file.name, type: file.type, size: file.size, data: raw };
+          }
+          fbRenderAttachPreview();
+        };
+        img.onerror = function() {
+          fbAttachmentDraft = { name: file.name, type: file.type, size: file.size, data: raw };
+          fbRenderAttachPreview();
+        };
+        img.src = raw;
+      };
+      reader.readAsDataURL(file);
+    } else {
+      reader.onload = function(ev) {
+        fbAttachmentDraft = {
+          name: file.name,
+          type: file.type || 'application/octet-stream',
+          size: file.size,
+          data: ev.target.result
+        };
+        fbRenderAttachPreview();
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+
+  document.getElementById('userFeedbackForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var name = document.getElementById('fbName').value.trim();
+    var email = document.getElementById('fbEmail').value.trim();
+    var type = document.getElementById('fbType').value;
+    var priority = document.getElementById('fbPriority').value;
+    var msg = document.getElementById('fbMessage').value.trim();
+    var hp = document.getElementById('fbHp');
+    if (!msg) return;
+    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) {
+      alert('Please enter a valid email address, or leave the field empty.');
+      document.getElementById('fbEmail').focus();
+      return;
+    }
+    var feedbacks = loadFeedbacks();
+    var ticket = fbTicketNext();
+    var record = {
+      id: 'fb_' + Date.now() + '_' + Math.floor(Math.random() * 900 + 100),
+      ticket: ticket,
+      name: name,
+      email: email,
+      type: type,
+      priority: priority,
+      message: msg,
+      date: new Date().toLocaleString(),
+      createdAt: Date.now(),
+      status: 'pending',
+      attachment: fbAttachmentDraft || null,
+      replies: [],
+      thread: [],
+      unread: true,
+      assignedTo: '',
+      spam: false,
+      spamScore: 0,
+      spamReasons: []
+    };
+    var scan = fbSpamScore({ id: record.id, message: msg, honeypot: hp ? hp.value : '' }, feedbacks);
+    record.spamScore = scan.score;
+    record.spamReasons = scan.reasons;
+    record.spam = scan.spam;
+
+    feedbacks.push(record);
+    var saved = saveFeedbacks(feedbacks);
+    if (!saved && record.attachment) {
+      record.attachment = null;
+      feedbacks[feedbacks.length - 1] = record;
+      saved = saveFeedbacks(feedbacks);
+      if (saved) alert('Your message was saved, but the attachment did not fit in browser storage. Please email the file to support instead.');
+    }
+    if (!saved) {
+      alert('Sorry — the browser storage is full, so your message could not be saved. Please email us directly.');
+      return;
+    }
+
+    var cfg = fbEmailConfig();
+    if (cfg.autoConfirm && email && !record.spam) {
+      var siteName = settings.title || 'our site';
+      var subject = String(cfg.confirmSubject || 'We received your message ({ticket})')
+        .replace(/\{ticket\}/g, ticket).replace(/\{site\}/g, siteName);
+      var bodyText = String(cfg.confirmBody || '')
+        .replace(/\{name\}/g, name || 'there')
+        .replace(/\{ticket\}/g, ticket)
+        .replace(/\{type\}/g, fbTypeMeta(type).label)
+        .replace(/\{site\}/g, siteName);
+      fbSendEmail({ to: email, subject: subject, text: bodyText, ticket: ticket });
+    }
+
+    if (typeof anTrackConversion === 'function') anTrackConversion('feedback_submitted');
+    if (record.spam) {
+      alert('Thank you. Your message was received as ticket ' + ticket + '.');
+    } else {
+      alert('Thank you! Your ' + fbTypeMeta(type).label.toLowerCase() + ' has been received.\n\nTicket: ' + ticket +
+        (email && cfg.autoConfirm && cfg.provider !== 'none' ? '\nA confirmation email is on its way.' : '') +
+        '\nKeep this number to follow up.');
+    }
+    this.reset();
+    fbAttachmentDraft = null;
+    fbRenderAttachPreview();
+    fbModal.classList.remove('active');
+    renderFeedbacks();
+  });
+  /* ============================================================
+     SEARCH SHORTCUT
+     ============================================================ */
+  document.addEventListener('keydown', function(e) {
+    if ((e.ctrlKey && e.key.toLowerCase() === 'k') ||
+        (e.key === '/' && document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA')) {
+      e.preventDefault();
+      search.focus();
+    }
+  });
+
+  /* ============================================================
+     SEARCH + FILTER
+     ============================================================ */
+  var chips = Array.prototype.slice.call(document.querySelectorAll('.chip'));
+  var search = document.getElementById('search');
+  var empty = document.getElementById('empty');
+  var activeFilter = 'all';
+
+  function applyFilters() {
+    var cards = Array.prototype.slice.call(document.querySelectorAll('#grid .card'));
+    var q = search.value.trim().toLowerCase();
+    var visible = 0;
+    cards.forEach(function(card) {
+      var cat = card.getAttribute('data-category') || '';
+      var keys = card.getAttribute('data-keywords') || '';
+      var id = parseInt(card.getAttribute('data-id'), 10);
+      var hay = (card.textContent + ' ' + keys).toLowerCase();
+      var okCat = activeFilter === 'all' || (activeFilter === 'fav' ? isFavorite(id) : cat === activeFilter);
+      var okQ = q === '' || hay.indexOf(q) !== -1;
+      var show = okCat && okQ;
+      card.classList.toggle('hidden', !show);
+      if (show) visible++;
+    });
+    empty.style.display = visible ? 'none' : 'block';
+  }
+
+  chips.forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      chips.forEach(function(c) { c.classList.remove('active'); });
+      chip.classList.add('active');
+      activeFilter = chip.getAttribute('data-filter');
+      trackFilterClick(chip.textContent.trim());
+      applyFilters();
+    });
+  });
+
+  var searchTimer = null;
+  search.addEventListener('input', function() {
+    applyFilters();
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(function() { trackSearchQuery(search.value.trim().toLowerCase()); }, 1200);
+  });
+
+
+  /* ============================================================
+     PRO ADMIN MODULE — Dashboard, Tool Manager, SEO, Security, Logs, System
+     (client-side only: data lives in this browser's localStorage)
+     ============================================================ */
+  var AUTH_KEY = 'das_studio_auth', AUDIT_KEY = 'das_studio_audit', LOGIN_KEY = 'das_studio_logins', LOCK_KEY = 'das_studio_lock', ERR_KEY = 'das_studio_errors';
+  var DEFAULT_HASH = '501d4a2b16227630101a37714f19f67417755b7e6b44e902cd2e4e1dd10c004b';
+  var SESSION_MS = 30 * 60 * 1000, MAX_FAILS = 5, LOCK_MS = 5 * 60 * 1000;
+  var lastActivity = Date.now(), sessionStart = 0;
+
+  function lsGet(k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }
+  function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function nowStr() { return new Date().toLocaleString(); }
+  function pushLog(key, entry, max) { var a = lsGet(key, []); a.unshift(entry); lsSet(key, a.slice(0, max || 300)); }
+  function logAct(action, detail) { pushLog(AUDIT_KEY, { t: Date.now(), a: action, d: detail || '' }, 300); }
+  function downloadText(name, text, mime) {
+    if (typeof anTrackConversion === 'function') anTrackConversion('download');
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([text], { type: mime || 'text/plain' }));
+    a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 3000);
+  }
+  function csvCell(v) { return '"' + String(v == null ? '' : v).replace(/"/g, '""') + '"'; }
+
+  /* pure-JS SHA-256 fallback (crypto.subtle is unavailable on plain http) */
+  function sha256js(s) {
+    function r(n, x) { return (x >>> n) | (x << (32 - n)); }
+    var K = [], H = [], p = 2, c = 0, i, j;
+    function isP(n) { for (var q = 2; q * q <= n; q++) if (n % q === 0) return false; return true; }
+    for (; c < 64; p++) if (isP(p)) { if (c < 8) H[c] = (Math.pow(p, .5) * 4294967296) | 0; K[c++] = (Math.pow(p, 1 / 3) * 4294967296) | 0; }
+    var bytes = unescape(encodeURIComponent(s)), l = bytes.length, w = [];
+    for (i = 0; i < l; i++) w[i >> 2] |= bytes.charCodeAt(i) << (24 - (i % 4) * 8);
+    w[l >> 2] |= 0x80 << (24 - (l % 4) * 8); w[(((l + 8) >> 6) + 1) * 16 - 1] = l * 8;
+    for (j = 0; j < w.length; j += 16) {
+      var W = w.slice(j, j + 16), h = H.slice(0), t1, t2;
+      for (i = 0; i < 64; i++) {
+        if (i >= 16) { var a0 = W[i - 15], a1 = W[i - 2]; W[i] = (W[i - 16] + (r(7, a0) ^ r(18, a0) ^ (a0 >>> 3)) + W[i - 7] + (r(17, a1) ^ r(19, a1) ^ (a1 >>> 10))) | 0; }
+        t1 = (h[7] + (r(6, h[4]) ^ r(11, h[4]) ^ r(25, h[4])) + ((h[4] & h[5]) ^ (~h[4] & h[6])) + K[i] + W[i]) | 0;
+        t2 = ((r(2, h[0]) ^ r(13, h[0]) ^ r(22, h[0])) + ((h[0] & h[1]) ^ (h[0] & h[2]) ^ (h[1] & h[2]))) | 0;
+        h = [(t1 + t2) | 0, h[0], h[1], h[2], (h[3] + t1) | 0, h[4], h[5], h[6]];
+      }
+      for (i = 0; i < 8; i++) H[i] = (H[i] + h[i]) | 0;
+    }
+    return H.map(function (x) { return ('00000000' + (x >>> 0).toString(16)).slice(-8); }).join('');
+  }
+  function hashPass(pass) {
+    var s = 'das_studio_v1::' + pass;
+    if (window.crypto && crypto.subtle && window.TextEncoder) {
+      return crypto.subtle.digest('SHA-256', new TextEncoder().encode(s)).then(function (b) {
+        return Array.prototype.map.call(new Uint8Array(b), function (x) { return ('0' + x.toString(16)).slice(-2); }).join('');
+      });
+    }
+    return Promise.resolve(sha256js(s));
+  }
+  function storedHash() { var a = lsGet(AUTH_KEY, null); return (a && a.hash) || DEFAULT_HASH; }
+  function usingDefaultPass() { return storedHash() === DEFAULT_HASH; }
+
+  function adminLogout(reason) {
+    if (!isAdmin) return;
+    isAdmin = false; adminBtn.textContent = '🔒 Admin Panel'; modal.classList.remove('active');
+    logAct('logout', reason || 'Manual logout'); renderGrid();
+  }
+  function adminLoginCore(pass) {
+    var lock = lsGet(LOCK_KEY, { fails: 0, until: 0 });
+    if (lock.until > Date.now()) { admLoginError('Too many failed attempts. Try again in ' + Math.ceil((lock.until - Date.now()) / 60000) + ' minute(s).'); return; }
+    hashPass(pass).then(function (h) {
+      if (h === storedHash()) {
+        var secCfg = secGet();
+        function finishLogin() {
+          lsSet(LOCK_KEY, { fails: 0, until: 0 });
+          isAdmin = true; sessionStart = lastActivity = Date.now(); adminBtn.textContent = '🔓 Exit Admin';
+          pushLog(LOGIN_KEY, { t: Date.now(), ok: true, ua: getDeviceInfo ? JSON.stringify(getDeviceInfo()).slice(0, 80) : navigator.userAgent.slice(0, 80) }, 100);
+          try { sessTouch(); } catch (e) {}
+          logAct('login', 'Successful login'); renderGrid();
+          if (usingDefaultPass()) alert('⚠️ You are still using the default password. Open Admin Panel → 🔐 Security and change it now.');
+        }
+        if (secCfg.ipEnforce && secCfg.ipAllow.length) {
+          if (!secCfg.lastIp) { alert('IP restriction is enabled but your IP has not been detected yet.\n\nOpen Security → “Check my IP” once, then try again.'); return; }
+          if (secCfg.ipAllow.indexOf(secCfg.lastIp) === -1) {
+            secAlert('login', 'Blocked login from IP ' + secCfg.lastIp);
+            alert('Access denied for IP ' + secCfg.lastIp + '.');
+            return;
+          }
+        }
+        if (secCfg.twoFA && secCfg.twoFA.enabled) {
+          var tfaMethod = secCfg.twoFA.method || 'totp';
+          if (tfaMethod === 'email') {
+            if (!secCfg.otp || !secCfg.otp.until || Date.now() > secCfg.otp.until) {
+              var fresh = String(Math.floor(100000 + Math.random() * 900000));
+              secCfg.otp = { code: fresh, until: Date.now() + 5 * 60000, tries: 0 };
+              secSave(secCfg);
+              if (settings.supportEmail) {
+                fbSendEmail({ to: settings.supportEmail, subject: 'Your DAS Studio login code',
+                  text: 'Your one-time login code is ' + fresh + ' (valid 5 minutes).' });
+              }
+            }
+            var otpIn = prompt('Two-factor authentication\n\nEnter the 6-digit code sent to ' + (settings.supportEmail || 'your email') + ':');
+            if (otpIn === null) return;
+            if (String(otpIn).trim() !== String(secCfg.otp.code)) {
+              secAlert('login', 'Failed email OTP');
+              alert('Incorrect or expired code.');
+              return;
+            }
+            secCfg.otp = { code: '', until: 0, tries: 0 };
+            secSave(secCfg);
+          } else if (secCfg.twoFA.secret) {
+            var tfaCode = prompt('Two-factor authentication\n\nEnter the 6-digit code from your authenticator app:');
+            if (tfaCode === null) return;
+            if (!totpVerify(secCfg.twoFA.secret, tfaCode)) {
+              var bcodes = secCfg.twoFA.backup || [];
+              if (bcodes.indexOf(String(tfaCode).trim()) === -1) {
+                secAlert('login', 'Failed two-factor code');
+                alert('Incorrect code.');
+                return;
+              }
+              secCfg.twoFA.backup = bcodes.filter(function (x) { return x !== String(tfaCode).trim(); });
+              secSave(secCfg);
+              secAlert('login', 'Backup code used');
+            }
+          }
+        }
+        finishLogin();
+      } else {
+        lock.fails = (lock.fails || 0) + 1;
+        if (lock.fails >= MAX_FAILS) { lock.until = Date.now() + LOCK_MS; lock.fails = 0; }
+        lsSet(LOCK_KEY, lock);
+        pushLog(LOGIN_KEY, { t: Date.now(), ok: false, ua: navigator.userAgent.slice(0, 80) }, 100);
+        admLoginError(lock.until ? 'Too many failed attempts. Login locked for 5 minutes.' : 'Incorrect password. Attempt ' + lock.fails + ' of ' + MAX_FAILS + '.');
+      }
+    });
+  }
+  function admLoginBox() {
+    var el = document.getElementById('admLogin');
+    if (el) return el;
+    el = document.createElement('div'); el.id = 'admLogin'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'alTitle');
+    el.innerHTML = '<form class="al-box" id="alForm" autocomplete="on"><h2 id="alTitle">🔐 Admin sign in</h2><p>Enter the admin password to manage tools, settings and messages.</p>' +
+      '<div class="al-field"><input type="email" id="alEmail" autocomplete="username" placeholder="Admin email" aria-label="Admin email" style="width:100%"></div><div class="al-field"><input type="password" id="alPass" autocomplete="current-password" placeholder="Password" aria-label="Admin password" required>' +
+      '<button type="button" class="al-eye" id="alEye" aria-label="Show password">👁️</button></div><div class="al-err" id="alErr" role="alert"></div>' +
+      '<div class="al-row"><button type="button" id="alCancel">Cancel</button><button type="submit" class="go" id="alGo">Sign in</button></div></form>';
+    document.body.appendChild(el);
+    var inp = el.querySelector('#alPass');
+    var mailInp = el.querySelector('#alEmail');
+    try { var bcfg = JSON.parse(localStorage.getItem('das_studio_backend') || '{}'); mailInp.value = bcfg.email || ''; }
+    catch (e2) { mailInp.value = ''; }
+    el.querySelector('#alEye').onclick = function () { var show = inp.type === 'password'; inp.type = show ? 'text' : 'password'; this.setAttribute('aria-label', show ? 'Hide password' : 'Show password'); inp.focus(); };
+    el.querySelector('#alCancel').onclick = function () { el.classList.remove('show'); };
+    el.addEventListener('mousedown', function (e) { if (e.target === el) el.classList.remove('show'); });
+    el.addEventListener('keydown', function (e) { if (e.key === 'Escape') el.classList.remove('show'); });
+    el.querySelector('#alForm').onsubmit = function (e) {
+      e.preventDefault(); var v = inp.value; if (!v) return;
+      el.classList.remove('show'); inp.value = ''; inp.type = 'password'; adminLoginCore(v, (mailInp && mailInp.value || '').trim());
+    };
+    return el;
+  }
+  function admLoginError(msg) {
+    var el = admLoginBox(); el.classList.add('show');
+    el.querySelector('#alErr').textContent = msg || '';
+    var i = el.querySelector('#alPass'); i.value = ''; setTimeout(function () { i.focus(); }, 30);
+  }
+  function adminLogin() { admLoginError(''); }
+  ['click', 'keydown', 'mousemove'].forEach(function (ev) { document.addEventListener(ev, function () { lastActivity = Date.now(); }, { passive: true }); });
+  setInterval(function () { if (isAdmin && Date.now() - lastActivity > SESSION_MS) { alert('Session expired due to inactivity.'); adminLogout('Session timeout'); } }, 15000);
+
+  /* runtime error capture for System Health */
+  window.addEventListener('error', function (e) { pushLog(ERR_KEY, { t: Date.now(), m: String(e.message || 'Error').slice(0, 200), s: (e.filename || '').split('/').pop() + ':' + (e.lineno || '') }, 50); });
+  window.addEventListener('unhandledrejection', function (e) { pushLog(ERR_KEY, { t: Date.now(), m: 'Promise: ' + String(e.reason).slice(0, 180), s: '' }, 50); });
+
+  /* audit hooks */
+  var _saveTools = saveToolsToStorage;
+  saveToolsToStorage = function () { _saveTools(); logAct('tools', 'Tools saved (' + tools.length + ' total)'); };
+  document.getElementById('settingsForm').addEventListener('submit', function () { logAct('settings', 'Site settings saved'); });
+
+  /* ---- UI shell: inject styles, tab buttons, containers ---- */
+  var st = document.createElement('style');
+  st.textContent = '.xm-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px}.xm-row input,.xm-row select{padding:7px 10px;border-radius:8px;border:1px solid var(--border);background:var(--card);color:var(--text);font:inherit}' +
+    '.xm-badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700}.xm-ok{background:rgba(34,197,94,.15);color:#22c55e}.xm-bad{background:rgba(239,68,68,.15);color:#ef4444}.xm-warn{background:rgba(245,158,11,.15);color:#f59e0b}' +
+    '.xm-alert{padding:10px 12px;border-radius:10px;margin-bottom:8px;font-size:13px;border:1px solid var(--border)}.xm-alert.warn{border-color:rgba(245,158,11,.5);background:rgba(245,158,11,.08)}.xm-alert.bad{border-color:rgba(239,68,68,.5);background:rgba(239,68,68,.08)}.xm-alert.ok{border-color:rgba(34,197,94,.5);background:rgba(34,197,94,.08)}' +
+    '.xm-bar{height:10px;border-radius:99px;background:var(--border);overflow:hidden}.xm-bar>i{display:block;height:100%;background:linear-gradient(90deg,var(--accent-grad-1),var(--accent-grad-2))}.xm-scroll{max-height:260px;overflow:auto;border:1px solid var(--border);border-radius:8px;margin-bottom:12px}.xm-note{font-size:12px;color:var(--muted);margin:6px 0 12px}';
+  document.head.appendChild(st);
+
+  var NEW_TABS = [
+    ['tabDashBtn', 'tabDash', '🏠 Dashboard'], ['tabTMBtn', 'tabTM', '🧰 Tool Manager'], ['tabSeoBtn', 'tabSeo', '🔍 SEO'],
+    ['tabSecBtn', 'tabSec', '🔐 Security'], ['tabLogBtn', 'tabLog', '🧾 Activity Logs'], ['tabSysBtn', 'tabSys', '🩺 System Health']
+  ];
+  var tabNav = document.querySelector('#adminModal .tab-nav'), modalBox = document.querySelector('#adminModal .modal');
+  NEW_TABS.forEach(function (t) {
+    var b = document.createElement('button'); b.className = 'tab-btn'; b.id = t[0]; b.type = 'button'; b.textContent = t[2]; tabNav.appendChild(b);
+    var c = document.createElement('div'); c.className = 'tab-content'; c.id = t[1]; modalBox.appendChild(c);
+    tabBtns.push(t[0]); tabContents.push(t[1]);
+  });
+  var tabRenderers = {};
+  NEW_TABS.forEach(function (t) { document.getElementById(t[0]).addEventListener('click', function () { switchTab(t[0], t[1]); tabRenderers[t[1]](); }); });
+  function $(id) { return document.getElementById(id); }
+  var STAT_META = { 'Total Tools': ['🧰', '#6366f1'], 'Published': ['✅', '#10b981'], 'Hidden': ['🙈', '#94a3b8'], 'Total Visits': ['👁️', '#3b82f6'],
+    'Tool Clicks': ['🖱️', '#ec4899'], 'Pending Feedback': ['⏳', '#f59e0b'], 'Total Feedback': ['💬', '#8b5cf6'], 'Favorites': ['❤️', '#ef4444'] };
+  function stat(label, val) {
+    var m = STAT_META[label];
+    if (!m) return '<div class="stat-card"><h4>' + label + '</h4><div>' + val + '</div></div>';
+    return '<div class="stat-card" style="--tone:' + m[1] + '"><span class="stat-ico" aria-hidden="true">' + m[0] + '</span><div class="stat-meta"><h4>' + label + '</h4><div>' + val + '</div></div></div>';
+  }
+
+  function admCatBars() {
+    var names = { media: 'Image & Video', design: 'Design', office: 'Documents', audio: 'Audio', '3D': '3D', software: 'Software' }, c = {}, max = 1;
+    tools.forEach(function (t) { var k = t.category || 'other'; c[k] = (c[k] || 0) + 1; if (c[k] > max) max = c[k]; });
+    var keys = Object.keys(c).sort(function (a, b) { return c[b] - c[a]; });
+    if (!keys.length) return '<div class="xm-note">No tools yet — add your first tool to see the breakdown.</div>';
+    return '<div class="adm-cats">' + keys.map(function (k) {
+      return '<div class="adm-cat"><span>' + escapeHtml(names[k] || k) + '</span><i><b style="width:' + Math.round(c[k] / max * 100) + '%"></b></i><em>' + c[k] + '</em></div>';
+    }).join('') + '</div>';
+  }
+  /* ---- Dashboard ---- */
+  tabRenderers.tabDash = function () {
+    var fbs = loadFeedbacks(), pending = fbs.filter(function (f) { return f.status === 'pending'; }).length;
+    var crit = fbs.filter(function (f) { return f.priority === 'critical' && f.status !== 'resolved' && f.status !== 'closed'; }).length;
+    var hidden = tools.filter(function (t) { return t.hidden; }).length;
+    var clicks = 0; for (var k in (analyticsData.clicks || {})) clicks += analyticsData.clicks[k].count;
+    var alerts = '';
+    if (usingDefaultPass()) alerts += '<div class="xm-alert bad">🔴 Default admin password is still in use. Change it in <b>Security</b>.</div>';
+    if (!(function(){ try { var q = lsGet('das_studio_seo', null); return q && /^G-[A-Z0-9]{6,12}$/.test(q.ga || ''); } catch (e) { return false; } })()) alerts += '<div class="xm-alert warn">🟠 Google Analytics is not active yet. Add your real GA4 Measurement ID in the SEO tab.</div>';
+    if (settings.maintenance) alerts += '<div class="xm-alert warn">🟠 Maintenance mode is ON — visitors cannot see the site.</div>';
+    if (crit) alerts += '<div class="xm-alert bad">🔴 ' + crit + ' critical feedback item(s) unresolved.</div>';
+    if (settings.headCode || settings.bodyCode) alerts += '<div class="xm-alert warn">🟠 Custom head/body code is active — review it regularly.</div>';
+    if (!alerts) alerts = '<div class="xm-alert ok">✅ No issues detected.</div>';
+    var rec = lsGet(AUDIT_KEY, []).slice(0, 6).map(function (l) { return '<tr><td>' + ssFmtDateTime(l.t) + '</td><td><b>' + escapeHtml(l.a) + '</b></td><td>' + escapeHtml(l.d) + '</td></tr>'; }).join('') || '<tr><td colspan="3">No activity yet.</td></tr>';
+    $('tabDash').innerHTML = '<div class="stats-grid">' + stat('Total Tools', tools.length) + stat('Published', tools.length - hidden) + stat('Hidden', hidden) + stat('Total Visits', analyticsData.visits || 0) + '</div>' +
+      '<div class="stats-grid">' + stat('Tool Clicks', clicks) + stat('Pending Feedback', pending) + stat('Total Feedback', fbs.length) + stat('Favorites', favorites.length) + '</div>' +
+      '<h3 class="adm-h3">⚡ Quick actions</h3><div class="adm-qa"><button type="button" onclick="admQa(\'tool\')">➕ Add a tool</button><button type="button" onclick="admQa(\'notice\')">📢 Post announcement</button><button type="button" onclick="admQa(\'user\')">👤 Add a user</button><button type="button" onclick="window.open(location.href.split(\'#\')[0],\'_blank\')">🌐 View live site</button></div>' +
+      '<h3 class="adm-h3">📂 Tools by category</h3>' + admCatBars() +
+      '<h3 class="adm-h3">⚠️ Alerts</h3>' + alerts +
+      '<h3 class="adm-h3">🕑 Recent activity</h3><div class="xm-scroll"><table class="analytics-table"><thead><tr><th>When</th><th>Action</th><th>Details</th></tr></thead><tbody>' + rec + '</tbody></table></div>' +
+      '<div class="xm-note">Session: logged in since ' + new Date(sessionStart).toLocaleTimeString() + ' · auto-logout after 30 min of inactivity.</div>';
+  };
+
+  /* ---- Tool Manager ---- */
+  var tmQuery = '', tmSel = {}, tmLinks = {};
+  function tmVisible() { var q = tmQuery.toLowerCase(); return tools.filter(function (t) { return !q || ((t.titleMain || '') + (t.titleAccent || '') + (t.category || '') + (t.keywords || '')).toLowerCase().indexOf(q) !== -1; }); }
+  function tmSelected() { return tools.filter(function (t) { return tmSel[t.id]; }); }
+  function commit(msg) { saveToolsToStorage(); renderGrid(); logAct('tools', msg); tabRenderers.tabTM(); }
+  tabRenderers.tabTM = function () { mmRender($('tabTM')); };
+
+  /* ---- SEO ---- */
+  tabRenderers.tabSeo = function () {
+    var base = location.origin && location.origin !== 'null' ? location.origin + location.pathname.replace(/[^\/]*$/, '') : 'https://your-domain.com/';
+    var seo = lsGet('das_studio_seo', { base: base, ga: '' });
+    var tl = (settings.title || '').length, dl = (settings.desc || '').length;
+    function chk(ok, txt) { return '<div class="xm-alert ' + (ok ? 'ok' : 'warn') + '">' + (ok ? '✅ ' : '⚠️ ') + txt + '</div>'; }
+    $('tabSeo').innerHTML = '<div class="settings-section-title">📋 SEO Health Check</div>' +
+      chk(tl >= 30 && tl <= 60, 'Title length: ' + tl + ' chars (ideal 30–60)') + chk(dl >= 70 && dl <= 160, 'Description length: ' + dl + ' chars (ideal 70–160)') +
+      chk(!!settings.ogImage, 'Open Graph image ' + (settings.ogImage ? 'set' : 'missing (affects social sharing previews)')) + chk(!!settings.metaKeywords, 'Meta keywords ' + (settings.metaKeywords ? 'set' : 'missing')) +
+      '<div class="settings-section-title" style="margin-top:14px">🌐 Site URL & Google Analytics</div>' +
+      '<div class="form-group"><label>Canonical base URL (with trailing slash)</label><input type="url" id="seoBase" value="' + escapeHtml(seo.base) + '"></div>' +
+      '<div class="form-group"><label>GA4 Measurement ID (G-XXXXXXXXXX)</label><input type="text" id="seoGa" value="' + escapeHtml(seo.ga) + '" placeholder="G-ABC123XYZ9"></div>' +
+      '<div class="xm-note">The GA ID is saved here for your records and for the generated snippet below. The live tag in the page <code>&lt;head&gt;</code> must also be edited by hand (or paste the snippet into Custom Head Code).</div>' +
+      '<div class="xm-row"><button class="btn-primary" id="seoSave" type="button">Save</button><button class="btn-secondary" id="seoGaCopy" type="button">Copy GA snippet</button></div>' +
+      '<div class="settings-section-title">🤖 Generated files</div>' +
+      '<div class="xm-row"><button class="btn-secondary" id="seoRobots" type="button">⬇ robots.txt</button><button class="btn-secondary" id="seoMap" type="button">⬇ sitemap.xml</button></div>' +
+      '<div class="xm-note">Upload both files to the root of your site. The sitemap lists the canonical URL plus every published tool link.</div>';
+    $('seoSave').onclick = function () {
+      var ga = $('seoGa').value.trim();
+      if (ga && !/^G-[A-Z0-9]{6,12}$/.test(ga)) return alert('Invalid GA4 ID. Format: G-XXXXXXXXXX');
+      lsSet('das_studio_seo', { base: $('seoBase').value.trim(), ga: ga }); logAct('seo', 'SEO settings saved'); alert('Saved.');
+    };
+    $('seoGaCopy').onclick = function () {
+      var ga = $('seoGa').value.trim(); if (!/^G-[A-Z0-9]{6,12}$/.test(ga)) return alert('Enter a valid GA4 ID first.');
+      var snip = '<script async src="https://www.googletagmanager.com/gtag/js?id=' + ga + '"><\/script>\n<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag("js",new Date());gtag("config","' + ga + '");<\/script>';
+      fbCopy(snip, 'GA snippet copied.');
+    };
+    $('seoRobots').onclick = function () { var b = $('seoBase').value.trim(); downloadText('robots.txt', 'User-agent: *\nAllow: /\n\nSitemap: ' + b + 'sitemap.xml\n'); logAct('seo', 'robots.txt generated'); };
+    $('seoMap').onclick = function () {
+      var b = $('seoBase').value.trim(), d = new Date().toISOString().slice(0, 10);
+      var urls = [b].concat(tools.filter(function (t) { return !t.hidden && /^https?:/.test(t.link); }).map(function (t) { return t.link; }));
+      downloadText('sitemap.xml', '<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' + urls.map(function (u) { return '  <url><loc>' + u.replace(/&/g, '&amp;') + '</loc><lastmod>' + d + '</lastmod></url>'; }).join('\n') + '\n</urlset>\n', 'application/xml'); logAct('seo', 'sitemap.xml generated');
+    };
+  };
+
+  /* ---- Security ---- */
+  tabRenderers.tabSec = function () {
+    var lg = lsGet(LOGIN_KEY, []), lock = lsGet(LOCK_KEY, { fails: 0, until: 0 });
+    var rows = lg.slice(0, 20).map(function (l) { return '<tr><td>' + ssFmtDateTime(l.t) + '</td><td><span class="xm-badge ' + (l.ok ? 'xm-ok' : 'xm-bad') + '">' + (l.ok ? 'Success' : 'Failed') + '</span></td><td style="font-size:11px">' + escapeHtml(l.ua || '') + '</td></tr>'; }).join('') || '<tr><td colspan="3">No login attempts recorded.</td></tr>';
+    var failed = lg.filter(function (l) { return !l.ok; }).length;
+    $('tabSec').innerHTML = (usingDefaultPass() ? '<div class="xm-alert bad">🔴 You are using the default password. Change it now.</div>' : '<div class="xm-alert ok">✅ Custom password is set.</div>') +
+      '<div class="stats-grid">' + stat('Failed attempts (logged)', failed) + stat('Lockout', lock.until > Date.now() ? 'Active' : 'None') + stat('Session timeout', '30 min') + '</div>' +
+      '<div class="settings-section-title">🔑 Change Admin Password</div>' +
+      '<div class="form-group"><label>Current password</label><input type="password" id="secOld" autocomplete="off"></div>' +
+      '<div class="form-group"><label>New password (min 10 chars, upper + lower + number)</label><input type="password" id="secNew" autocomplete="new-password"></div>' +
+      '<div class="form-group"><label>Confirm new password</label><input type="password" id="secNew2" autocomplete="new-password"></div>' +
+      '<div class="xm-row"><button class="btn-primary" id="secSave" type="button">Update Password</button><button class="btn-secondary" id="secOut" type="button">Force Logout</button></div>' +
+      '<div class="settings-section-title">📜 Login History</div><div class="xm-scroll"><table class="analytics-table"><thead><tr><th>Time</th><th>Result</th><th>Device</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<div class="xm-alert warn">ℹ️ <b>Important:</b> this site has no server, so the password is only hashed (SHA-256) and checked in the browser. It deters casual access but is <b>not</b> real security — anyone with DevTools can bypass it or edit localStorage. For real protection, add a backend (server-side auth, HTTP-only cookies, database).</div>';
+    $('secSave').onclick = function () {
+      var o = $('secOld').value, n = $('secNew').value, n2 = $('secNew2').value;
+      if (n !== n2) return alert('New passwords do not match.');
+      if (n.length < 10 || !/[a-z]/.test(n) || !/[A-Z]/.test(n) || !/[0-9]/.test(n)) return alert('Password must be 10+ characters with upper-case, lower-case and a number.');
+      hashPass(o).then(function (h) {
+        if (h !== storedHash()) return alert('Current password is incorrect.');
+        hashPass(n).then(function (nh) { lsSet(AUTH_KEY, { hash: nh, changed: Date.now() }); logAct('security', 'Admin password changed'); alert('Password updated.'); tabRenderers.tabSec(); });
+      });
+    };
+    $('secOut').onclick = function () { adminLogout('Forced logout'); };
+  };
+
+  /* ---- Activity Logs ---- */
+  var logFilter = '';
+  tabRenderers.tabLog = function () {
+    var all = lsGet(AUDIT_KEY, []), q = logFilter.toLowerCase();
+    var list = all.filter(function (l) { return !q || (l.a + ' ' + l.d).toLowerCase().indexOf(q) !== -1; });
+    $('tabLog').innerHTML = '<div class="xm-row"><input id="logQ" placeholder="Filter logs…" value="' + escapeHtml(logFilter) + '" style="flex:1"><button class="btn-secondary" id="logCsv" type="button">⬇ CSV</button><button class="btn-secondary" id="logClr" type="button" style="color:#ef4444">🗑 Clear</button></div>' +
+      '<div class="xm-scroll" style="max-height:420px"><table class="analytics-table"><thead><tr><th>Time</th><th>Action</th><th>Details</th></tr></thead><tbody>' +
+      (list.map(function (l) { return '<tr><td>' + ssFmtDateTime(l.t) + '</td><td><b>' + escapeHtml(l.a) + '</b></td><td>' + escapeHtml(l.d) + '</td></tr>'; }).join('') || '<tr><td colspan="3">No log entries.</td></tr>') + '</tbody></table></div><div class="xm-note">Shows the latest 300 admin actions in this browser.</div>';
+    $('logQ').oninput = function () { logFilter = this.value; var p = this.selectionStart; tabRenderers.tabLog(); var s = $('logQ'); s.focus(); s.setSelectionRange(p, p); };
+    $('logCsv').onclick = function () { downloadText('admin-logs.csv', '\ufeffTime,Action,Details\r\n' + list.map(function (l) { return [new Date(l.t).toISOString(), l.a, l.d].map(csvCell).join(','); }).join('\r\n'), 'text/csv'); };
+    $('logClr').onclick = function () { if (confirm('Clear all activity logs?')) { lsSet(AUDIT_KEY, []); logAct('logs', 'Logs cleared'); tabRenderers.tabLog(); } };
+  };
+
+  /* ---- System Health ---- */
+  tabRenderers.tabSys = function () {
+    var total = 0, rows = '';
+    try { for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i), sz = (k.length + (localStorage.getItem(k) || '').length) * 2; total += sz; if (k.indexOf('das_studio') === 0 || k === 'arna-theme') rows += '<tr><td>' + escapeHtml(k) + '</td><td>' + (sz / 1024).toFixed(1) + ' KB</td></tr>'; } } catch (e) {}
+    var pct = Math.min(100, total / (5 * 1024 * 1024) * 100), pe = (performance.getEntriesByType && performance.getEntriesByType('navigation')[0]) || null;
+    var errs = lsGet(ERR_KEY, []);
+    $('tabSys').innerHTML = '<div class="stats-grid">' + stat('Storage used', (total / 1024).toFixed(0) + ' KB') + stat('Network', navigator.onLine ? '<span class="xm-badge xm-ok">Online</span>' : '<span class="xm-badge xm-bad">Offline</span>') +
+      stat('Page load', pe ? Math.round(pe.loadEventEnd - pe.startTime) + ' ms' : 'n/a') + stat('JS errors', errs.length) + '</div>' +
+      '<div class="xm-note">localStorage quota ≈ 5 MB (' + pct.toFixed(1) + '% used)</div><div class="xm-bar"><i style="width:' + pct + '%"></i></div>' +
+      (pct > 80 ? '<div class="xm-alert warn" style="margin-top:10px">⚠️ Storage is nearly full. Export a backup and remove large attachments.</div>' : '') +
+      '<div class="settings-section-title" style="margin-top:14px">💾 Storage by key</div><div class="xm-scroll"><table class="analytics-table"><tbody>' + rows + '</tbody></table></div>' +
+      '<div class="settings-section-title">🐞 Recent JavaScript errors</div><div class="xm-scroll"><table class="analytics-table"><tbody>' +
+      (errs.slice(0, 15).map(function (e) { return '<tr><td>' + new Date(e.t).toLocaleString() + '</td><td>' + escapeHtml(e.m) + '</td><td>' + escapeHtml(e.s) + '</td></tr>'; }).join('') || '<tr><td colspan="3">No errors captured. 🎉</td></tr>') + '</tbody></table></div>' +
+      '<div class="xm-note">Server metrics (CPU, RAM, uptime, API latency) need a backend and cannot be measured from a static page.</div>';
+  };
+
+  /* ============================================================
+     TOOL LIBRARY — status · featured · versioning · tags · preview
+     link checker · image upload · export/import · bulk actions
+     ============================================================ */
+  var TOOL_STATUS_LABEL = { published: 'Published', draft: 'Draft', archived: 'Archived' };
+
+  function toolStatusOf(t) {
+    var s = t && t.status;
+    if (s === 'draft' || s === 'archived' || s === 'published') return s;
+    return (t && t.hidden) ? 'draft' : 'published';
+  }
+  function toolTagsOf(t) {
+    if (!t || !Array.isArray(t.tags)) return [];
+    return t.tags.map(function (x) { return String(x == null ? '' : x).trim(); })
+                 .filter(function (x) { return x !== ''; }).slice(0, 12);
+  }
+  function toolById(id) {
+    var hit = null;
+    tools.forEach(function (t) { if (String(t.id) === String(id)) hit = t; });
+    return hit;
+  }
+
+  /* ---- one card markup used by the grid, the preview and the manager ---- */
+  function mmCardInner(item, numStr, adminView, favActive) {
+    var st = toolStatusOf(item);
+    var tags = toolTagsOf(item).slice(0, 6);
+    return '<div class="card-admin-actions">' +
+        '<button type="button" class="btn-icon edit-btn" data-id="' + item.id + '">✏️ Edit</button>' +
+        '<button type="button" class="btn-icon dup-btn" data-id="' + item.id + '" title="Duplicate this tool">📋</button>' +
+        '<button type="button" class="btn-icon hide-btn" data-id="' + item.id + '" title="' +
+          (st === 'published' ? 'Unpublish (move to draft)' : 'Publish') + '">' + (st === 'published' ? '🔒' : '👁️') + '</button>' +
+        '<button type="button" class="btn-icon delete-btn" data-id="' + item.id + '">🗑️</button>' +
+      '</div>' +
+      '<div class="card-header">' +
+        '<div class="card-header-left"><span class="card-number">' + numStr + '</span> ' + escapeHtml(item.header || '') + '</div>' +
+        '<button type="button" class="fav-btn ' + (favActive ? 'active' : '') + '" data-id="' + item.id + '" title="Toggle Favorite">' +
+          (favActive ? '❤️' : '🤍') + '</button>' +
+      '</div>' +
+      '<div class="card-image">' +
+        '<img src="' + String(item.image || '') + '" alt="" loading="lazy" onerror="this.remove()">' +
+        (item.version ? '<span class="card-ver">' + escapeHtml(item.version) + '</span>' : '') +
+        (item.featured ? '<span class="card-featured">⭐ FEATURED</span>' : '') +
+        (adminView && st !== 'published' ? '<span class="card-status ' + st + '">' + TOOL_STATUS_LABEL[st] + '</span>' : '') +
+        '<div class="mascot"><img src="' + String(item.icon || '') + '" alt="" onerror="this.remove()"></div>' +
+      '</div>' +
+      '<div class="card-body">' +
+        '<h3 class="card-title">' + escapeHtml(item.titleMain) + '<span>' + escapeHtml(item.titleAccent) + '</span></h3>' +
+        '<p class="card-desc">' + escapeHtml(item.desc) + '</p>' +
+        (tags.length ? '<div class="card-tags">' + tags.map(function (g) {
+          return '<span>' + escapeHtml(g) + '</span>';
+        }).join('') + '</div>' : '') +
+      '</div>';
+  }
+
+  /* ---- tag chip input ---- */
+  var mmTagList = [];
+  function mmRenderTagChips() {
+    var wrap = document.getElementById('toolTagsWrap');
+    if (!wrap) return;
+    var input = document.getElementById('toolTagsInput');
+    Array.prototype.slice.call(wrap.querySelectorAll('.chip-tag')).forEach(function (c) { c.remove(); });
+    mmTagList.forEach(function (tag, i) {
+      var chip = document.createElement('span');
+      chip.className = 'chip-tag';
+      chip.innerHTML = escapeHtml(tag) + '<button type="button" aria-label="Remove tag">×</button>';
+      chip.querySelector('button').addEventListener('click', function () {
+        mmTagList.splice(i, 1);
+        mmRenderTagChips();
+      });
+      if (input) wrap.insertBefore(chip, input); else wrap.appendChild(chip);
+    });
+  }
+  function mmSetTags(arr) { mmTagList = (arr || []).map(String).slice(0, 12); mmRenderTagChips(); }
+  function mmGetTags() { return mmTagList.slice(); }
+  function mmAddTags(raw) {
+    String(raw || '').split(',').forEach(function (part) {
+      var v = part.trim().replace(/\s+/g, ' ');
+      if (!v || mmTagList.length >= 12) return;
+      var dup = mmTagList.some(function (x) { return x.toLowerCase() === v.toLowerCase(); });
+      if (!dup) mmTagList.push(v.slice(0, 24));
+    });
+    mmRenderTagChips();
+  }
+
+  /* ---- image preview + upload ---- */
+  function mmUpdateImagePreviews() {
+    function paint(prevId, url, label) {
+      var prev = document.getElementById(prevId);
+      if (!prev) return;
+      var u = String(url || '').trim();
+      if (!u) { prev.innerHTML = '<span>' + label + ': nothing selected yet.</span>'; return; }
+      prev.innerHTML = '<img src="' + u.replace(/"/g, '&quot;') + '" alt="" onerror="this.style.display=\'none\'">' +
+        '<span>' + label + (u.indexOf('data:') === 0 ? ' · uploaded file (stored in this browser)' : ' · ' + escapeHtml(u.slice(0, 48))) + '</span>';
+    }
+    var imgEl = document.getElementById('toolImage');
+    var iconEl = document.getElementById('toolIcon');
+    paint('toolImagePrev', imgEl ? imgEl.value : '', 'Cover image');
+    paint('toolIconPrev', iconEl ? iconEl.value : '', 'Icon');
+  }
+
+  function mmBindUpload(fileId, targetId) {
+    var input = document.getElementById(fileId);
+    if (!input) return;
+    input.addEventListener('change', function () {
+      var file = this.files && this.files[0];
+      if (!file) return;
+      if (file.size > 3 * 1024 * 1024) { alert('Please choose an image smaller than 3 MB.'); this.value = ''; return; }
+      var reader = new FileReader();
+      reader.onload = function (ev) {
+        var raw = ev.target.result;
+        function apply(dataUrl) {
+          var target = document.getElementById(targetId);
+          if (target) target.value = dataUrl;
+          mmUpdateImagePreviews();
+        }
+        if (/^image\/(png|jpe?g|webp|gif)$/i.test(file.type)) {
+          var img = new Image();
+          img.onload = function () {
+            try {
+              var max = 900, w = img.width, h = img.height;
+              if (w > max || h > max) { var r = Math.min(max / w, max / h); w = Math.round(w * r); h = Math.round(h * r); }
+              var cv = document.createElement('canvas');
+              cv.width = w; cv.height = h;
+              cv.getContext('2d').drawImage(img, 0, 0, w, h);
+              var out = cv.toDataURL('image/jpeg', 0.82);
+              apply(out.length < raw.length ? out : raw);
+            } catch (e) { apply(raw); }
+          };
+          img.onerror = function () { apply(raw); };
+          img.src = raw;
+        } else {
+          apply(raw); /* svg, gif and anything else is kept as-is */
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  /* ---- form <-> data ---- */
+  function mmFormData() {
+    function v(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+    var status = v('toolStatus') || 'published';
+    var featEl = document.getElementById('toolFeatured');
+    return {
+      id: 0,
+      titleMain: v('toolTitleMain'),
+      titleAccent: v('toolTitleAccent'),
+      header: v('toolHeader'),
+      category: v('toolCategory'),
+      accent: v('toolAccent') || '#6366f1',
+      link: v('toolLink'),
+      image: v('toolImage'),
+      icon: v('toolIcon'),
+      desc: v('toolDesc'),
+      keywords: v('toolKeywords'),
+      tags: mmGetTags(),
+      status: status,
+      hidden: status !== 'published',
+      featured: !!(featEl && featEl.checked),
+      version: v('toolVersion').trim(),
+      releaseNotes: v('toolReleaseNotes').trim(),
+      updatedAt: Date.now()
+    };
+  }
+
+  /* ---- live card preview ---- */
+  function mmPreviewData(data) {
+    var stage = document.getElementById('toolPreviewStage');
+    var modalEl = document.getElementById('toolPreviewModal');
+    if (!stage || !modalEl) return;
+    var card = document.createElement('a');
+    card.className = 'card';
+    if (data.featured) card.classList.add('is-featured');
+    card.style.setProperty('--accent', data.accent || '#6366f1');
+    card.href = data.link || '#';
+    card.target = '_blank';
+    card.rel = 'noopener';
+    card.innerHTML = mmCardInner(data, '01', true, false);
+    stage.innerHTML = '';
+    stage.appendChild(card);
+    modalEl.classList.add('active');
+  }
+
+  /* ---- manager state ---- */
+  var mmQ = '', mmStatusFilter = 'all', mmSort = 'manual', mmSel = {}, mmLinks = {};
+  var mmBusy = false;
+
+  function mmSelectedCount() {
+    var n = 0;
+    for (var k in mmSel) if (mmSel[k]) n++;
+    return n;
+  }
+  function mmFiltered() {
+    var q = mmQ.toLowerCase();
+    var list = tools.filter(function (t) {
+      if (mmStatusFilter === 'featured') { if (!t.featured) return false; }
+      else if (mmStatusFilter !== 'all' && toolStatusOf(t) !== mmStatusFilter) return false;
+      if (!q) return true;
+      var hay = ((t.titleMain || '') + ' ' + (t.titleAccent || '') + ' ' + (t.header || '') + ' ' +
+        (t.category || '') + ' ' + (t.keywords || '') + ' ' + toolTagsOf(t).join(' ') + ' ' +
+        (t.version || '')).toLowerCase();
+      return hay.indexOf(q) !== -1;
+    });
+    if (mmSort === 'name') list.sort(function (a, b) { return String(a.titleMain || '').localeCompare(String(b.titleMain || '')); });
+    else if (mmSort === 'updated') list.sort(function (a, b) { return (b.updatedAt || 0) - (a.updatedAt || 0); });
+    else if (mmSort === 'status') list.sort(function (a, b) { return toolStatusOf(a).localeCompare(toolStatusOf(b)); });
+    else list.sort(function (a, b) { return (b.featured ? 1 : 0) - (a.featured ? 1 : 0); });
+    return list;
+  }
+
+  function mmCommit(msg) {
+    saveToolsToStorage();
+    renderGrid();
+    try { logAct('tools', msg); } catch (e) {}
+    mmRenderAll();
+  }
+  function mmRenderAll() {
+    var p = document.getElementById('mmPanel');
+    if (p) mmRender(p);
+    var t = document.getElementById('tabTM');
+    if (t) mmRender(t);
+  }
+
+  function mmRender(el) {
+    if (!el) return;
+    var list = mmFiltered();
+    var counts = { total: tools.length, published: 0, draft: 0, archived: 0, featured: 0 };
+    tools.forEach(function (t) { counts[toolStatusOf(t)]++; if (t.featured) counts.featured++; });
+
+    var stats = [
+      ['all', 'Total', counts.total, 'var(--text)'],
+      ['published', 'Published', counts.published, '#10b981'],
+      ['draft', 'Draft', counts.draft, '#f59e0b'],
+      ['archived', 'Archived', counts.archived, '#94a3b8'],
+      ['featured', 'Featured', counts.featured, '#f43f5e']
+    ].map(function (s) {
+      return '<button type="button" class="mm-stat' + (mmStatusFilter === s[0] ? ' active' : '') +
+        '" data-mmstat="' + s[0] + '"><b style="color:' + s[3] + '">' + s[2] + '</b><span>' + s[1] + '</span></button>';
+    }).join('');
+
+    var rows = list.map(function (t) {
+      var st = toolStatusOf(t);
+      var link = mmLinks[t.id];
+      var linkBadge = link === 'ok' ? '<span class="mm-badge ok">✓ reachable</span>'
+        : link === 'cors' ? '<span class="mm-badge warn">? unverified</span>'
+        : link === 'fail' ? '<span class="mm-badge bad">✕ failed</span>'
+        : '<span class="mm-badge muted">—</span>';
+      var tags = toolTagsOf(t).slice(0, 4).map(function (g) {
+        return '<span class="mm-tag">' + escapeHtml(g) + '</span>';
+      }).join('');
+      return '<tr>' +
+        '<td><input type="checkbox" class="mm-check" data-id="' + t.id + '"' + (mmSel[String(t.id)] ? ' checked' : '') + '></td>' +
+        '<td><div class="mm-name">' + escapeHtml((t.titleMain || '') + (t.titleAccent || '')) +
+          (t.version ? ' <span class="mm-ver">' + escapeHtml(t.version) + '</span>' : '') + '</div>' +
+          '<div class="mm-sub">' + escapeHtml(t.header || '') + ' · ' + escapeHtml(t.category || '') + '</div>' +
+          (tags ? '<div class="mm-tags">' + tags + '</div>' : '') + '</td>' +
+        '<td><span class="mm-badge ' + st + '">' + TOOL_STATUS_LABEL[st] + '</span></td>' +
+        '<td><button type="button" class="mm-star' + (t.featured ? ' on' : '') + '" data-act="feature" data-id="' + t.id +
+          '" title="Toggle featured">' + (t.featured ? '⭐' : '☆') + '</button></td>' +
+        '<td>' + linkBadge + '</td>' +
+        '<td><div class="mm-actions">' +
+          '<button type="button" class="btn-secondary mm-btn" data-act="edit" data-id="' + t.id + '">✏️ Edit</button>' +
+          '<button type="button" class="btn-secondary mm-btn" data-act="dup" data-id="' + t.id + '">📋 Copy</button>' +
+          '<button type="button" class="btn-secondary mm-btn" data-act="preview" data-id="' + t.id + '">👁️</button>' +
+          '<button type="button" class="btn-secondary mm-btn danger" data-act="del" data-id="' + t.id + '">🗑️</button>' +
+        '</div></td></tr>';
+    }).join('') || '<tr><td colspan="6" class="mm-empty">No tools match these filters.</td></tr>';
+
+    el.innerHTML =
+      '<div class="mm-stats">' + stats + '</div>' +
+      '<div class="mm-row">' +
+        '<input type="text" class="mm-search" data-mm="q" placeholder="🔍 Search name, tag, category or version…" value="' + escapeHtml(mmQ) + '">' +
+        '<select data-mm="sort">' +
+          '<option value="manual"' + (mmSort === 'manual' ? ' selected' : '') + '>Sort: Featured first</option>' +
+          '<option value="name"' + (mmSort === 'name' ? ' selected' : '') + '>Sort: Name A → Z</option>' +
+          '<option value="updated"' + (mmSort === 'updated' ? ' selected' : '') + '>Sort: Recently updated</option>' +
+          '<option value="status"' + (mmSort === 'status' ? ' selected' : '') + '>Sort: Status</option>' +
+        '</select>' +
+        '<button type="button" class="btn-secondary" data-act="links">🔍 Check broken links</button>' +
+      '</div>' +
+      '<div class="mm-row mm-bulk">' +
+        '<label><input type="checkbox" data-act="all"> Select all</label>' +
+        '<span class="mm-selcount">' + mmSelectedCount() + ' selected</span>' +
+        '<select data-mm="bulk">' +
+          '<option value="">Bulk action…</option>' +
+          '<option value="publish">✅ Publish</option>' +
+          '<option value="draft">📝 Move to Draft</option>' +
+          '<option value="archive">📦 Archive</option>' +
+          '<option value="feature">⭐ Mark Featured</option>' +
+          '<option value="unfeature">☆ Remove Featured</option>' +
+          '<option value="delete">🗑 Delete permanently</option>' +
+        '</select>' +
+        '<button type="button" class="btn-primary" data-act="apply">Apply</button>' +
+      '</div>' +
+      '<div class="mm-row">' +
+        '<button type="button" class="btn-secondary" data-act="exp-json">📥 Export Tools (JSON)</button>' +
+        '<button type="button" class="btn-secondary" data-act="exp-csv">📥 Export CSV</button>' +
+        '<label class="btn-secondary" style="cursor:pointer;display:inline-flex;align-items:center;">📤 Import Tools' +
+          '<input type="file" accept=".json,application/json" data-act="import" hidden></label>' +
+        '<span class="mm-note" style="margin:0 0 0 auto;">Tools-only backup — site settings and analytics are not included.</span>' +
+      '</div>' +
+      '<div class="mm-scroll"><table class="mm-table"><thead><tr>' +
+        '<th style="width:28px"></th><th>Tool</th><th>Status</th><th>⭐</th><th>Link</th><th></th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<div class="mm-note">Bulk actions apply to the ticked rows. Link check sends a <code>HEAD</code> request — some sites block cross-origin checks, so “unverified” means the browser could not read the answer (the link may still work).</div>';
+
+    mmBind(el);
+  }
+
+  function mmBind(el) {
+    if (el.__mmBound) return;
+    el.__mmBound = true;
+    el.addEventListener('click', function (e) { mmClick(e, el); });
+    el.addEventListener('change', function (e) { mmChange(e, el); });
+    el.addEventListener('input', function (e) {
+      var s = e.target.closest('[data-mm="q"]');
+      if (!s) return;
+      mmQ = s.value;
+      var pos = s.selectionStart;
+      mmRender(el);
+      var ns = el.querySelector('[data-mm="q"]');
+      if (ns) { ns.focus(); try { ns.setSelectionRange(pos, pos); } catch (err) {} }
+    });
+  }
+
+  function mmClick(e, el) {
+    var stat = e.target.closest('[data-mmstat]');
+    if (stat) { mmStatusFilter = stat.getAttribute('data-mmstat'); mmRender(el); return; }
+    var btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    var act = btn.getAttribute('data-act');
+    var id = btn.getAttribute('data-id');
+    if (act === 'edit') { var t = toolById(id); if (t) openModal(t); }
+    else if (act === 'dup') { mmDuplicate(Number(id)); }
+    else if (act === 'del') { mmDeleteOne(Number(id)); }
+    else if (act === 'feature') { mmToggleFeatured(Number(id)); }
+    else if (act === 'preview') { var p = toolById(id); if (p) mmPreviewData(p); }
+    else if (act === 'apply') { mmApplyBulk(el); }
+    else if (act === 'links') { mmCheckLinks(btn); }
+    else if (act === 'exp-json') { mmExportJson(); }
+    else if (act === 'exp-csv') { mmExportCsv(); }
+  }
+
+  function mmChange(e, el) {
+    var t = e.target;
+    if (t.matches('[data-mm="sort"]')) { mmSort = t.value; mmRender(el); return; }
+    if (t.matches('[data-act="all"]')) {
+      var on = t.checked;
+      mmFiltered().forEach(function (x) { mmSel[String(x.id)] = on; });
+      mmRender(el);
+      return;
+    }
+    if (t.matches('.mm-check')) {
+      mmSel[String(t.getAttribute('data-id'))] = t.checked;
+      var c = el.querySelector('.mm-selcount');
+      if (c) c.textContent = mmSelectedCount() + ' selected';
+      return;
+    }
+    if (t.matches('[data-act="import"]')) {
+      mmImportFile(t.files && t.files[0]);
+      t.value = '';
+    }
+  }
+
+  function mmApplyBulk(el) {
+    var selEl = el.querySelector('[data-mm="bulk"]');
+    var action = selEl ? selEl.value : '';
+    var chosen = tools.filter(function (t) { return mmSel[String(t.id)]; });
+    if (!chosen.length) { alert('Tick at least one tool first.'); return; }
+    if (!action) { alert('Choose a bulk action from the dropdown.'); return; }
+    var n = chosen.length;
+    if (action === 'delete') {
+      if (!confirm('Permanently delete ' + n + ' tool(s)?\n\nExport a JSON backup first if you are not sure.')) return;
+      tools = tools.filter(function (t) { return !mmSel[String(t.id)]; });
+    } else if (action === 'publish') {
+      chosen.forEach(function (t) { t.status = 'published'; t.hidden = false; t.updatedAt = Date.now(); });
+    } else if (action === 'draft') {
+      chosen.forEach(function (t) { t.status = 'draft'; t.hidden = true; t.updatedAt = Date.now(); });
+    } else if (action === 'archive') {
+      chosen.forEach(function (t) { t.status = 'archived'; t.hidden = true; t.updatedAt = Date.now(); });
+    } else if (action === 'feature') {
+      chosen.forEach(function (t) { t.featured = true; });
+    } else if (action === 'unfeature') {
+      chosen.forEach(function (t) { t.featured = false; });
+    }
+    mmSel = {};
+    mmCommit('Bulk ' + action + ' (' + n + ' tool' + (n === 1 ? '' : 's') + ')');
+  }
+
+  function mmDuplicate(id) {
+    var src = toolById(id);
+    if (!src) return;
+    var copy = JSON.parse(JSON.stringify(src));
+    copy.id = Date.now();
+    copy.titleMain = (src.titleMain || '') + ' (Copy)';
+    copy.status = 'draft';
+    copy.hidden = true;
+    copy.featured = false;
+    copy.createdAt = Date.now();
+    copy.updatedAt = Date.now();
+    tools.push(copy);
+    saveToolsToStorage();
+    renderGrid();
+    mmRenderAll();
+    openModal(copy);
+  }
+
+  function mmDeleteOne(id) {
+    var t = toolById(id);
+    if (!t) return;
+    if (!confirm('Delete "' + (t.titleMain || '') + (t.titleAccent || '') + '"?\n\nThis cannot be undone.')) return;
+    tools = tools.filter(function (x) { return String(x.id) !== String(id); });
+    delete mmSel[String(id)];
+    mmCommit('Deleted tool: ' + (t.titleMain || ''));
+  }
+
+  function mmToggleFeatured(id) {
+    tools.forEach(function (t) {
+      if (String(t.id) === String(id)) { t.featured = !t.featured; t.updatedAt = Date.now(); }
+    });
+    mmCommit('Toggled featured');
+  }
+
+  /* ---- broken link checker ---- */
+  function mmProbe(t) {
+    var url = String(t.link || '');
+    if (!/^https?:/i.test(url)) return Promise.resolve('fail');
+    function attempt(method, mode) {
+      var ctl = window.AbortController ? new AbortController() : null;
+      var timer = setTimeout(function () { if (ctl) ctl.abort(); }, 9000);
+      return fetch(url, { method: method, mode: mode, cache: 'no-store', redirect: 'follow',
+        signal: ctl ? ctl.signal : undefined })
+        .then(function (r) { clearTimeout(timer); return r; },
+              function (err) { clearTimeout(timer); throw err; });
+    }
+    return attempt('HEAD', 'cors').then(function (r) {
+      if (r.type === 'opaque') return 'cors';
+      return r.ok ? 'ok' : 'fail';
+    }, function () {
+      /* CORS blocks the status code — retry as an opaque request */
+      return attempt('GET', 'no-cors').then(function () { return 'cors'; }, function () { return 'fail'; });
+    });
+  }
+
+  function mmCheckLinks(btn) {
+    if (mmBusy) return;
+    var total = tools.length;
+    if (!total) return;
+    mmBusy = true;
+    var done = 0;
+    if (btn) { btn.disabled = true; btn.textContent = 'Checking 0/' + total + '…'; }
+    Promise.all(tools.map(function (t) {
+      return mmProbe(t).then(function (res) {
+        mmLinks[t.id] = res;
+        done++;
+        if (btn) btn.textContent = 'Checking ' + done + '/' + total + '…';
+      });
+    })).then(function () {
+      mmBusy = false;
+      var bad = tools.filter(function (t) { return mmLinks[t.id] === 'fail'; }).length;
+      var unv = tools.filter(function (t) { return mmLinks[t.id] === 'cors'; }).length;
+      if (btn) { btn.disabled = false; btn.textContent = '🔍 Check broken links'; }
+      try { logAct('tools', 'Link check: ' + bad + ' failed, ' + unv + ' unverified'); } catch (e) {}
+      mmRenderAll();
+      alert(bad
+        ? (bad + ' link(s) could not be reached — they are marked ✕ failed in the table.'
+           + (unv ? '\n' + unv + ' link(s) could not be verified because of cross-origin rules.' : ''))
+        : ('All ' + total + ' links responded.' + (unv ? '\n' + unv + ' could not be verified (cross-origin), but they did not fail.' : '')));
+    });
+  }
+
+  /* ---- export / import (tools only) ---- */
+  function mmExportJson() {
+    var payload = {
+      app: 'DAS Studio',
+      type: 'das-studio-tools',
+      schema: 1,
+      exportedAt: new Date().toISOString(),
+      count: tools.length,
+      tools: tools
+    };
+    downloadText('das-tools-' + new Date().toISOString().slice(0, 10) + '.json',
+      JSON.stringify(payload, null, 2), 'application/json');
+    try { logAct('export', 'Tools JSON exported (' + tools.length + ')'); } catch (e) {}
+  }
+
+  function mmExportCsv() {
+    var cols = ['id', 'titleMain', 'titleAccent', 'header', 'category', 'status', 'featured',
+                'version', 'tags', 'link', 'keywords', 'image', 'icon', 'desc', 'releaseNotes'];
+    var body = tools.map(function (t) {
+      return cols.map(function (c) {
+        var v = c === 'tags' ? toolTagsOf(t).join('|')
+          : c === 'status' ? toolStatusOf(t)
+          : c === 'featured' ? (t.featured ? 'yes' : 'no')
+          : t[c];
+        return csvCell(v);
+      }).join(',');
+    }).join('\r\n');
+    downloadText('das-tools-' + new Date().toISOString().slice(0, 10) + '.csv',
+      '\ufeff' + cols.join(',') + '\r\n' + body, 'text/csv');
+    try { logAct('export', 'Tools CSV exported'); } catch (e) {}
+  }
+
+  function mmImportFile(file) {
+    if (!file) return;
+    var rd = new FileReader();
+    rd.onload = function () {
+      var data;
+      try { data = JSON.parse(rd.result); } catch (e) { alert('That file is not valid JSON.'); return; }
+      var arr = Array.isArray(data) ? data : (data && Array.isArray(data.tools) ? data.tools : null);
+      if (!arr) { alert('No tool list found in this file.\nExpected an array of tools, or an object with a "tools" array.'); return; }
+      var clean = [], skipped = 0, usedIds = {};
+      arr.forEach(function (raw, i) {
+        if (!raw || typeof raw !== 'object' || (!raw.titleMain && !raw.link)) { skipped++; return; }
+        var t = {};
+        ['titleMain', 'titleAccent', 'header', 'category', 'accent', 'link', 'image', 'icon',
+         'desc', 'keywords', 'version', 'releaseNotes'].forEach(function (k) {
+          if (raw[k] != null) t[k] = String(raw[k]);
+        });
+        t.tags = Array.isArray(raw.tags) ? raw.tags.map(String)
+          : (raw.tags ? String(raw.tags).split(',') : []);
+        t.featured = !!raw.featured;
+        t.status = (raw.status === 'draft' || raw.status === 'archived') ? raw.status
+          : (raw.hidden ? 'draft' : 'published');
+        t.hidden = t.status !== 'published';
+        var nid = Number(raw.id);
+        if (!nid || usedIds[nid]) nid = Date.now() + i;
+        usedIds[nid] = 1;
+        t.id = nid;
+        t.updatedAt = Date.now();
+        clean.push(t);
+      });
+      if (!clean.length) {
+        alert('Nothing to import — every row was invalid (a title or a link is required).');
+        return;
+      }
+      var msg = 'Found ' + clean.length + ' valid tool(s)' +
+        (skipped ? ' (' + skipped + ' invalid row(s) skipped)' : '') + '.\n\n' +
+        'OK = REPLACE your current ' + tools.length + ' tools.\n' +
+        'Cancel = MERGE them into the existing list.';
+      var replace = confirm(msg);
+      tools = replace ? clean : tools.concat(clean);
+      mmSel = {};
+      mmCommit('Imported ' + clean.length + ' tools (' + (replace ? 'replace' : 'merge') + ')');
+      alert('Import complete — ' + tools.length + ' tools in the library.');
+    };
+    rd.readAsText(file);
+  }
+
+  /* ---- editor bindings ---- */
+  (function bindToolLibraryUI() {
+    mmBindUpload('toolImageFile', 'toolImage');
+    mmBindUpload('toolIconFile', 'toolIcon');
+
+    var tagInput = document.getElementById('toolTagsInput');
+    if (tagInput) {
+      tagInput.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ',') {
+          e.preventDefault();
+          mmAddTags(this.value);
+          this.value = '';
+        } else if (e.key === 'Backspace' && !this.value && mmTagList.length) {
+          mmTagList.pop();
+          mmRenderTagChips();
+        }
+      });
+      tagInput.addEventListener('blur', function () {
+        if (this.value.trim()) { mmAddTags(this.value); this.value = ''; }
+      });
+    }
+
+    var imgEl = document.getElementById('toolImage');
+    var iconEl = document.getElementById('toolIcon');
+    if (imgEl) imgEl.addEventListener('input', mmUpdateImagePreviews);
+    if (iconEl) iconEl.addEventListener('input', mmUpdateImagePreviews);
+
+    var pvBtn = document.getElementById('toolLivePreviewBtn');
+    if (pvBtn) pvBtn.addEventListener('click', function () { mmPreviewData(mmFormData()); });
+
+    var pvModal = document.getElementById('toolPreviewModal');
+    if (pvModal) {
+      var closePv = function () { pvModal.classList.remove('active'); };
+      var c1 = document.getElementById('toolPreviewClose');
+      var c2 = document.getElementById('toolPreviewBack');
+      if (c1) c1.addEventListener('click', closePv);
+      if (c2) c2.addEventListener('click', closePv);
+      pvModal.addEventListener('click', function (e) { if (e.target === pvModal) closePv(); });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && pvModal.classList.contains('active')) closePv();
+      });
+    }
+
+    mmRenderTagChips();
+    mmUpdateImagePreviews();
+    mmRenderAll();
+  })();
+  /* ============================================================
+     ANNOUNCEMENT MANAGER — list, editor, targeting, report
+     ============================================================ */
+  var annFilter = 'all';
+
+  function annStatusOf(a) {
+    if (a.archived) return 'archived';
+    if (!a.active) return 'paused';
+    var now = Date.now();
+    if (a.start) { var st = new Date(a.start).getTime(); if (!isNaN(st) && now < st) return 'scheduled'; }
+    if (a.end) { var en = new Date(a.end).getTime(); if (!isNaN(en) && now > en) return 'expired'; }
+    return 'live';
+  }
+  var ANN_STATUS_LABEL = { live: 'Live', paused: 'Paused', scheduled: 'Scheduled', expired: 'Expired', archived: 'Archived' };
+
+  function annPersist() {
+    try { localStorage.setItem('das_studio_settings', JSON.stringify(settings)); } catch (e) {}
+    try { logAct('notice', 'Announcements saved'); } catch (e) {}
+    renderNoticeBar();
+    annRender();
+  }
+
+  function annWindowText(a) {
+    if (!a.start && !a.end) return 'Always';
+    function short(v) {
+      var d = new Date(v);
+      if (isNaN(d.getTime())) return '?';
+      try {
+        return new Intl.DateTimeFormat('en-GB', { timeZone: settings.timezone || 'Asia/Kolkata',
+          day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit', hour12: false }).format(d);
+      } catch (e) { return d.toLocaleString(); }
+    }
+    if (a.start && a.end) return short(a.start) + ' → ' + short(a.end);
+    if (a.start) return 'from ' + short(a.start);
+    return 'until ' + short(a.end);
+  }
+
+  function annRender() {
+    var panel = document.getElementById('annPanel');
+    if (!panel) return;
+    var all = annList();
+    var counts = { total: all.length, live: 0, scheduled: 0, paused: 0, expired: 0, archived: 0 };
+    all.forEach(function (a) { var s = annStatusOf(a); counts[s] = (counts[s] || 0) + 1; });
+
+    var stats = [
+      ['all', 'Total', counts.total, 'var(--text)'],
+      ['live', 'Live', counts.live, '#10b981'],
+      ['scheduled', 'Scheduled', counts.scheduled, '#60a5fa'],
+      ['paused', 'Paused', counts.paused, '#94a3b8'],
+      ['archived', 'Archived', counts.archived, '#64748b']
+    ].map(function (s) {
+      return '<button type="button" class="ann-stat' + (annFilter === s[0] ? ' active' : '') + '" data-annfilter="' + s[0] +
+        '" style="text-align:left;cursor:pointer;font-family:inherit;' + (annFilter === s[0] ? 'border-color:var(--accent-grad-1);' : '') + '">' +
+        '<b style="color:' + s[3] + '">' + s[2] + '</b><span>' + s[1] + '</span></button>';
+    }).join('');
+
+    var rows = all.filter(function (a) {
+      return annFilter === 'all' || annStatusOf(a) === annFilter;
+    }).sort(function (x, y) {
+      var rx = ANN_PRIORITY_RANK[x.priority] == null ? 9 : ANN_PRIORITY_RANK[x.priority];
+      var ry = ANN_PRIORITY_RANK[y.priority] == null ? 9 : ANN_PRIORITY_RANK[y.priority];
+      if (rx !== ry) return rx - ry;
+      return (y.createdAt || 0) - (x.createdAt || 0);
+    }).map(function (a) {
+      var st = annStatusOf(a);
+      var s = annStatOf(a.id);
+      var ctr = s.views ? ((s.clicks / s.views) * 100).toFixed(1) + '%' : '—';
+      var disp = a.display === 'popup' ? '🪟 Popup' : (a.display === 'both' ? '📶 Bar + Popup' : '📶 Bar');
+      var aud = a.audience === 'all' ? 'Everyone' : (a.audience || 'all');
+      return '<tr>' +
+        '<td><span class="ann-badge ' + (a.priority || 'medium') + '">' + (ANN_PRIORITY_LABEL[a.priority] || 'Medium') + '</span></td>' +
+        '<td><div class="ann-title">' + escapeHtml(a.title || '(untitled)') + '</div>' +
+          '<div class="ann-sub">' + escapeHtml(annText(a) || '—') + '</div>' +
+          '<div class="ann-sub" style="font-size:10.5px;opacity:.85;">' + disp + ' · ' + escapeHtml(aud) +
+          (a.pageMatch ? ' · “' + escapeHtml(a.pageMatch) + '”' : '') + '</div></td>' +
+        '<td><span class="ann-sub" style="white-space:normal;">' + escapeHtml(annWindowText(a)) + '</span></td>' +
+        '<td><span class="ann-state ' + st + '">' + ANN_STATUS_LABEL[st] + '</span></td>' +
+        '<td><div class="ann-num" style="font-size:11.5px;">' + (s.views || 0) + ' / ' + (s.clicks || 0) + '</div>' +
+          '<div class="ann-ctr">' + ctr + ' CTR</div></td>' +
+        '<td><div class="ann-actions">' +
+          '<button type="button" class="ann-btn" data-ann="edit" data-id="' + a.id + '">✏️</button>' +
+          '<button type="button" class="ann-btn" data-ann="toggle" data-id="' + a.id + '" title="' +
+            (a.active ? 'Pause' : 'Publish') + '">' + (a.active ? '⏸️' : '▶️') + '</button>' +
+          '<button type="button" class="ann-btn" data-ann="dup" data-id="' + a.id + '" title="Duplicate">📋</button>' +
+          '<button type="button" class="ann-btn" data-ann="archive" data-id="' + a.id + '" title="' +
+            (a.archived ? 'Restore' : 'Archive') + '">' + (a.archived ? '♻️' : '📦') + '</button>' +
+          '<button type="button" class="ann-btn danger" data-ann="del" data-id="' + a.id + '" title="Delete">🗑️</button>' +
+        '</div></td></tr>';
+    }).join('');
+
+    panel.innerHTML =
+      '<div class="ann-stats">' + stats + '</div>' +
+      '<div class="ann-row">' +
+        '<button type="button" class="btn-primary" data-ann="new" style="padding:7px 14px;font-size:12px;">➕ New announcement</button>' +
+        '<button type="button" class="btn-secondary" data-ann="resetstats" style="padding:7px 12px;font-size:12px;">↺ Reset view/click stats</button>' +
+        '<span class="ann-note" style="margin:0 0 0 auto;">The highest-priority active announcement is shown first. If a visitor dismisses it, the next one takes its place.</span>' +
+      '</div>' +
+      '<div class="ann-scroll"><table class="ann-table"><thead><tr>' +
+        '<th>Priority</th><th>Announcement</th><th>Schedule</th><th>State</th>' +
+        '<th>Views / Clicks</th><th></th>' +
+      '</tr></thead><tbody>' +
+      (rows || '<tr><td colspan="6" class="ann-empty">No announcements yet. Click “➕ New announcement” to create your first one.</td></tr>') +
+      '</tbody></table></div>';
+
+    annRenderReport();
+  }
+
+  function annRenderReport() {
+    var box = document.getElementById('annReport');
+    if (!box) return;
+    var all = annList();
+    var totals = { views: 0, clicks: 0 };
+    all.forEach(function (a) {
+      var s = annStatOf(a.id);
+      totals.views += s.views || 0;
+      totals.clicks += s.clicks || 0;
+    });
+    var maxViews = 1;
+    all.forEach(function (a) { var s = annStatOf(a.id); if ((s.views || 0) > maxViews) maxViews = s.views; });
+
+    var best = null, bestScore = -1;
+    all.forEach(function (a) {
+      var s = annStatOf(a.id);
+      var score = (s.clicks || 0) * 2 + (s.views || 0);
+      if (score > bestScore) { bestScore = score; best = a; }
+    });
+
+    var rows = all.slice().sort(function (x, y) {
+      return (annStatOf(y.id).views || 0) - (annStatOf(x.id).views || 0);
+    }).map(function (a) {
+      var s = annStatOf(a.id);
+      var pct = Math.round(((s.views || 0) / maxViews) * 100);
+      var ctr = s.views ? ((s.clicks / s.views) * 100).toFixed(1) + '%' : '—';
+      return '<tr>' +
+        '<td><div class="ann-title">' + escapeHtml(a.title || '(untitled)') + '</div>' +
+          '<div class="ann-sub">' + (ANN_PRIORITY_LABEL[a.priority] || '') + ' · ' + ANN_STATUS_LABEL[annStatusOf(a)] + '</div></td>' +
+        '<td class="ann-num">' + (s.views || 0) + '</td>' +
+        '<td class="ann-num">' + (s.clicks || 0) + '</td>' +
+        '<td class="ann-ctr">' + ctr + '</td>' +
+        '<td style="width:38%"><div class="ann-bar"><i style="width:' + pct + '%"></i></div></td>' +
+      '</tr>';
+    }).join('');
+
+    box.innerHTML =
+      '<div class="ann-stats">' +
+        '<div class="ann-stat"><b>' + totals.views + '</b><span>Total views</span></div>' +
+        '<div class="ann-stat"><b>' + totals.clicks + '</b><span>Total clicks</span></div>' +
+        '<div class="ann-stat"><b>' + (totals.views ? ((totals.clicks / totals.views) * 100).toFixed(1) + '%' : '—') + '</b><span>Click-through rate</span></div>' +
+        '<div class="ann-stat"><b style="font-size:12.5px;line-height:1.5;">' + escapeHtml(best ? (best.title || '(untitled)') : '—') + '</b><span>Best performer</span></div>' +
+      '</div>' +
+      '<div class="ann-scroll"><table class="ann-table"><thead><tr>' +
+        '<th>Announcement</th><th>Views</th><th>Clicks</th><th>CTR</th><th>Share of views</th>' +
+      '</tr></thead><tbody>' +
+      (rows || '<tr><td colspan="5" class="ann-empty">No data yet — publish an announcement and it will be measured here.</td></tr>') +
+      '</tbody></table></div>' +
+      '<p class="ann-note">Views are counted once per announcement per page load. Clicks are counted when a visitor presses the action button. All figures live in this browser only (localStorage).</p>';
+  }
+
+  /* ---- editor ---- */
+  function annEditorLoad(a) {
+    function set(id, v) { var el = document.getElementById(id); if (el) el.value = (v == null ? '' : v); }
+    function chk(id, v) { var el = document.getElementById(id); if (el) el.checked = !!v; }
+    set('annId', a ? a.id : '');
+    set('annTitle', a ? a.title : '');
+    set('annText', a ? a.text : '');
+    set('annTextBn', a ? a.textBn : '');
+    set('annLang', a ? (a.lang || 'both') : 'both');
+    set('annType', a ? (a.type || 'info') : 'info');
+    set('annBg', a ? (a.bg || '#6366f1') : '#6366f1');
+    set('annPriority', a ? (a.priority || 'medium') : 'medium');
+    set('annDisplay', a ? (a.display || 'bar') : 'bar');
+    set('annPopupTitle', a ? a.popupTitle : '');
+    set('annPopupBody', a ? a.popupBody : '');
+    set('annAudience', a ? (a.audience || 'all') : 'all');
+    set('annPageMatch', a ? a.pageMatch : '');
+    set('annStart', a ? a.start : '');
+    set('annEnd', a ? a.end : '');
+    set('annActionText', a ? a.actionText : '');
+    set('annActionUrl', a ? a.actionUrl : '');
+    chk('annActionNewTab', a ? a.actionNewTab !== false : true);
+    chk('annDismissible', a ? a.dismissible !== false : true);
+    set('annDismissHours', a ? (a.dismissHours != null ? a.dismissHours : 24) : 24);
+    chk('annActive', a ? !!a.active : true);
+    var title = document.getElementById('annEditorTitle');
+    if (title) title.textContent = a ? ('✏️ Edit Announcement — ' + (a.title || '')) : '➕ New Announcement';
+    var box = document.getElementById('annPreviewBox');
+    if (box) box.style.display = 'none';
+  }
+
+  function annFormData() {
+    function v(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+    function c(id) { var el = document.getElementById(id); return !!(el && el.checked); }
+    return {
+      id: v('annId') || ('ann_' + Date.now()),
+      title: v('annTitle').trim(),
+      text: v('annText').trim(),
+      textBn: v('annTextBn').trim(),
+      lang: v('annLang') || 'both',
+      type: v('annType') || 'info',
+      bg: v('annBg') || '#6366f1',
+      priority: v('annPriority') || 'medium',
+      display: v('annDisplay') || 'bar',
+      popupTitle: v('annPopupTitle').trim(),
+      popupBody: v('annPopupBody'),
+      audience: v('annAudience') || 'all',
+      pageMatch: v('annPageMatch').trim(),
+      start: v('annStart'),
+      end: v('annEnd'),
+      actionText: v('annActionText').trim(),
+      actionUrl: v('annActionUrl').trim(),
+      actionNewTab: c('annActionNewTab'),
+      dismissible: c('annDismissible'),
+      dismissHours: Number(v('annDismissHours')) || 0,
+      active: c('annActive'),
+      archived: false
+    };
+  }
+
+  function annPreviewBarHtml(a) {
+    var bg = a.type === 'custom' ? (a.bg || '#6366f1') : '';
+    var cls = annBarClass(a);
+    var style = 'background:' + (a.type === 'custom' ? bg :
+      (a.priority === 'emergency' ? 'linear-gradient(90deg,#dc2626,#f97316)' :
+       a.priority === 'high' ? 'linear-gradient(90deg,#f59e0b,#ef4444)' :
+       a.type === 'success' ? '#16a34a' : a.type === 'warning' ? '#f59e0b' :
+       a.type === 'offer' ? 'linear-gradient(90deg,#8b5cf6,#ec4899)' : '#3b82f6')) + ';color:#fff;';
+    var html = '<div style="' + style + 'padding:10px 16px;border-radius:9px;font-size:14px;font-weight:600;' +
+      'display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;">' +
+      '<span class="notice-text">' + annIcon(a.type) +
+      ((a.priority === 'high' || a.priority === 'emergency')
+        ? ' <span class="notice-pri">' + (a.priority === 'emergency' ? '🔴 Emergency' : '🟠 Important') + '</span>' : '') +
+      ' <span>' + escapeHtml(annText(a)) + '</span>' +
+      (a.actionText && a.actionUrl ? ' <span class="notice-btn">' + escapeHtml(a.actionText) + '</span>' : '') +
+      '</span>' +
+      (a.dismissible ? '<span style="opacity:.7;">✕</span>' : '') + '</div>';
+    return html;
+  }
+
+  function annShowBarPreview() {
+    var a = annFormData();
+    var box = document.getElementById('annPreviewBox');
+    if (!box) return;
+    if (!annText(a)) { alert('Add announcement text first.'); return; }
+    box.style.display = 'block';
+    box.innerHTML = '<div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Bar preview — exactly how it will appear at the top of the site.</div>' +
+      annPreviewBarHtml(a);
+  }
+
+  function annShowPopupPreview() {
+    var a = annFormData();
+    var pop = document.getElementById('annPopup');
+    if (!pop) return;
+    var pri = document.getElementById('annPopPri');
+    pri.className = 'ann-pop-pri ' + (a.priority || 'low');
+    pri.textContent = ANN_PRIORITY_LABEL[a.priority] || 'Medium';
+    pri.style.display = (a.priority === 'low') ? 'none' : 'inline-block';
+    document.getElementById('annPopIcon').textContent = annIcon(a.type);
+    document.getElementById('annPopTitle').textContent = a.popupTitle || a.title || 'Announcement';
+    document.getElementById('annPopBody').innerHTML = a.popupBody || ('<p>' + escapeHtml(annText(a)) + '</p>');
+    var actions = document.getElementById('annPopActions');
+    actions.innerHTML = '';
+    var close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'btn-primary';
+    close.textContent = 'Close preview';
+    close.addEventListener('click', function () { pop.classList.remove('show'); });
+    actions.appendChild(close);
+    pop.classList.add('show');
+  }
+
+  /* ---- actions ---- */
+  function annSaveFromForm() {
+    var data = annFormData();
+    if (!data.title) { alert('Please give the announcement a title.'); return; }
+    if (!annText(data)) { alert('Please add announcement text (English or বাংলা).'); return; }
+    if (data.start && data.end && new Date(data.start) > new Date(data.end)) {
+      alert('The “go live” time is after the “stop showing” time.');
+      return;
+    }
+    var list = annList();
+    var idx = -1;
+    list.forEach(function (x, i) { if (String(x.id) === String(data.id)) idx = i; });
+    if (idx > -1) {
+      data.createdAt = list[idx].createdAt || Date.now();
+      data.updatedAt = Date.now();
+      list[idx] = data;
+    } else {
+      data.createdAt = Date.now();
+      data.updatedAt = Date.now();
+      list.push(data);
+    }
+    annPersist();
+    annEditorLoad(null);
+    ssToast('Announcement saved');
+  }
+
+  function annDelete(id) {
+    var a = annById(id);
+    if (!a) return;
+    if (!confirm('Delete “' + (a.title || 'this announcement') + '”?\n\nIts statistics will be removed too. Use Archive instead if you only want to hide it.')) return;
+    settings.announcements = annList().filter(function (x) { return String(x.id) !== String(id); });
+    var st = annStats();
+    delete st[id];
+    try { localStorage.setItem(ANN_STATS_KEY, JSON.stringify(st)); } catch (e) {}
+    annPersist();
+  }
+
+  function annDuplicate(id) {
+    var a = annById(id);
+    if (!a) return;
+    var copy = JSON.parse(JSON.stringify(a));
+    copy.id = 'ann_' + Date.now();
+    copy.title = (a.title || '') + ' (Copy)';
+    copy.active = false;
+    copy.archived = false;
+    copy.createdAt = Date.now();
+    annList().push(copy);
+    annPersist();
+    annEditorLoad(copy);
+    ssToast('Duplicated as a paused draft');
+  }
+
+  function annToggleActive(id) {
+    var a = annById(id);
+    if (!a) return;
+    a.active = !a.active;
+    a.archived = false;
+    annPersist();
+  }
+
+  function annToggleArchive(id) {
+    var a = annById(id);
+    if (!a) return;
+    a.archived = !a.archived;
+    if (a.archived) a.active = false;
+    annPersist();
+  }
+
+  /* ---- wiring ---- */
+  (function bindAnnouncements() {
+    var panel = document.getElementById('annPanel');
+    if (panel) {
+      panel.addEventListener('click', function (e) {
+        var f = e.target.closest('[data-annfilter]');
+        if (f) { annFilter = f.getAttribute('data-annfilter'); annRender(); return; }
+        var b = e.target.closest('[data-ann]');
+        if (!b) return;
+        var act = b.getAttribute('data-ann');
+        var id = b.getAttribute('data-id');
+        if (act === 'new') { annEditorLoad(null); var t = document.getElementById('annTitle'); if (t) t.focus(); }
+        else if (act === 'edit') { var a = annById(id); if (a) annEditorLoad(a); }
+        else if (act === 'toggle') annToggleActive(id);
+        else if (act === 'dup') annDuplicate(id);
+        else if (act === 'archive') annToggleArchive(id);
+        else if (act === 'del') annDelete(id);
+        else if (act === 'resetstats') {
+          if (confirm('Reset all announcement view and click counters?')) {
+            try { localStorage.setItem(ANN_STATS_KEY, '{}'); } catch (err) {}
+            ANN_SEEN = {};
+            annRender();
+          }
+        }
+      });
+    }
+
+    var form = document.getElementById('annEditorForm');
+    if (form) {
+      form.addEventListener('submit', function (e) { e.preventDefault(); annSaveFromForm(); });
+    }
+    var cancel = document.getElementById('annCancelBtn');
+    if (cancel) cancel.addEventListener('click', function () { annEditorLoad(null); });
+    var pb = document.getElementById('annPreviewBarBtn');
+    if (pb) pb.addEventListener('click', annShowBarPreview);
+    var pp = document.getElementById('annPreviewPopupBtn');
+    if (pp) pp.addEventListener('click', annShowPopupPreview);
+
+    var pop = document.getElementById('annPopup');
+    if (pop) {
+      var pc = document.getElementById('annPopClose');
+      if (pc) pc.addEventListener('click', function () {
+        pop.classList.remove('show');
+        var cand = annCandidates();
+        for (var i = 0; i < cand.length; i++) {
+          if (cand[i].display !== 'bar') { ANN_SEEN['popup_' + cand[i].id] = true; break; }
+        }
+      });
+      pop.addEventListener('click', function (e) { if (e.target === pop) pop.classList.remove('show'); });
+    }
+
+    annRender();
+    annEditorLoad(null);
+  })();
+  /* ============================================================
+     DESIGN STUDIO — header/footer layout, nav builder, buttons,
+     cards, background, sections, device preview, theme backup
+     ============================================================ */
+  var DESIGN_DEFAULTS = {
+    headerOrder: ['brand', 'nav', 'search', 'controls'],
+    headerAlign: 'space-between', headerSticky: false, headerSearch: 'hero',
+    navItems: [
+      { id: 'n1', label: 'Tools', url: '#', newTab: false, children: [] },
+      { id: 'n2', label: 'Feedback', url: '#', newTab: false, children: [] }
+    ],
+    footerCols: 3, footerQuick: 'on', footerNews: 'off',
+    footerColMap: { social: 1, contact: 1, quick: 2, legal: 3, news: 4 },
+    btnCustom: false, btnBg1: '#6366f1', btnBg2: '#a855f7', btnFg: '#ffffff',
+    btnHover: 'lift', btnRadius: 12, btnPy: 9, btnPx: 16, btnWeight: 600,
+    cardBorderW: 1, cardBorderStyle: 'solid', cardBorderColor: '', cardHover: 'lift',
+    cardShadowColor: '',
+    bgPattern: 'none', bgImage: '', bgOpacity: 30, bgSize: 'cover', bgBlur: 0,
+    sections: { announcement: true, heroPill: true, hero: true, search: true, filters: true,
+                footer: true, feedback: true, blobs: true, social: true }
+  };
+
+  var AP_SECTIONS = [
+    ['announcement', 'Announcement bar', 'The notice banner at the very top'],
+    ['heroPill', 'Hero badge pill', 'The small “free & browser-based” pill'],
+    ['hero', 'Hero heading & text', 'The big title and paragraph'],
+    ['search', 'Search box', 'The tool search bar'],
+    ['filters', 'Category chips', 'The filter buttons under the search'],
+    ['footer', 'Footer', 'The whole footer block'],
+    ['feedback', 'Feedback button', 'The floating feedback / bug button'],
+    ['blobs', 'Background glow', 'Animated blobs and the grain overlay'],
+    ['social', 'Footer social icons', 'Social media links in the footer']
+  ];
+
+  var AP_RESET_MAP = {
+    type: ['fontFamily', 'fontSize'],
+    cards: ['cardRadius', 'glassAlpha', 'glassBlur', 'shadowStrength', 'cardBorderW', 'cardBorderStyle', 'cardBorderColor', 'cardHover', 'cardShadowColor'],
+    buttons: ['btnCustom', 'btnBg1', 'btnBg2', 'btnFg', 'btnHover', 'btnRadius', 'btnPy', 'btnPx', 'btnWeight'],
+    glow: ['blobOpacity', 'blob1', 'blob2', 'blob3', 'blob4'],
+    header: ['headerOrder', 'headerAlign', 'headerSticky', 'headerSearch'],
+    nav: ['navItems'],
+    footer: ['footerCols', 'footerQuick', 'footerNews', 'footerColMap'],
+    bg: ['bgPattern', 'bgImage', 'bgOpacity', 'bgSize', 'bgBlur'],
+    sections: ['sections'],
+    css: ['customCss']
+  };
+
+  var AP_THEME_KEYS = ['color1', 'color2', 'fontFamily', 'fontSize', 'cardRadius', 'glassAlpha', 'glassBlur',
+    'shadowStrength', 'blobOpacity', 'blob1', 'blob2', 'blob3', 'blob4', 'customCss', 'themePreset',
+    'headerOrder', 'headerAlign', 'headerSticky', 'headerSearch', 'navItems',
+    'footerCols', 'footerQuick', 'footerNews', 'footerColMap',
+    'btnCustom', 'btnBg1', 'btnBg2', 'btnFg', 'btnHover', 'btnRadius', 'btnPy', 'btnPx', 'btnWeight',
+    'cardBorderW', 'cardBorderStyle', 'cardBorderColor', 'cardHover', 'cardShadowColor',
+    'bgPattern', 'bgImage', 'bgOpacity', 'bgSize', 'bgBlur', 'sections'];
+
+  var AP_PATTERNS = {
+    none: '',
+    dots: 'radial-gradient(circle, rgba(255,255,255,.20) 1px, transparent 1px)',
+    grid: 'linear-gradient(rgba(255,255,255,.09) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.09) 1px, transparent 1px)',
+    diagonal: 'repeating-linear-gradient(45deg, rgba(255,255,255,.08) 0 2px, transparent 2px 11px)',
+    cross: 'repeating-linear-gradient(45deg, rgba(255,255,255,.07) 0 1px, transparent 1px 13px), repeating-linear-gradient(-45deg, rgba(255,255,255,.07) 0 1px, transparent 1px 13px)',
+    noise: "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E\")"
+  };
+  var AP_PATTERN_SIZE = { dots: '22px 22px', grid: '42px 42px', diagonal: 'auto', cross: 'auto', noise: '140px 140px', none: 'auto' };
+
+  var apHeaderDraft = null;
+  var apNavDraft = null;
+
+  function apDesignValues() {
+    var s = settings;
+    return {
+      headerOrder: (Array.isArray(s.headerOrder) && s.headerOrder.length) ? s.headerOrder.slice() : DESIGN_DEFAULTS.headerOrder.slice(),
+      headerAlign: s.headerAlign || DESIGN_DEFAULTS.headerAlign,
+      headerSticky: !!s.headerSticky,
+      headerSearch: s.headerSearch || DESIGN_DEFAULTS.headerSearch,
+      navItems: Array.isArray(s.navItems) ? s.navItems : DESIGN_DEFAULTS.navItems,
+      footerCols: Math.max(1, Math.min(4, Number(s.footerCols) || DESIGN_DEFAULTS.footerCols)),
+      footerQuick: s.footerQuick !== 'off',
+      footerNews: s.footerNews === 'on',
+      footerColMap: s.footerColMap || DESIGN_DEFAULTS.footerColMap,
+      btnCustom: !!s.btnCustom,
+      btnBg1: s.btnBg1 || DESIGN_DEFAULTS.btnBg1,
+      btnBg2: s.btnBg2 || DESIGN_DEFAULTS.btnBg2,
+      btnFg: s.btnFg || DESIGN_DEFAULTS.btnFg,
+      btnHover: s.btnHover || DESIGN_DEFAULTS.btnHover,
+      btnRadius: s.btnRadius == null ? DESIGN_DEFAULTS.btnRadius : Number(s.btnRadius),
+      btnPy: s.btnPy == null ? DESIGN_DEFAULTS.btnPy : Number(s.btnPy),
+      btnPx: s.btnPx == null ? DESIGN_DEFAULTS.btnPx : Number(s.btnPx),
+      btnWeight: s.btnWeight == null ? DESIGN_DEFAULTS.btnWeight : Number(s.btnWeight),
+      cardBorderW: s.cardBorderW == null ? DESIGN_DEFAULTS.cardBorderW : Number(s.cardBorderW),
+      cardBorderStyle: s.cardBorderStyle || DESIGN_DEFAULTS.cardBorderStyle,
+      cardBorderColor: s.cardBorderColor || '',
+      cardHover: s.cardHover || DESIGN_DEFAULTS.cardHover,
+      cardShadowColor: s.cardShadowColor || '',
+      bgPattern: s.bgPattern || 'none',
+      bgImage: s.bgImage || '',
+      bgOpacity: s.bgOpacity == null ? DESIGN_DEFAULTS.bgOpacity : Number(s.bgOpacity),
+      bgSize: s.bgSize || 'cover',
+      bgBlur: s.bgBlur == null ? DESIGN_DEFAULTS.bgBlur : Number(s.bgBlur),
+      sections: Object.assign({}, DESIGN_DEFAULTS.sections, s.sections || {})
+    };
+  }
+
+  /* ---- live rendering ---- */
+  function apApplyHeader(d) {
+    var inner = document.getElementById('topInner');
+    if (inner) {
+      inner.style.justifyContent = d.headerAlign;
+      Array.prototype.forEach.call(inner.querySelectorAll('[data-hblock]'), function (b) {
+        var i = d.headerOrder.indexOf(b.getAttribute('data-hblock'));
+        b.style.order = (i === -1 ? 90 : i);
+      });
+    }
+    var head = document.getElementById('siteHeader');
+    if (head) head.classList.toggle('sticky-head', !!d.headerSticky);
+
+    var box = document.querySelector('.search-box');
+    var slot = document.getElementById('headerSearchSlot');
+    var anchor = document.getElementById('heroSearchAnchor');
+    if (box && slot && anchor) {
+      if (d.headerSearch === 'header') { slot.classList.add('on'); if (box.parentNode !== slot) slot.appendChild(box); }
+      else { slot.classList.remove('on'); if (box.parentNode !== anchor) anchor.appendChild(box); }
+    }
+    apRenderNav(d);
+  }
+
+  function apRenderNav(d) {
+    var nav = document.getElementById('headerNav');
+    if (!nav) return;
+    nav.innerHTML = '';
+    var items = (d.navItems || []).filter(function (i) { return i && (i.label || '').trim(); });
+    if (!items.length) { nav.style.display = 'none'; return; }
+    nav.style.display = 'flex';
+    items.forEach(function (it) {
+      var wrap = document.createElement('div');
+      wrap.className = 'hn-item';
+      var a = document.createElement('a');
+      a.href = it.url || '#';
+      a.textContent = it.label;
+      if (it.newTab) { a.target = '_blank'; a.rel = 'noopener'; }
+      wrap.appendChild(a);
+      if (Array.isArray(it.children) && it.children.length) {
+        var sub = document.createElement('div');
+        sub.className = 'hn-sub';
+        it.children.forEach(function (c) {
+          if (!c || !c.label) return;
+          var ca = document.createElement('a');
+          ca.href = c.url || '#';
+          ca.textContent = c.label;
+          if (c.newTab) { ca.target = '_blank'; ca.rel = 'noopener'; }
+          sub.appendChild(ca);
+        });
+        if (sub.children.length) wrap.appendChild(sub);
+      }
+      nav.appendChild(wrap);
+    });
+  }
+
+  function apRenderFooter(d) {
+    var grid = document.getElementById('footerGrid');
+    if (!grid) return;
+    grid.style.gridTemplateColumns = 'repeat(' + d.footerCols + ',minmax(0,1fr))';
+    var map = d.footerColMap || DESIGN_DEFAULTS.footerColMap;
+    function col(n) { n = Number(n) || 1; return ((n - 1) % d.footerCols) + 1; }
+    function place(el, n) {
+      var target = grid.querySelector('.footer-col[data-fcol="' + col(n) + '"]');
+      if (target && el && el.parentNode !== target) target.appendChild(el);
+    }
+    place(document.getElementById('footerSocial'), map.social);
+    place(document.getElementById('footerContact'), map.contact);
+    place(document.getElementById('footerLegal'), map.legal);
+
+    var quickCol = grid.querySelector('.footer-col[data-fcol="' + col(map.quick) + '"]');
+    var newsCol = grid.querySelector('.footer-col[data-fcol="' + col(map.news) + '"]');
+
+    var oldQuick = document.getElementById('footerQuickBlock');
+    if (oldQuick) oldQuick.remove();
+    var oldNews = document.getElementById('footerNewsBlock');
+    if (oldNews) oldNews.remove();
+
+    if (d.footerQuick && quickCol) {
+      var q = document.createElement('div');
+      q.id = 'footerQuickBlock';
+      var links = (d.navItems || []).filter(function (i) { return i && i.label; });
+      q.innerHTML = '<div class="footer-col-title">Quick links</div><div class="footer-quick">' +
+        (links.length ? links.map(function (i) {
+          return '<a href="' + escapeHtml(i.url || '#') + '"' + (i.newTab ? ' target="_blank" rel="noopener"' : '') + '>' +
+            escapeHtml(i.label) + '</a>';
+        }).join('') : '<a href="#">Home</a>') + '</div>';
+      quickCol.appendChild(q);
+    }
+    if (d.footerNews && newsCol) {
+      var n = document.createElement('div');
+      n.id = 'footerNewsBlock';
+      n.innerHTML = '<div class="footer-col-title">Newsletter</div>' +
+        '<p style="font-size:12px;color:var(--muted);line-height:1.6;">Get new tools and updates in your inbox.</p>' +
+        '<form class="footer-news" id="footerNewsForm"><input type="email" placeholder="you@example.com" required>' +
+        '<button type="submit">Join</button></form>';
+      newsCol.appendChild(n);
+      var f = document.getElementById('footerNewsForm');
+      if (f) f.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (typeof anTrackConversion === 'function') anTrackConversion('newsletter');
+        this.innerHTML = '<p style="font-size:12px;color:#10b981;font-weight:700;">Thanks — you are on the list!</p>';
+      });
+    }
+  }
+
+  function apApplyButtons(d) {
+    var r = document.documentElement;
+    r.style.setProperty('--btn-radius', d.btnRadius + 'px');
+    r.style.setProperty('--btn-py', d.btnPy + 'px');
+    r.style.setProperty('--btn-px', d.btnPx + 'px');
+    r.style.setProperty('--btn-weight', String(d.btnWeight));
+    r.style.setProperty('--btn-bg1', d.btnBg1);
+    r.style.setProperty('--btn-bg2', d.btnBg2);
+    r.style.setProperty('--btn-fg', d.btnFg);
+    document.body.classList.toggle('btn-custom', !!d.btnCustom);
+    document.body.classList.remove('btn-hover-lift', 'btn-hover-glow', 'btn-hover-none');
+    document.body.classList.add('btn-hover-' + (d.btnHover || 'lift'));
+  }
+
+  function apApplyCards(d) {
+    var r = document.documentElement;
+    r.style.setProperty('--card-bw', d.cardBorderW + 'px');
+    r.style.setProperty('--card-bs', d.cardBorderStyle === 'none' ? 'solid' : d.cardBorderStyle);
+    r.style.setProperty('--card-bc', d.cardBorderColor || 'var(--panel-border)');
+    if (d.cardShadowColor) {
+      var st = Math.max(0, Math.min(100, Number(settings.shadowStrength == null ? 70 : settings.shadowStrength))) / 100;
+      r.style.setProperty('--card-shadow', '0 ' + (5 + Math.round(st * 10)) + 'px ' + (16 + Math.round(st * 26)) + 'px -14px ' + apHexA(d.cardShadowColor, (st * 0.6).toFixed(2)));
+      r.style.setProperty('--card-shadow-hover', '0 ' + (11 + Math.round(st * 17)) + 'px ' + (26 + Math.round(st * 34)) + 'px -14px ' + apHexA(d.cardShadowColor, Math.min(0.95, st * 0.75 + 0.15).toFixed(2)));
+    }
+    if (d.cardBorderStyle === 'none') r.style.setProperty('--card-bw', '0px');
+    document.body.classList.remove('card-hover-lift', 'card-hover-tilt', 'card-hover-zoom', 'card-hover-none');
+    document.body.classList.add('card-hover-' + (d.cardHover || 'lift'));
+  }
+  function apHexA(hex, alpha) {
+    var h = String(hex || '#000000').replace('#', '');
+    if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+    var n = parseInt(h, 16);
+    if (isNaN(n)) return 'rgba(0,0,0,' + alpha + ')';
+    return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + alpha + ')';
+  }
+
+  function apApplyBackground(d) {
+    var layer = document.getElementById('bgLayer');
+    if (!layer) {
+      layer = document.createElement('div');
+      layer.id = 'bgLayer';
+      layer.setAttribute('aria-hidden', 'true');
+      document.body.insertBefore(layer, document.body.firstChild);
+    }
+    var pattern = AP_PATTERNS[d.bgPattern] || '';
+    var img = d.bgImage ? 'url("' + d.bgImage + '")' : '';
+    var layers = [];
+    if (img) layers.push(img);
+    if (pattern) layers.push(pattern);
+    layer.style.backgroundImage = layers.join(', ') || 'none';
+    layer.style.backgroundSize = img ? d.bgSize : (AP_PATTERN_SIZE[d.bgPattern] || 'auto');
+    layer.style.filter = d.bgBlur ? 'blur(' + d.bgBlur + 'px)' : 'none';
+    document.documentElement.style.setProperty('--bg-opacity', String(Math.max(0, Math.min(100, d.bgOpacity)) / 100));
+    layer.classList.toggle('on', !!(img || pattern));
+    var st = document.getElementById('apBgState');
+    if (st) st.textContent = d.bgImage ? 'Image uploaded (stored in this browser)' : 'No image uploaded';
+  }
+
+  function apApplySections(d) {
+    var css = '';
+    var s = d.sections;
+    if (!s.announcement) css += '#announcementBar{display:none!important}';
+    if (!s.heroPill) css += '.hero .pill{display:none!important}';
+    if (!s.hero) css += '.hero h1,.hero p{display:none!important}';
+    if (!s.search) css += '.search-box{display:none!important}';
+    if (!s.filters) css += '#filters{display:none!important}';
+    if (!s.footer) css += '.site-footer{display:none!important}';
+    if (!s.feedback) css += '#openFeedbackModalBtn{display:none!important}';
+    if (!s.blobs) css += '.blobs,.grain{display:none!important}';
+    if (!s.social) css += '#footerSocial{display:none!important}';
+    var el = document.getElementById('dasSectionCss');
+    if (!el) {
+      el = document.createElement('style');
+      el.id = 'dasSectionCss';
+      document.head.appendChild(el);
+    }
+    if (el.textContent !== css) el.textContent = css;
+  }
+
+  function apApplyDesign() {
+    var d = apDesignValues();
+    apApplyHeader(d);
+    apRenderFooter(d);
+    apApplyButtons(d);
+    apApplyCards(d);
+    apApplyBackground(d);
+    apApplySections(d);
+  }
+
+  /* ---- admin UI: header order ---- */
+  var AP_HBLOCK_LABEL = { brand: 'Brand / logo + title', nav: 'Navigation menu', search: 'Search box', controls: 'Buttons (admin, theme, language)' };
+
+  function apRenderHeaderOrder() {
+    var box = document.getElementById('apHeaderOrder');
+    if (!box) return;
+    if (!apHeaderDraft) apHeaderDraft = apDesignValues().headerOrder.slice();
+    box.innerHTML = apHeaderDraft.map(function (k, i) {
+      return '<div class="ap-dragitem" draggable="true" data-hk="' + k + '" data-hi="' + i + '">' +
+        '<span class="grip">⋮⋮</span><span>' + (AP_HBLOCK_LABEL[k] || k) + '</span>' +
+        '<small>#' + (i + 1) + '</small></div>';
+    }).join('');
+    Array.prototype.forEach.call(box.querySelectorAll('.ap-dragitem'), function (el) {
+      el.addEventListener('dragstart', function (e) {
+        e.dataTransfer.setData('text/plain', el.getAttribute('data-hk'));
+        e.dataTransfer.effectAllowed = 'move';
+      });
+      el.addEventListener('dragover', function (e) { e.preventDefault(); el.classList.add('dragover'); });
+      el.addEventListener('dragleave', function () { el.classList.remove('dragover'); });
+      el.addEventListener('drop', function (e) {
+        e.preventDefault();
+        el.classList.remove('dragover');
+        var from = e.dataTransfer.getData('text/plain');
+        var to = el.getAttribute('data-hk');
+        if (!from || from === to) return;
+        var arr = apHeaderDraft.filter(function (x) { return x !== from; });
+        arr.splice(arr.indexOf(to), 0, from);
+        apHeaderDraft = arr;
+        settings.headerOrder = arr.slice();
+        apRenderHeaderOrder();
+        apApplyDesign();
+      });
+    });
+  }
+
+  /* ---- admin UI: nav builder ---- */
+  function apRenderNavList() {
+    var box = document.getElementById('apNavList');
+    if (!box) return;
+    if (!apNavDraft) apNavDraft = JSON.parse(JSON.stringify(apDesignValues().navItems || []));
+    if (!apNavDraft.length) {
+      box.innerHTML = '<div class="ap-empty">No menu items yet — add one below.</div>';
+      return;
+    }
+    box.innerHTML = apNavDraft.map(function (it, i) {
+      var subs = (it.children || []).map(function (c, j) {
+        return '<div class="ap-subitem">↳ <input type="text" data-nav="' + i + '" data-sub="' + j + '" data-field="label" value="' + escapeHtml(c.label || '') + '" placeholder="Sub-link label">' +
+          '<input type="text" data-nav="' + i + '" data-sub="' + j + '" data-field="url" value="' + escapeHtml(c.url || '') + '" placeholder="/url">' +
+          '<button type="button" class="ap-iconbtn danger" data-navdel="' + i + ':' + j + '">✕</button></div>';
+      }).join('');
+      return '<div class="ap-item">' +
+        '<button type="button" class="ap-iconbtn" data-navup="' + i + '" title="Move up">↑</button>' +
+        '<button type="button" class="ap-iconbtn" data-navdown="' + i + '" title="Move down">↓</button>' +
+        '<input type="text" data-nav="' + i + '" data-field="label" value="' + escapeHtml(it.label || '') + '" placeholder="Label">' +
+        '<input type="text" data-nav="' + i + '" data-field="url" value="' + escapeHtml(it.url || '') + '" placeholder="/url">' +
+        '<button type="button" class="ap-iconbtn" data-navsub="' + i + '" title="Add sub-link">＋</button>' +
+        '<button type="button" class="ap-iconbtn danger" data-navdel="' + i + '">✕</button>' +
+        (subs ? '<div class="sub">Sub-links (dropdown):</div>' + subs : '') +
+        '</div>';
+    }).join('');
+  }
+
+  function apNavSync() {
+    settings.navItems = JSON.parse(JSON.stringify(apNavDraft || []));
+    apApplyDesign();
+  }
+
+  /* ---- admin UI: section toggles ---- */
+  function apRenderSectionToggles() {
+    var box = document.getElementById('apSectionToggles');
+    if (!box) return;
+    var s = Object.assign({}, DESIGN_DEFAULTS.sections, settings.sections || {});
+    box.innerHTML = AP_SECTIONS.map(function (row) {
+      return '<div class="ap-toggle"><input type="checkbox" data-sec="' + row[0] + '"' + (s[row[0]] !== false ? ' checked' : '') + '>' +
+        '<label for="apsec-' + row[0] + '">' + row[1] + '<small>' + row[2] + '</small></label></div>';
+    }).join('');
+    Array.prototype.forEach.call(box.querySelectorAll('[data-sec]'), function (cb) {
+      cb.addEventListener('change', function () {
+        var cur = Object.assign({}, DESIGN_DEFAULTS.sections, settings.sections || {});
+        cur[cb.getAttribute('data-sec')] = cb.checked;
+        settings.sections = cur;
+        apApplySections(apDesignValues());
+      });
+    });
+  }
+
+  /* ---- fill / save ---- */
+  function apFillDesign() {
+    function set(id, v) { var el = document.getElementById(id); if (el) el.value = (v == null ? '' : v); }
+    function chk(id, v) { var el = document.getElementById(id); if (el) el.checked = !!v; }
+    var d = apDesignValues();
+    apHeaderDraft = d.headerOrder.slice();
+    apNavDraft = JSON.parse(JSON.stringify(d.navItems || []));
+    set('apHeaderAlign', d.headerAlign);
+    set('apHeaderSearch', d.headerSearch);
+    chk('apHeaderSticky', d.headerSticky);
+    set('apFooterCols', d.footerCols);
+    set('apFooterQuick', d.footerQuick ? 'on' : 'off');
+    set('apFooterNews', d.footerNews ? 'on' : 'off');
+    set('apColSocial', d.footerColMap.social || 1);
+    set('apColContact', d.footerColMap.contact || 1);
+    set('apColQuick', d.footerColMap.quick || 2);
+    set('apColLegal', d.footerColMap.legal || 3);
+    chk('apBtnCustom', d.btnCustom);
+    set('apBtnBg1', d.btnBg1);
+    set('apBtnBg2', d.btnBg2);
+    set('apBtnFg', d.btnFg);
+    set('apBtnHover', d.btnHover);
+    set('apBtnRadius', d.btnRadius);
+    set('apBtnPy', d.btnPy);
+    set('apBtnPx', d.btnPx);
+    set('apBtnWeight', d.btnWeight);
+    set('apCardBorderW', d.cardBorderW);
+    set('apCardBorderStyle', d.cardBorderStyle);
+    set('apCardHover', d.cardHover);
+    if (d.cardBorderColor) set('apCardBorderColor', d.cardBorderColor);
+    if (d.cardShadowColor) set('apCardShadowColor', d.cardShadowColor);
+    set('apBgPattern', d.bgPattern);
+    set('apBgOpacity', d.bgOpacity);
+    set('apBgSize', d.bgSize);
+    set('apBgBlur', d.bgBlur);
+    apDesignLabels();
+    apRenderHeaderOrder();
+    apRenderNavList();
+    apRenderSectionToggles();
+    apApplyDesign();
+  }
+
+  function apDesignLabels() {
+    function v(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+    function t(id, txt) { var el = document.getElementById(id); if (el) el.textContent = txt; }
+    t('apBwVal', v('apCardBorderW') + 'px');
+    t('apBtnRadiusVal', v('apBtnRadius') + 'px');
+    t('apBtnPyVal', v('apBtnPy') + 'px');
+    t('apBtnPxVal', v('apBtnPx') + 'px');
+    t('apBtnWeightVal', v('apBtnWeight'));
+    t('apBgOpacityVal', v('apBgOpacity') + '%');
+    t('apBgBlurVal', v('apBgBlur') + 'px');
+  }
+
+  function apSaveDesign() {
+    function v(id) { var el = document.getElementById(id); return el ? el.value : ''; }
+    function c(id) { var el = document.getElementById(id); return !!(el && el.checked); }
+    settings.headerOrder = (apHeaderDraft || DESIGN_DEFAULTS.headerOrder).slice();
+    settings.headerAlign = v('apHeaderAlign') || 'space-between';
+    settings.headerSearch = v('apHeaderSearch') || 'hero';
+    settings.headerSticky = c('apHeaderSticky');
+    settings.navItems = JSON.parse(JSON.stringify(apNavDraft || []));
+    settings.footerCols = Number(v('apFooterCols')) || 3;
+    settings.footerQuick = v('apFooterQuick') || 'on';
+    settings.footerNews = v('apFooterNews') || 'off';
+    settings.footerColMap = {
+      social: Number(v('apColSocial')) || 1,
+      contact: Number(v('apColContact')) || 1,
+      quick: Number(v('apColQuick')) || 2,
+      legal: Number(v('apColLegal')) || 3,
+      news: 4
+    };
+    settings.btnCustom = c('apBtnCustom');
+    settings.btnBg1 = v('apBtnBg1') || '#6366f1';
+    settings.btnBg2 = v('apBtnBg2') || '#a855f7';
+    settings.btnFg = v('apBtnFg') || '#ffffff';
+    settings.btnHover = v('apBtnHover') || 'lift';
+    settings.btnRadius = Number(v('apBtnRadius'));
+    settings.btnPy = Number(v('apBtnPy'));
+    settings.btnPx = Number(v('apBtnPx'));
+    settings.btnWeight = Number(v('apBtnWeight'));
+    settings.cardBorderW = Number(v('apCardBorderW'));
+    settings.cardBorderStyle = v('apCardBorderStyle') || 'solid';
+    settings.cardHover = v('apCardHover') || 'lift';
+    settings.cardBorderColor = v('apCardBorderColor');
+    settings.cardShadowColor = v('apCardShadowColor');
+    settings.bgPattern = v('apBgPattern') || 'none';
+    settings.bgOpacity = Number(v('apBgOpacity'));
+    settings.bgSize = v('apBgSize') || 'cover';
+    settings.bgBlur = Number(v('apBgBlur'));
+    apApplyDesign();
+  }
+
+  /* ---- device preview ---- */
+  var AP_DEVICES = { mobile: 390, tablet: 768, desktop: 1180 };
+  function apLoadPreview() {
+    var f = document.getElementById('deviceIframe');
+    if (!f) return;
+    try {
+      var base = location.href.split('#')[0];
+      f.src = base + (base.indexOf('?') > -1 ? '&' : '?') + 'preview=' + Date.now();
+    } catch (e) { f.src = location.href; }
+  }
+  function apSetDevice(dev) {
+    var w = AP_DEVICES[dev] || 1180;
+    var frame = document.getElementById('deviceFrame');
+    var f = document.getElementById('deviceIframe');
+    if (frame) frame.style.width = w + 'px';
+    if (f) { f.style.width = w + 'px'; f.style.height = (dev === 'mobile' ? 640 : 560) + 'px'; }
+    Array.prototype.forEach.call(document.querySelectorAll('.device-bar [data-device]'), function (b) {
+      b.classList.toggle('active', b.getAttribute('data-device') === dev);
+    });
+    var meta = document.getElementById('deviceMeta');
+    if (meta) meta.textContent = dev.charAt(0).toUpperCase() + dev.slice(1) + ' view · ' + w + 'px wide · this is the real site with your saved settings.';
+  }
+
+  /* ---- export / import ---- */
+  function apExportTheme() {
+    var data = { app: 'DAS Studio', type: 'das-theme', schema: 1, exportedAt: new Date().toISOString(), theme: {} };
+    AP_THEME_KEYS.forEach(function (k) { if (settings[k] !== undefined) data.theme[k] = settings[k]; });
+    downloadText('das-theme-' + new Date().toISOString().slice(0, 10) + '.json',
+      JSON.stringify(data, null, 2), 'application/json');
+    try { logAct('theme', 'Theme exported'); } catch (e) {}
+  }
+  function apImportTheme(file) {
+    if (!file) return;
+    var msg = document.getElementById('apImportMsg');
+    var rd = new FileReader();
+    rd.onload = function () {
+      var data;
+      try { data = JSON.parse(rd.result); } catch (e) {
+        if (msg) { msg.style.display = 'block'; msg.textContent = 'That file is not valid JSON.'; }
+        return;
+      }
+      var theme = data && (data.theme || (data.type === undefined ? data : null));
+      if (!theme || typeof theme !== 'object') {
+        if (msg) { msg.style.display = 'block'; msg.textContent = 'No theme data found in this file.'; }
+        return;
+      }
+      var keys = Object.keys(theme).filter(function (k) { return AP_THEME_KEYS.indexOf(k) > -1; });
+      if (!keys.length) {
+        if (msg) { msg.style.display = 'block'; msg.textContent = 'This file has no recognised theme settings.'; }
+        return;
+      }
+      if (!confirm('Apply this theme?\n\nIt will overwrite your current appearance settings (' + keys.length + ' values).')) return;
+      keys.forEach(function (k) { settings[k] = theme[k]; });
+      apPersist();
+      applySettingsToDOM();
+      apFillUI();
+      apFillDesign();
+      if (msg) { msg.style.display = 'block'; msg.textContent = '✅ Theme imported — ' + keys.length + ' settings applied.'; }
+      try { logAct('theme', 'Theme imported (' + keys.length + ' values)'); } catch (e) {}
+    };
+    rd.readAsText(file);
+  }
+
+  /* ---- per-section reset ---- */
+  function apResetGroup(group) {
+    var keys = AP_RESET_MAP[group];
+    if (!keys) return;
+    var names = { type: 'typography', cards: 'card design', buttons: 'buttons', glow: 'glow colours', header: 'header layout', nav: 'navigation menu', footer: 'footer layout', bg: 'background', sections: 'section visibility', css: 'custom CSS' };
+    if (!confirm('Reset ' + (names[group] || group) + ' to the default? Everything else stays as it is.')) return;
+    keys.forEach(function (k) {
+      var dflt = (DESIGN_DEFAULTS[k] !== undefined) ? DESIGN_DEFAULTS[k] : AP_DEFAULTS[k];
+      if (dflt !== undefined) settings[k] = JSON.parse(JSON.stringify(dflt));
+      else delete settings[k];
+    });
+    apPersist();
+    applySettingsToDOM();
+    apFillUI();
+    apFillDesign();
+    try { logToast ? null : null; } catch (e) {}
+    alert((names[group] || group) + ' has been reset.');
+  }
+
+  /* ---- wiring ---- */
+  (function bindDesignStudio() {
+    var subnav = document.getElementById('apSubnav');
+    if (subnav) {
+      subnav.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-apg]');
+        if (!b) return;
+        var g = b.getAttribute('data-apg');
+        Array.prototype.forEach.call(subnav.querySelectorAll('[data-apg]'), function (x) {
+          x.classList.toggle('active', x === b);
+        });
+        Array.prototype.forEach.call(document.querySelectorAll('#tabAppearance .ap-group'), function (grp) {
+          grp.classList.toggle('active', grp.getAttribute('data-apg') === g);
+        });
+      });
+    }
+
+    /* live updates for the new controls */
+    ['apHeaderAlign', 'apHeaderSearch', 'apFooterCols', 'apFooterQuick', 'apFooterNews',
+     'apColSocial', 'apColContact', 'apColQuick', 'apColLegal', 'apBtnHover', 'apCardBorderStyle',
+     'apCardHover', 'apBgPattern', 'apBgSize'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('change', function () { apSaveDesign(); apDesignLabels(); });
+    });
+    ['apBtnRadius', 'apBtnPy', 'apBtnPx', 'apBtnWeight', 'apCardBorderW', 'apBgOpacity', 'apBgBlur']
+      .forEach(function (id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.addEventListener('input', function () { apSaveDesign(); apDesignLabels(); });
+      });
+    ['apBtnBg1', 'apBtnBg2', 'apBtnFg', 'apCardBorderColor', 'apCardShadowColor'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', function () { apSaveDesign(); });
+    });
+    ['apHeaderSticky', 'apBtnCustom'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('change', function () { apSaveDesign(); });
+    });
+
+    var navList = document.getElementById('apNavList');
+    if (navList) {
+      navList.addEventListener('input', function (e) {
+        var t = e.target;
+        if (!t.hasAttribute('data-nav')) return;
+        var i = Number(t.getAttribute('data-nav'));
+        var field = t.getAttribute('data-field');
+        if (t.hasAttribute('data-sub')) {
+          var j = Number(t.getAttribute('data-sub'));
+          if (apNavDraft[i] && apNavDraft[i].children && apNavDraft[i].children[j]) {
+            apNavDraft[i].children[j][field] = t.value;
+            apNavSync();
+          }
+        } else if (apNavDraft[i]) {
+          apNavDraft[i][field] = t.value;
+          apNavSync();
+        }
+      });
+      navList.addEventListener('click', function (e) {
+        var b = e.target.closest('button');
+        if (!b) return;
+        var up = b.getAttribute('data-navup');
+        var down = b.getAttribute('data-navdown');
+        var sub = b.getAttribute('data-navsub');
+        var del = b.getAttribute('data-navdel');
+        if (up !== null && up !== undefined) {
+          var i1 = Number(up);
+          if (i1 > 0) { var tmp = apNavDraft[i1 - 1]; apNavDraft[i1 - 1] = apNavDraft[i1]; apNavDraft[i1] = tmp; }
+          apRenderNavList(); apNavSync();
+        } else if (down !== null && down !== undefined) {
+          var i2 = Number(down);
+          if (i2 < apNavDraft.length - 1) { var t2 = apNavDraft[i2 + 1]; apNavDraft[i2 + 1] = apNavDraft[i2]; apNavDraft[i2] = t2; }
+          apRenderNavList(); apNavSync();
+        } else if (sub !== null && sub !== undefined) {
+          var i3 = Number(sub);
+          if (!apNavDraft[i3].children) apNavDraft[i3].children = [];
+          apNavDraft[i3].children.push({ label: 'New link', url: '#' });
+          apRenderNavList(); apNavSync();
+        } else if (del !== null && del !== undefined) {
+          if (String(del).indexOf(':') > -1) {
+            var parts = String(del).split(':');
+            apNavDraft[Number(parts[0])].children.splice(Number(parts[1]), 1);
+          } else {
+            apNavDraft.splice(Number(del), 1);
+          }
+          apRenderNavList(); apNavSync();
+        }
+      });
+    }
+    var navAdd = document.getElementById('apNavAdd');
+    if (navAdd) navAdd.addEventListener('click', function () {
+      apNavDraft.push({ id: 'n' + Date.now(), label: 'New link', url: '#', newTab: false, children: [] });
+      apRenderNavList(); apNavSync();
+    });
+    var navDef = document.getElementById('apNavDefaults');
+    if (navDef) navDef.addEventListener('click', function () {
+      apNavDraft = JSON.parse(JSON.stringify(DESIGN_DEFAULTS.navItems));
+      apRenderNavList(); apNavSync();
+    });
+
+    var bgFile = document.getElementById('apBgFile');
+    if (bgFile) bgFile.addEventListener('change', function () {
+      var f = this.files && this.files[0];
+      if (!f) return;
+      if (f.size > 2 * 1024 * 1024) { alert('Please choose an image under 2 MB.'); this.value = ''; return; }
+      var rd = new FileReader();
+      rd.onload = function (ev) {
+        settings.bgImage = ev.target.result;
+        apApplyDesign();
+        var st = document.getElementById('apBgState');
+        if (st) st.textContent = 'Image uploaded — save to keep it';
+      };
+      rd.readAsDataURL(f);
+    });
+    var bgClear = document.getElementById('apBgClear');
+    if (bgClear) bgClear.addEventListener('click', function () {
+      settings.bgImage = '';
+      apApplyDesign();
+    });
+
+    var pv = document.getElementById('apOpenPreview');
+    if (pv) pv.addEventListener('click', function () {
+      var m = document.getElementById('devicePreviewModal');
+      if (!m) return;
+      m.classList.add('active');
+      apSetDevice('desktop');
+      apLoadPreview();
+    });
+    var dm = document.getElementById('devicePreviewModal');
+    if (dm) {
+      var close = function () { dm.classList.remove('active'); };
+      var c1 = document.getElementById('deviceClose');
+      if (c1) c1.addEventListener('click', close);
+      dm.addEventListener('click', function (e) { if (e.target === dm) close(); });
+      var rel = document.getElementById('deviceReload');
+      if (rel) rel.addEventListener('click', apLoadPreview);
+      Array.prototype.forEach.call(dm.querySelectorAll('[data-device]'), function (b) {
+        b.addEventListener('click', function () { apSetDevice(b.getAttribute('data-device')); });
+      });
+    }
+
+    var ex = document.getElementById('apExportTheme');
+    if (ex) ex.addEventListener('click', apExportTheme);
+    var im = document.getElementById('apImportTheme');
+    if (im) im.addEventListener('change', function () { apImportTheme(this.files && this.files[0]); this.value = ''; });
+
+    document.addEventListener('click', function (e) {
+      var b = e.target.closest('[data-apreset]');
+      if (b) apResetGroup(b.getAttribute('data-apreset'));
+    });
+
+    var resetAll = document.getElementById('apResetAll');
+    if (resetAll) resetAll.addEventListener('click', function () {
+      if (!confirm('Reset every appearance setting — colours, fonts, cards, buttons, layout, background and custom CSS?')) return;
+      Object.keys(DESIGN_DEFAULTS).forEach(function (k) { delete settings[k]; });
+      for (var k in AP_DEFAULTS) settings[k] = AP_DEFAULTS[k];
+      settings.color1 = '#6366f1';
+      settings.color2 = '#ec4899';
+      apPersist();
+      applySettingsToDOM();
+      apFillUI();
+      apFillDesign();
+    });
+
+    apFillDesign();
+  })();
+  /* ============================================================
+     TICKET THREADS · EMAIL SETTINGS · PUBLIC REPLY
+     ============================================================ */
+  var thTicketId = null;
+  var thMode = 'email';
+
+  function fbThreadOf(it) { return Array.isArray(it.thread) ? it.thread : []; }
+
+  function fbAddThreadMsg(id, entry) {
+    var list = loadFeedbacks(), hit = false;
+    list.forEach(function (it) {
+      if (String(it.id) === String(id)) {
+        if (!Array.isArray(it.thread)) it.thread = [];
+        it.thread.push(entry);
+        hit = true;
+      }
+    });
+    if (!hit) return false;
+    return saveFeedbacks(list);
+  }
+
+  function fbAssignees() {
+    var team = String(fbEmailConfig().team || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+    return team.length ? team : ['Admin'];
+  }
+
+  function thRenderLog(it) {
+    var log = document.getElementById('thLog');
+    if (!log) return;
+    var msgs = fbThreadOf(it).slice().sort(function (a, b) { return (a.at || 0) - (b.at || 0); });
+    if (!msgs.length) {
+      log.innerHTML = '<div class="an-empty" style="text-align:center;color:var(--muted);font-size:12px;padding:16px;">' +
+        'No messages yet. The original request is below.</div>' +
+        '<div class="th-msg user"><div class="meta">👤 ' + escapeHtml(it.name || 'Anonymous') + ' · ' +
+        escapeHtml(ssFmtDateTime(it.createdAt)) + '</div><div class="body">' + escapeHtml(it.message) + '</div></div>';
+      return;
+    }
+    log.innerHTML = '<div class="th-msg user"><div class="meta">👤 ' + escapeHtml(it.name || 'Anonymous') + ' · original request · ' +
+      escapeHtml(ssFmtDateTime(it.createdAt)) + '</div><div class="body">' + escapeHtml(it.message) + '</div></div>' +
+      msgs.map(function (m) {
+        var kind = m.kind === 'user' ? 'user' : (m.kind === 'note' ? 'note' : 'admin');
+        var who = kind === 'user' ? '👤 ' + escapeHtml(it.name || 'User')
+          : (kind === 'note' ? '📝 Internal note — ' + escapeHtml(m.author || 'Admin')
+          : '✉️ ' + escapeHtml(m.author || 'Admin'));
+        var state = '';
+        if (kind === 'admin') {
+          state = m.sent ? '<div class="sent">✓ Sent' + (m.channel === 'email' ? ' by email' : '') + '</div>'
+            : (m.error ? '<div class="failed">✕ Not sent — ' + escapeHtml(m.error) + '</div>'
+                       : '<div class="failed" style="color:var(--muted)">saved only, not emailed</div>');
+        }
+        return '<div class="th-msg ' + kind + '"><div class="meta">' + who + ' · ' + escapeHtml(ssFmtDateTime(m.at)) +
+          '</div><div class="body">' + escapeHtml(m.text) + '</div>' + state + '</div>';
+      }).join('');
+    log.scrollTop = log.scrollHeight;
+  }
+
+  function thOpen(id) {
+    var it = null;
+    loadFeedbacks().forEach(function (x) { if (String(x.id) === String(id)) it = x; });
+    if (!it) return;
+    thTicketId = it.id;
+    if (it.unread) { fbMarkRead(it.id, true); renderFeedbacks(); }
+
+    document.getElementById('thTitle').textContent = 'Ticket ' + (it.ticket || fbRefCode(it));
+    document.getElementById('thWho').textContent = (it.name || 'Anonymous') + (it.email ? ' · ' + it.email : ' · no email');
+    document.getElementById('thSub').textContent = fbTypeMeta(it.type).label + ' · opened ' + ssFmtDateTime(it.createdAt);
+    document.getElementById('thTicket').textContent = it.ticket || fbRefCode(it);
+
+    var st = document.getElementById('thStatus');
+    st.innerHTML = FB_STATUSES.map(function (s) {
+      return '<option value="' + s.id + '"' + (it.status === s.id ? ' selected' : '') + '>' + s.icon + ' ' + s.label + '</option>';
+    }).join('');
+    var pr = document.getElementById('thPriority');
+    pr.innerHTML = FB_PRIORITIES.map(function (p) {
+      return '<option value="' + p.id + '"' + (it.priority === p.id ? ' selected' : '') + '>' + p.icon + ' ' + p.label + '</option>';
+    }).join('');
+    var as = document.getElementById('thAssign');
+    as.innerHTML = '<option value="">Unassigned</option>' + fbAssignees().map(function (m) {
+      return '<option value="' + escapeHtml(m) + '"' + (it.assignedTo === m ? ' selected' : '') + '>' + escapeHtml(m) + '</option>';
+    }).join('');
+
+    document.getElementById('thInput').value = '';
+    thSetMode('email');
+    var cfg = fbEmailConfig();
+    var state = document.getElementById('thSendState');
+    state.textContent = cfg.provider === 'none'
+      ? 'No delivery method configured — replies are saved, use “Copy reply link” or your mail app.'
+      : 'Sending via ' + (cfg.provider === 'emailjs' ? 'EmailJS' : 'webhook');
+    thRenderLog(it);
+    document.getElementById('fbThreadModal').classList.add('active');
+  }
+
+  function thSetMode(mode) {
+    thMode = mode === 'note' ? 'note' : 'email';
+    Array.prototype.forEach.call(document.querySelectorAll('#fbThreadModal [data-thmode]'), function (b) {
+      b.classList.toggle('active', b.getAttribute('data-thmode') === thMode);
+    });
+    var ta = document.getElementById('thInput');
+    if (ta) ta.placeholder = thMode === 'note'
+      ? 'Internal note — only admins can see this, the user never receives it…'
+      : 'Write your reply to the user…';
+  }
+
+  function thSend(sendNow) {
+    if (!thTicketId) return;
+    var ta = document.getElementById('thInput');
+    var text = ta ? ta.value.trim() : '';
+    if (!text) { alert('Write a message first.'); return; }
+    var it = null;
+    loadFeedbacks().forEach(function (x) { if (String(x.id) === String(thTicketId)) it = x; });
+    if (!it) return;
+    var cfg = fbEmailConfig();
+    var msg = {
+      id: 'm_' + Date.now(),
+      kind: thMode === 'note' ? 'note' : 'admin',
+      author: cfg.adminName || 'Admin',
+      text: text,
+      at: Date.now(),
+      channel: 'manual',
+      sent: false,
+      error: ''
+    };
+    var doSend = sendNow && thMode === 'email' && cfg.provider !== 'none' && it.email;
+    if (doSend) {
+      var subject = '[Ticket ' + (it.ticket || fbRefCode(it)) + '] ' + (it.type === 'bug' ? 'Your bug report' : 'Your message');
+      fbSendEmail({ to: it.email, subject: subject, text: text, ticket: it.ticket || '' })
+        .then(function (res) {
+          var list = loadFeedbacks();
+          list.forEach(function (x) {
+            if (String(x.id) !== String(thTicketId)) return;
+            var m = null;
+            (x.thread || []).forEach(function (t) { if (t.id === msg.id) m = t; });
+            if (m) { m.sent = res.ok; m.channel = res.ok ? 'email' : 'manual'; m.error = res.error || ''; }
+          });
+          saveFeedbacks(list);
+          thOpen(thTicketId);
+          renderFeedbacks();
+          if (!res.ok) alert('Could not send the email: ' + res.error + '\n\nThe message was saved in the thread.');
+        });
+      msg.channel = 'email';
+    }
+    fbAddThreadMsg(thTicketId, msg);
+    if (!doSend) {
+      thOpen(thTicketId);
+      renderFeedbacks();
+    }
+    if (ta) ta.value = '';
+  }
+
+  function fbOnStatusChange(id, status) {
+    var cfg = fbEmailConfig();
+    var it = null;
+    loadFeedbacks().forEach(function (x) { if (String(x.id) === String(id)) it = x; });
+    if (!it) return;
+    if (!cfg.statusNotify || !it.email) return;
+    if (status !== 'inprogress' && status !== 'resolved') return;
+    var label = fbStatusMeta(status).label;
+    var subject = '[Ticket ' + (it.ticket || fbRefCode(it)) + '] Status updated: ' + label;
+    var bodyText = 'Hi ' + (it.name || 'there') + ',\n\nYour ticket ' + (it.ticket || fbRefCode(it)) +
+      ' is now marked as "' + label + '".\n\n' +
+      (status === 'resolved' ? 'If everything looks good, no further action is needed — just reply to this email if not.\n\n' : '') +
+      '— ' + (settings.title || 'Support');
+    fbSendEmail({ to: it.email, subject: subject, text: bodyText, ticket: it.ticket || '' });
+  }
+
+  /* ---- email settings modal ---- */
+  function emFill() {
+    var c = fbEmailConfig();
+    document.getElementById('emProvider').value = c.provider || 'none';
+    document.getElementById('emService').value = c.service || '';
+    document.getElementById('emTemplate').value = c.template || '';
+    document.getElementById('emPublicKey').value = c.publicKey || '';
+    document.getElementById('emEndpoint').value = c.endpoint || '';
+    document.getElementById('emToken').value = c.token || '';
+    document.getElementById('emFromName').value = c.fromName || '';
+    document.getElementById('emFromEmail').value = c.fromEmail || '';
+    document.getElementById('emAdminName').value = c.adminName || 'Admin';
+    document.getElementById('emTeam').value = c.team || 'Admin';
+    document.getElementById('emAutoConfirm').checked = !!c.autoConfirm;
+    document.getElementById('emStatusNotify').checked = !!c.statusNotify;
+    document.getElementById('emConfirmSubject').value = c.confirmSubject || '';
+    document.getElementById('emConfirmBody').value = c.confirmBody || '';
+    emToggleBoxes();
+    emStatus();
+    emLogRender();
+  }
+  function emToggleBoxes() {
+    var p = document.getElementById('emProvider').value;
+    document.getElementById('emEmailJsBox').style.display = p === 'emailjs' ? 'block' : 'none';
+    document.getElementById('emWebhookBox').style.display = p === 'webhook' ? 'block' : 'none';
+  }
+  function emStatus() {
+    var c = fbEmailConfig();
+    var el = document.getElementById('emStatus');
+    if (!el) return;
+    if (c.provider === 'none') {
+      el.className = 'em-status warn';
+      el.innerHTML = '⚠️ <b>No delivery method.</b> Replies are saved in the thread and can be copied — nothing is emailed automatically.';
+    } else if (c.provider === 'emailjs' && (!c.service || !c.template || !c.publicKey)) {
+      el.className = 'em-status warn';
+      el.innerHTML = '⚠️ EmailJS is selected but Service ID, Template ID or Public key is missing.';
+    } else if (c.provider === 'webhook' && !c.endpoint) {
+      el.className = 'em-status warn';
+      el.innerHTML = '⚠️ Webhook is selected but no endpoint URL is set.';
+    } else {
+      el.className = 'em-status ok';
+      el.innerHTML = '✅ <b>Ready.</b> Sending through ' + (c.provider === 'emailjs' ? 'EmailJS' : 'your webhook endpoint') +
+        (c.fromEmail ? ' as ' + escapeHtml(c.fromEmail) : '') + '.';
+    }
+  }
+  function emLogRender() {
+    var el = document.getElementById('emLog');
+    if (!el) return;
+    var log = fbMailLog();
+    if (!log.length) { el.textContent = 'No emails sent yet.'; return; }
+    el.innerHTML = log.slice(0, 12).map(function (l) {
+      return '<div>' + escapeHtml(ssFmtDateTime(l.at)) + ' · ' + (l.ok ? '✅' : '✕') + ' ' +
+        escapeHtml(l.to || '—') + ' · ' + escapeHtml(l.subject || '') +
+        (l.error ? ' <span style="color:#ef4444">(' + escapeHtml(l.error) + ')</span>' : '') + '</div>';
+    }).join('');
+  }
+
+  /* ---- public reply via link ---- */
+  function prOpen(ticketNo) {
+    var found = null;
+    loadFeedbacks().forEach(function (it) {
+      if ((it.ticket || '').toUpperCase() === String(ticketNo).toUpperCase()) found = it;
+    });
+    var m = document.getElementById('fbPublicReplyModal');
+    if (!m) return;
+    document.getElementById('prTicket').textContent = ticketNo;
+    document.getElementById('prMessage').value = '';
+    if (!found) {
+      document.getElementById('prMessage').placeholder = 'No ticket found with this number in this browser.';
+    }
+    m.classList.add('active');
+    m.setAttribute('data-ticket', ticketNo);
+  }
+
+  (function bindTickets() {
+    var panel = document.getElementById('feedbackListContainer');
+    if (panel) {
+      panel.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-act]');
+        if (!b) return;
+        var act = b.getAttribute('data-act');
+        var id = b.getAttribute('data-id');
+        if (act === 'thread') { thOpen(id); }
+        else if (act === 'notspam') {
+          var list = loadFeedbacks();
+          list.forEach(function (it) { if (String(it.id) === String(id)) { it.spam = false; it.unread = true; } });
+          saveFeedbacks(list); renderFeedbacks();
+        }
+      });
+    }
+
+    var close = function (id) { var m = document.getElementById(id); if (m) m.classList.remove('active'); };
+    ['thClose'].forEach(function (i) { var b = document.getElementById(i); if (b) b.addEventListener('click', function () { close('fbThreadModal'); }); });
+    var tm = document.getElementById('fbThreadModal');
+    if (tm) tm.addEventListener('click', function (e) { if (e.target === tm) close('fbThreadModal'); });
+
+    Array.prototype.forEach.call(document.querySelectorAll('#fbThreadModal [data-thmode]'), function (b) {
+      b.addEventListener('click', function () { thSetMode(b.getAttribute('data-thmode')); });
+    });
+    var sendBtn = document.getElementById('thSend');
+    if (sendBtn) sendBtn.addEventListener('click', function () { thSend(true); });
+    var saveBtn = document.getElementById('thSaveOnly');
+    if (saveBtn) saveBtn.addEventListener('click', function () { thSend(false); });
+
+    ['thStatus', 'thPriority', 'thAssign'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('change', function () {
+        var list = loadFeedbacks(), hit = false;
+        list.forEach(function (it) {
+          if (String(it.id) !== String(thTicketId)) return;
+          if (id === 'thStatus') it.status = el.value;
+          if (id === 'thPriority') it.priority = el.value;
+          if (id === 'thAssign') it.assignedTo = el.value;
+          hit = true;
+        });
+        if (!hit) return;
+        saveFeedbacks(list);
+        renderFeedbacks();
+        if (id === 'thStatus') fbOnStatusChange(thTicketId, el.value);
+      });
+    });
+
+    var copyLink = document.getElementById('thCopyLink');
+    if (copyLink) copyLink.addEventListener('click', function () {
+      var it = null;
+      loadFeedbacks().forEach(function (x) { if (String(x.id) === String(thTicketId)) it = x; });
+      if (!it) return;
+      var base = (settings.baseUrl || location.href.split('#')[0].split('?')[0]).replace(/\/$/, '/');
+      var link = base + '?ticket=' + encodeURIComponent(it.ticket || '');
+      fbCopy(link, 'Reply link copied:\n' + link);
+    });
+    var markUnread = document.getElementById('thMarkUnread');
+    if (markUnread) markUnread.addEventListener('click', function () {
+      fbMarkRead(thTicketId, false);
+      renderFeedbacks();
+      close('fbThreadModal');
+    });
+
+    /* email settings */
+    var esb = document.getElementById('fbEmailSettingsBtn');
+    if (esb) esb.addEventListener('click', function () {
+      emFill();
+      document.getElementById('fbEmailModal').classList.add('active');
+    });
+    var emc = document.getElementById('emClose');
+    if (emc) emc.addEventListener('click', function () { close('fbEmailModal'); });
+    var emm = document.getElementById('fbEmailModal');
+    if (emm) emm.addEventListener('click', function (e) { if (e.target === emm) close('fbEmailModal'); });
+    var emp = document.getElementById('emProvider');
+    if (emp) emp.addEventListener('change', emToggleBoxes);
+    var emSave = document.getElementById('emSave');
+    if (emSave) emSave.addEventListener('click', function () {
+      fbSaveEmailConfig({
+        provider: document.getElementById('emProvider').value,
+        service: document.getElementById('emService').value.trim(),
+        template: document.getElementById('emTemplate').value.trim(),
+        publicKey: document.getElementById('emPublicKey').value.trim(),
+        endpoint: document.getElementById('emEndpoint').value.trim(),
+        token: document.getElementById('emToken').value.trim(),
+        fromName: document.getElementById('emFromName').value.trim(),
+        fromEmail: document.getElementById('emFromEmail').value.trim(),
+        adminName: document.getElementById('emAdminName').value.trim() || 'Admin',
+        team: document.getElementById('emTeam').value.trim() || 'Admin',
+        autoConfirm: document.getElementById('emAutoConfirm').checked,
+        statusNotify: document.getElementById('emStatusNotify').checked,
+        confirmSubject: document.getElementById('emConfirmSubject').value,
+        confirmBody: document.getElementById('emConfirmBody').value
+      });
+      emStatus();
+      renderFeedbacks();
+      alert('Email setup saved.');
+    });
+    var emTest = document.getElementById('emTest');
+    if (emTest) emTest.addEventListener('click', function () {
+      var c = fbEmailConfig();
+      var to = c.fromEmail || prompt('Send the test email to which address?');
+      if (!to) return;
+      emTest.disabled = true;
+      fbSendEmail({ to: to, subject: 'Test email from your admin panel', text: 'If you can read this, email delivery works.', ticket: 'TEST' })
+        .then(function (r) {
+          emTest.disabled = false;
+          emLogRender(); emStatus();
+          alert(r.ok ? 'Test email accepted by the provider.' : 'Failed: ' + r.error);
+        });
+    });
+
+    /* export buttons */
+    var xls = document.getElementById('fbExportXlsBtn');
+    if (xls) xls.addEventListener('click', function () { exportFeedbacksCsv(true); });
+
+    /* public reply */
+    var prc = document.getElementById('prClose');
+    if (prc) prc.addEventListener('click', function () { close('fbPublicReplyModal'); });
+    var prx = document.getElementById('prCancel');
+    if (prx) prx.addEventListener('click', function () { close('fbPublicReplyModal'); });
+    var prs = document.getElementById('prSend');
+    if (prs) prs.addEventListener('click', function () {
+      var m = document.getElementById('fbPublicReplyModal');
+      var ticketNo = m.getAttribute('data-ticket');
+      var text = document.getElementById('prMessage').value.trim();
+      if (!text) { alert('Please write a message.'); return; }
+      var list = loadFeedbacks(), hit = false;
+      list.forEach(function (it) {
+        if ((it.ticket || '').toUpperCase() !== String(ticketNo).toUpperCase()) return;
+        if (!Array.isArray(it.thread)) it.thread = [];
+        it.thread.push({ id: 'm_' + Date.now(), kind: 'user', author: it.name || 'User', text: text, at: Date.now(), channel: 'web' });
+        it.unread = true;
+        it.lastUserReply = Date.now();
+        hit = true;
+      });
+      if (!hit) { alert('This ticket number was not found in this browser.'); return; }
+      saveFeedbacks(list);
+      close('fbPublicReplyModal');
+      renderFeedbacks();
+      alert('Thank you — your reply has been added to ticket ' + ticketNo + '.');
+    });
+
+    /* open the reply form when the page is loaded from an emailed link */
+    try {
+      var q = new URLSearchParams(location.search).get('ticket');
+      if (q) setTimeout(function () { prOpen(q); }, 700);
+    } catch (e) {}
+
+    renderFeedbacks();
+  })();
+  /* ============================================================
+     ADMIN CONSOLE — users · security · database · media
+     reports · system health
+     ============================================================ */
+  var USERS_KEY = 'das_studio_users';
+  var SEC_KEY = 'das_studio_security';
+  var DB_KEY = 'das_studio_db';
+  var MEDIA_KEY = 'das_studio_media';
+  var API_KEY = 'das_studio_apilog';
+  var RPT_KEY = 'das_studio_reports';
+  var SESS_KEY = 'das_studio_admin_sessions';
+
+  var USER_ROLES = [
+    { id: 'owner', label: 'Owner', desc: 'Full access, cannot be removed' },
+    { id: 'admin', label: 'Admin', desc: 'Manage content, tickets and settings' },
+    { id: 'editor', label: 'Editor', desc: 'Edit tools and media only' },
+    { id: 'viewer', label: 'Viewer', desc: 'Read-only access' }
+  ];
+  var USER_STATUS = { active: 'Active', blocked: 'Blocked', invited: 'Invited' };
+
+  function usersAll() {
+    var list = lsGet(USERS_KEY, null);
+    if (!Array.isArray(list) || !list.length) {
+      list = [{ id: 'u_owner', name: settings.authorName || 'Site Owner', email: settings.supportEmail || '',
+        role: 'owner', status: 'active', created: Date.now(), lastActive: Date.now(), notes: 'Primary account',
+        activity: [{ t: Date.now(), a: 'Account created' }] }];
+      lsSet(USERS_KEY, list);
+    }
+    return list;
+  }
+  function usersSave(list) { lsSet(USERS_KEY, list); }
+  function userById(id) { var hit = null; usersAll().forEach(function (u) { if (u.id === id) hit = u; }); return hit; }
+  function userLog(id, action) {
+    var list = usersAll();
+    list.forEach(function (u) {
+      if (u.id !== id) return;
+      u.activity = u.activity || [];
+      u.activity.unshift({ t: Date.now(), a: action });
+      u.activity = u.activity.slice(0, 50);
+      u.lastActive = Date.now();
+    });
+    usersSave(list);
+  }
+
+  /* ---- security config ---- */
+  function secGet() {
+    var s = lsGet(SEC_KEY, null);
+    if (!s || typeof s !== 'object') s = {};
+    if (!s.twoFA) s.twoFA = { enabled: false, secret: '', backup: [] };
+    if (!Array.isArray(s.ipAllow)) s.ipAllow = [];
+    if (!Array.isArray(s.alerts)) s.alerts = [];
+    if (s.ipEnforce == null) s.ipEnforce = false;
+    if (s.ipLookupUrl == null) s.ipLookupUrl = 'https://api.ipify.org?format=json';
+    if (s.lastIp == null) s.lastIp = '';
+    if (!s.epoch) s.epoch = 1;
+    return s;
+  }
+  function secSave(s) { lsSet(SEC_KEY, s); }
+  function secAlert(kind, msg) {
+    var s = secGet();
+    s.alerts.unshift({ t: Date.now(), kind: kind, msg: msg });
+    s.alerts = s.alerts.slice(0, 60);
+    secSave(s);
+    try { logAct('security', kind + ': ' + msg); } catch (e) {}
+  }
+
+  /* ---- TOTP (RFC 6238) ---- */
+  function b32decode(str) {
+    var alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    var clean = String(str || '').toUpperCase().replace(/[^A-Z2-7]/g, '');
+    var bits = 0, value = 0, out = [];
+    for (var i = 0; i < clean.length; i++) {
+      value = (value << 5) | alphabet.indexOf(clean[i]);
+      bits += 5;
+      if (bits >= 8) { out.push((value >>> (bits - 8)) & 255); bits -= 8; }
+    }
+    return out;
+  }
+  function b32encode(bytes) {
+    var alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';
+    var bits = 0, value = 0, out = '';
+    for (var i = 0; i < bytes.length; i++) {
+      value = (value << 8) | bytes[i];
+      bits += 8;
+      while (bits >= 5) { out += alphabet[(value >>> (bits - 5)) & 31]; bits -= 5; }
+    }
+    if (bits > 0) out += alphabet[(value << (5 - bits)) & 31];
+    return out;
+  }
+  function sha1bytes(bytes) {
+    function rotl(n, s) { return ((n << s) | (n >>> (32 - s))) >>> 0; }
+    var ml = bytes.length * 8;
+    var msg = bytes.slice();
+    msg.push(0x80);
+    while (msg.length % 64 !== 56) msg.push(0);
+    var hi = Math.floor(ml / 4294967296), lo = ml >>> 0;
+    msg.push((hi >>> 24) & 255, (hi >>> 16) & 255, (hi >>> 8) & 255, hi & 255,
+             (lo >>> 24) & 255, (lo >>> 16) & 255, (lo >>> 8) & 255, lo & 255);
+    var H = [0x67452301, 0xEFCDAB89, 0x98BADCFE, 0x10325476, 0xC3D2E1F0];
+    for (var i = 0; i < msg.length; i += 64) {
+      var w = new Array(80);
+      for (var j = 0; j < 16; j++) {
+        w[j] = ((msg[i + j * 4] << 24) | (msg[i + j * 4 + 1] << 16) | (msg[i + j * 4 + 2] << 8) | msg[i + j * 4 + 3]) >>> 0;
+      }
+      for (j = 16; j < 80; j++) w[j] = rotl(w[j - 3] ^ w[j - 8] ^ w[j - 14] ^ w[j - 16], 1);
+      var a = H[0], b = H[1], c = H[2], d = H[3], e = H[4];
+      for (j = 0; j < 80; j++) {
+        var f, k;
+        if (j < 20) { f = (b & c) | (~b & d); k = 0x5A827999; }
+        else if (j < 40) { f = b ^ c ^ d; k = 0x6ED9EBA1; }
+        else if (j < 60) { f = (b & c) | (b & d) | (c & d); k = 0x8F1BBCDC; }
+        else { f = b ^ c ^ d; k = 0xCA62C1D6; }
+        var tmp = (rotl(a, 5) + (f >>> 0) + e + k + w[j]) >>> 0;
+        e = d; d = c; c = rotl(b, 30); b = a; a = tmp;
+      }
+      H[0] = (H[0] + a) >>> 0; H[1] = (H[1] + b) >>> 0; H[2] = (H[2] + c) >>> 0;
+      H[3] = (H[3] + d) >>> 0; H[4] = (H[4] + e) >>> 0;
+    }
+    var out = [];
+    H.forEach(function (h) { out.push((h >>> 24) & 255, (h >>> 16) & 255, (h >>> 8) & 255, h & 255); });
+    return out;
+  }
+  function hmacSha1(keyBytes, msgBytes) {
+    var block = 64, key = keyBytes.slice();
+    if (key.length > block) key = sha1bytes(key);
+    while (key.length < block) key.push(0);
+    var o = [], i = [];
+    for (var x = 0; x < block; x++) { o.push(key[x] ^ 0x5c); i.push(key[x] ^ 0x36); }
+    return sha1bytes(o.concat(sha1bytes(i.concat(msgBytes))));
+  }
+  function totpCode(secretB32, atMs) {
+    var key = b32decode(secretB32);
+    var counter = Math.floor((atMs || Date.now()) / 1000 / 30);
+    var msg = [0, 0, 0, 0, (counter >>> 24) & 255, (counter >>> 16) & 255, (counter >>> 8) & 255, counter & 255];
+    var h = hmacSha1(key, msg);
+    var off = h[h.length - 1] & 0xf;
+    var bin = ((h[off] & 0x7f) << 24) | (h[off + 1] << 16) | (h[off + 2] << 8) | h[off + 3];
+    return String(bin % 1000000).padStart(6, '0');
+  }
+  function totpVerify(secret, code) {
+    if (!secret || !/^\d{6}$/.test(String(code || '').trim())) return false;
+    var now = Date.now();
+    for (var d = -1; d <= 1; d++) {
+      if (totpCode(secret, now + d * 30000) === String(code).trim()) return true;
+    }
+    return false;
+  }
+  function newTotpSecret() {
+    var bytes = [];
+    var arr = new Uint8Array(20);
+    if (window.crypto && crypto.getRandomValues) crypto.getRandomValues(arr);
+    else for (var i = 0; i < 20; i++) arr[i] = Math.floor(Math.random() * 256);
+    for (var j = 0; j < arr.length; j++) bytes.push(arr[j]);
+    return b32encode(bytes);
+  }
+
+  /* ---- admin sessions ---- */
+  function sessAll() { var a = lsGet(SESS_KEY, []); return Array.isArray(a) ? a : []; }
+  function sessSave(a) { lsSet(SESS_KEY, a); }
+  function sessCurrentId() {
+    try {
+      var id = sessionStorage.getItem('das_admin_sess');
+      if (!id) { id = 'as_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); sessionStorage.setItem('das_admin_sess', id); }
+      return id;
+    } catch (e) { return 'as_anon'; }
+  }
+  function sessTouch() {
+    var id = sessCurrentId(), list = sessAll(), found = false;
+    list.forEach(function (s) { if (s.id === id) { s.lastSeen = Date.now(); found = true; } });
+    if (!found) {
+      list.unshift({ id: id, start: Date.now(), lastSeen: Date.now(), device: getDeviceInfo(),
+        ua: navigator.userAgent.slice(0, 80), epoch: secGet().epoch });
+    }
+    sessSave(list.slice(0, 20));
+  }
+  function sessRevoke(id) {
+    sessSave(sessAll().filter(function (s) { return s.id !== id; }));
+  }
+
+  /* ---- API timing log ---- */
+  (function wrapFetch() {
+    if (window.__dasFetchWrapped || typeof window.fetch !== 'function') return;
+    window.__dasFetchWrapped = true;
+    var orig = window.fetch.bind(window);
+    window.fetch = function () {
+      var url = '';
+      try { url = (typeof arguments[0] === 'string') ? arguments[0] : (arguments[0] && arguments[0].url) || ''; } catch (e) {}
+      var t0 = Date.now();
+      return orig.apply(null, arguments).then(function (r) {
+        var ms = Date.now() - t0;
+        pushLog(API_KEY, { t: t0, url: String(url).slice(0, 120), ms: ms, status: r.status, ok: r.ok }, 200);
+        return r;
+      }, function (err) {
+        pushLog(API_KEY, { t: t0, url: String(url).slice(0, 120), ms: Date.now() - t0, status: 0, ok: false }, 200);
+        throw err;
+      });
+    };
+  })();
+  /* ---------- helpers for the new console ---------- */
+  function kb(n) { return (n / 1024).toFixed(n > 1048576 ? 0 : 1) + ' KB'; }
+  function storeSize(prefix) {
+    var total = 0, rows = [];
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (prefix && k.indexOf(prefix) !== 0) continue;
+        var sz = (k.length + (localStorage.getItem(k) || '').length) * 2;
+        total += sz;
+        rows.push({ key: k, size: sz });
+      }
+    } catch (e) {}
+    rows.sort(function (a, b) { return b.size - a.size; });
+    return { total: total, rows: rows };
+  }
+
+  /* ============================ USERS ============================ */
+  var usrEditId = null;
+  function usersRender() {
+    var list = usersAll();
+    var counts = { total: list.length, active: 0, blocked: 0, invited: 0 };
+    list.forEach(function (u) { if (counts[u.status] != null) counts[u.status]++; });
+    var rows = list.map(function (u) {
+      var role = USER_ROLES.filter(function (r) { return r.id === u.role; })[0] || { label: u.role };
+      var badge = u.status === 'active' ? 'xm-ok' : (u.status === 'blocked' ? 'xm-bad' : 'xm-warn');
+      return '<tr>' +
+        '<td><b>' + escapeHtml(u.name || '—') + '</b><div class="xm-note" style="margin:0">' + escapeHtml(u.email || 'no email') + '</div></td>' +
+        '<td><span class="xm-badge ' + (u.role === 'owner' ? 'xm-ok' : 'xm-warn') + '">' + escapeHtml(role.label) + '</span></td>' +
+        '<td><span class="xm-badge ' + badge + '">' + escapeHtml(USER_STATUS[u.status] || u.status) + '</span></td>' +
+        '<td style="font-size:11px">' + (u.lastActive ? ssFmtDateTime(u.lastActive) : '—') + '</td>' +
+        '<td><div class="xm-row" style="margin:0;gap:4px">' +
+          '<button class="btn-secondary" data-u="edit" data-id="' + u.id + '" type="button" style="padding:4px 8px;font-size:11px">✏️</button>' +
+          '<button class="btn-secondary" data-u="profile" data-id="' + u.id + '" type="button" style="padding:4px 8px;font-size:11px">👤</button>' +
+          (u.role === 'owner' ? '' : '<button class="btn-secondary" data-u="block" data-id="' + u.id + '" type="button" style="padding:4px 8px;font-size:11px">' + (u.status === 'blocked' ? '🔓' : '🚫') + '</button>' +
+            '<button class="btn-secondary" data-u="del" data-id="' + u.id + '" type="button" style="padding:4px 8px;font-size:11px;color:#ef4444">🗑️</button>') +
+        '</div></td></tr>';
+    }).join('') || '<tr><td colspan="5">No users yet.</td></tr>';
+
+    $('tabUsers').innerHTML =
+      '<div class="stats-grid">' + stat('Total users', counts.total) + stat('Active', counts.active) +
+        stat('Blocked', counts.blocked) + stat('Invited', counts.invited) + '</div>' +
+      '<div class="settings-section-title">👤 Add / edit user</div>' +
+      '<div class="xm-row">' +
+        '<input id="usrName" placeholder="Full name" style="flex:1;min-width:130px">' +
+        '<input id="usrEmail" placeholder="email@example.com" style="flex:1;min-width:150px">' +
+        '<select id="usrRole">' + USER_ROLES.map(function (r) { return '<option value="' + r.id + '">' + r.label + '</option>'; }).join('') + '</select>' +
+        '<select id="usrStatus"><option value="active">Active</option><option value="blocked">Blocked</option><option value="invited">Invited</option></select>' +
+        '<button class="btn-primary" id="usrSave" type="button">Save user</button>' +
+        '<button class="btn-secondary" id="usrClear" type="button">Clear</button>' +
+      '</div>' +
+      '<div class="xm-note">Users here are panel profiles kept in this browser. They describe who may be assigned work and how they appear in logs — real sign-in accounts need a backend.</div>' +
+      '<div class="xm-scroll"><table class="analytics-table"><thead><tr><th>User</th><th>Role</th><th>Status</th><th>Last active</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<div class="settings-section-title">📊 User activity</div>' +
+      '<div class="xm-scroll" id="usrActivity"></div>';
+
+    var box = $('usrActivity');
+    var acts = [];
+    list.forEach(function (u) { (u.activity || []).forEach(function (a) { acts.push({ t: a.t, a: a.a, u: u.name || u.email }); }); });
+    acts.sort(function (a, b) { return b.t - a.t; });
+    box.innerHTML = '<table class="analytics-table"><tbody>' +
+      (acts.slice(0, 25).map(function (a) {
+        return '<tr><td style="width:150px">' + ssFmtDateTime(a.t) + '</td><td><b>' + escapeHtml(a.u) + '</b></td><td>' + escapeHtml(a.a) + '</td></tr>';
+      }).join('') || '<tr><td>No activity recorded yet.</td></tr>') + '</tbody></table>';
+
+    $('usrSave').onclick = function () {
+      var name = $('usrName').value.trim(), email = $('usrEmail').value.trim();
+      if (!name) return alert('Enter a name.');
+      var list2 = usersAll();
+      if (usrEditId) {
+        list2.forEach(function (u) {
+          if (u.id !== usrEditId) return;
+          if (u.role === 'owner' && $('usrRole').value !== 'owner') return alert('The owner role cannot be changed.');
+          u.name = name; u.email = email; u.role = $('usrRole').value; u.status = $('usrStatus').value;
+          u.activity = u.activity || []; u.activity.unshift({ t: Date.now(), a: 'Profile updated' });
+        });
+        logAct('users', 'Updated user: ' + name);
+      } else {
+        list2.push({ id: 'u_' + Date.now().toString(36), name: name, email: email, role: $('usrRole').value,
+          status: $('usrStatus').value, created: Date.now(), lastActive: Date.now(), activity: [{ t: Date.now(), a: 'User created' }] });
+        logAct('users', 'Added user: ' + name);
+      }
+      usersSave(list2);
+      usrEditId = null;
+      usersRender();
+    };
+    $('usrClear').onclick = function () { usrEditId = null; usersRender(); };
+    $('tabUsers').querySelectorAll('[data-u]').forEach(function (b) {
+      b.onclick = function () {
+        var id = b.getAttribute('data-id'), act = b.getAttribute('data-u');
+        var u = userById(id);
+        if (!u) return;
+        if (act === 'edit') {
+          usrEditId = id;
+          $('usrName').value = u.name || ''; $('usrEmail').value = u.email || '';
+          $('usrRole').value = u.role; $('usrStatus').value = u.status;
+        } else if (act === 'profile') {
+          alert('👤 ' + (u.name || 'User') + '\n' + (u.email || 'no email') +
+            '\nRole: ' + u.role + '\nStatus: ' + (USER_STATUS[u.status] || u.status) +
+            '\nCreated: ' + ssFmtDateTime(u.created) + '\nLast active: ' + ssFmtDateTime(u.lastActive) +
+            '\n\nRecent activity:\n' + (u.activity || []).slice(0, 6).map(function (a) { return '• ' + a.a; }).join('\n'));
+        } else if (act === 'block') {
+          var list3 = usersAll();
+          list3.forEach(function (x) { if (x.id === id) x.status = x.status === 'blocked' ? 'active' : 'blocked'; });
+          usersSave(list3);
+          secAlert('user', (u.name || 'User') + ' was ' + (u.status === 'blocked' ? 'unblocked' : 'blocked'));
+          usersRender();
+        } else if (act === 'del') {
+          if (!confirm('Delete user "' + (u.name || '') + '"?')) return;
+          usersSave(usersAll().filter(function (x) { return x.id !== id; }));
+          logAct('users', 'Deleted user: ' + (u.name || ''));
+          usersRender();
+        }
+      };
+    });
+  }
+
+  /* ============================ MEDIA ============================ */
+  var mediaFolder = 'General';
+  function mediaAll() { var m = lsGet(MEDIA_KEY, []); return Array.isArray(m) ? m : []; }
+  function mediaSave(m) { lsSet(MEDIA_KEY, m); }
+  function mediaFolders() {
+    var f = lsGet('das_studio_media_folders', ['General']);
+    if (!Array.isArray(f) || !f.length) f = ['General'];
+    return f;
+  }
+  function mediaRender() {
+    var all = mediaAll();
+    var folders = mediaFolders();
+    var used = storeSize(MEDIA_KEY).total;
+    var imgs = all.filter(function (m) { return /^image\//.test(m.type); }).length;
+    var vids = all.filter(function (m) { return /^video\//.test(m.type); }).length;
+    var auds = all.filter(function (m) { return /^audio\//.test(m.type); }).length;
+
+    var refs = '';
+    try { refs = JSON.stringify(tools) + JSON.stringify(settings); } catch (e) {}
+    var unused = all.filter(function (m) { return refs.indexOf(m.data) === -1; });
+
+    var cards = all.filter(function (m) { return mediaFolder === 'All' || m.folder === mediaFolder; }).map(function (m) {
+      var isImg = /^image\//.test(m.type);
+      return '<div class="md-card">' +
+        '<div class="md-thumb">' + (isImg
+          ? '<img src="' + m.data + '" alt="">'
+          : '<span>' + (m.type.indexOf('video') === 0 ? '🎬' : m.type.indexOf('audio') === 0 ? '🎵' : '📄') + '</span>') + '</div>' +
+        '<div class="md-name" title="' + escapeHtml(m.name) + '">' + escapeHtml(m.name) + '</div>' +
+        '<div class="md-meta">' + kb(m.size) + ' · ' + escapeHtml(m.folder) + '</div>' +
+        '<div class="md-actions">' +
+          '<button class="btn-secondary" data-m="use" data-id="' + m.id + '" type="button" style="padding:3px 7px;font-size:10.5px">🔗 URL</button>' +
+          (isImg ? '<button class="btn-secondary" data-m="opt" data-id="' + m.id + '" type="button" style="padding:3px 7px;font-size:10.5px">⚡</button>' : '') +
+          '<button class="btn-secondary" data-m="del" data-id="' + m.id + '" type="button" style="padding:3px 7px;font-size:10.5px;color:#ef4444">🗑️</button>' +
+        '</div></div>';
+    }).join('') || '<div class="xm-note">No files in this folder yet.</div>';
+
+    $('tabMedia').innerHTML =
+      '<div class="stats-grid">' + stat('Files', all.length) + stat('Storage used', kb(used)) +
+        stat('Images', imgs) + stat('Unused', unused.length) + '</div>' +
+      '<div class="xm-row">' +
+        '<select id="mdFolder">' + ['All'].concat(folders).map(function (f) {
+          return '<option value="' + escapeHtml(f) + '"' + (mediaFolder === f ? ' selected' : '') + '>' + escapeHtml(f) + '</option>';
+        }).join('') + '</select>' +
+        '<input id="mdNewFolder" placeholder="New folder name" style="min-width:130px">' +
+        '<button class="btn-secondary" id="mdAddFolder" type="button">➕ Folder</button>' +
+        '<span style="flex:1"></span>' +
+        '<label class="btn-secondary" style="cursor:pointer">🖼️ Image<input type="file" id="mdImg" accept="image/*" hidden></label>' +
+        '<label class="btn-secondary" style="cursor:pointer">🎬 Video<input type="file" id="mdVid" accept="video/*" hidden></label>' +
+        '<label class="btn-secondary" style="cursor:pointer">🎵 Audio<input type="file" id="mdAud" accept="audio/*" hidden></label>' +
+      '</div>' +
+      '<div class="xm-note">Files are stored as Base64 in this browser (≈5 MB total quota), so keep them small — images are compressed automatically to 1200 px. Video and audio are kept as-is.</div>' +
+      '<div class="md-grid">' + cards + '</div>' +
+      '<div class="settings-section-title" style="margin-top:14px">🧹 Cleanup</div>' +
+      '<div class="xm-row"><button class="btn-secondary" id="mdClean" type="button">🗑️ Remove ' + unused.length + ' unused file(s)</button></div>' +
+      '<div class="xm-note">“Unused” means the file data does not appear in any tool or site setting.</div>';
+
+    $('mdFolder').onchange = function () { mediaFolder = this.value; mediaRender(); };
+    $('mdAddFolder').onclick = function () {
+      var n = $('mdNewFolder').value.trim();
+      if (!n) return;
+      var f = mediaFolders();
+      if (f.indexOf(n) === -1) f.push(n);
+      lsSet('das_studio_media_folders', f);
+      mediaRender();
+    };
+    function addFile(file) {
+      if (!file) return;
+      var max = /^image\//.test(file.type) ? 3 * 1024 * 1024 : 6 * 1024 * 1024;
+      if (file.size > max) { alert('File is too large for browser storage (max ' + (max / 1048576) + ' MB).'); return; }
+      var rd = new FileReader();
+      rd.onload = function (ev) {
+        var raw = ev.target.result;
+        var finish = function (dataUrl, size) {
+          var list = mediaAll();
+          list.unshift({ id: 'md_' + Date.now().toString(36), name: file.name, folder: mediaFolder === 'All' ? 'General' : mediaFolder,
+            type: file.type, size: size || file.size, data: dataUrl, created: Date.now() });
+          mediaSave(list);
+          logAct('media', 'Uploaded ' + file.name);
+          mediaRender();
+        };
+        if (/^image\/(png|jpe?g|webp)$/i.test(file.type)) {
+          var img = new Image();
+          img.onload = function () {
+            try {
+              var w = img.width, h = img.height, maxPx = 1200;
+              if (w > maxPx || h > maxPx) { var r = Math.min(maxPx / w, maxPx / h); w = Math.round(w * r); h = Math.round(h * r); }
+              var cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+              cv.getContext('2d').drawImage(img, 0, 0, w, h);
+              var out = cv.toDataURL('image/jpeg', 0.85);
+              finish(out.length < raw.length ? out : raw, Math.round((out.length < raw.length ? out : raw).length * 0.75));
+            } catch (e) { finish(raw, file.size); }
+          };
+          img.onerror = function () { finish(raw, file.size); };
+          img.src = raw;
+        } else finish(raw, file.size);
+      };
+      rd.readAsDataURL(file);
+    }
+    ['mdImg', 'mdVid', 'mdAud'].forEach(function (id) {
+      var el = $(id);
+      if (el) el.onchange = function () { addFile(this.files && this.files[0]); this.value = ''; };
+    });
+    $('mdClean').onclick = function () {
+      if (!unused.length) return alert('Nothing to clean up.');
+      if (!confirm('Remove ' + unused.length + ' unused file(s)?')) return;
+      mediaSave(all.filter(function (m) { return unused.indexOf(m) === -1; }));
+      logAct('media', 'Cleaned ' + unused.length + ' unused files');
+      mediaRender();
+    };
+    $('tabMedia').querySelectorAll('[data-m]').forEach(function (b) {
+      b.onclick = function () {
+        var id = b.getAttribute('data-id'), act = b.getAttribute('data-m');
+        var m = mediaAll().filter(function (x) { return x.id === id; })[0];
+        if (!m) return;
+        if (act === 'use') {
+          fbCopy(m.data.length > 200000 ? '(file is too large to copy — use the Tools → image upload instead)' : m.data,
+            'Base64 data URL copied — paste it into any image/icon field.');
+        } else if (act === 'opt') {
+          var img = new Image();
+          img.onload = function () {
+            try {
+              var cv = document.createElement('canvas');
+              var w = Math.min(1200, img.width), h = Math.round(img.height * (w / img.width));
+              cv.width = w; cv.height = h;
+              cv.getContext('2d').drawImage(img, 0, 0, w, h);
+              var out = cv.toDataURL('image/jpeg', 0.75);
+              var list = mediaAll();
+              list.forEach(function (x) { if (x.id === id) { x.data = out; x.size = Math.round(out.length * 0.75); } });
+              mediaSave(list);
+              mediaRender();
+              alert('Optimised — now ' + kb(Math.round(out.length * 0.75)) + '.');
+            } catch (e) { alert('Could not optimise this image.'); }
+          };
+          img.src = m.data;
+        } else if (act === 'del') {
+          if (!confirm('Delete "' + m.name + '"?')) return;
+          mediaSave(mediaAll().filter(function (x) { return x.id !== id; }));
+          mediaRender();
+        }
+      };
+    });
+  }
+  /* ============================ DATABASE ============================ */
+  function dbCfg() {
+    var d = lsGet(DB_KEY, null) || {};
+    if (!d.provider) d.provider = 'local';
+    if (d.migration == null) d.migration = 1;
+    if (d.endpoint == null) d.endpoint = '';
+    if (d.name == null) d.name = 'das-studio-local';
+    if (d.lastBackup == null) d.lastBackup = 0;
+    return d;
+  }
+  function dbSave(d) { lsSet(DB_KEY, d); }
+
+  function dbHealthRows() {
+    var rows = [];
+    var keys = storeSize('das_studio_');
+    var bad = 0;
+    try {
+      for (var i = 0; i < localStorage.length; i++) {
+        var k = localStorage.key(i);
+        if (k.indexOf('das_studio') !== 0) continue;
+        try { JSON.parse(localStorage.getItem(k)); } catch (e) { bad++; rows.push(k + ' — unreadable JSON'); }
+      }
+    } catch (e) {}
+    var total = keys.total, pct = total / (5 * 1024 * 1024) * 100;
+    return { total: total, pct: pct, corrupt: bad, keys: keys.rows.length };
+  }
+
+  function dbRender() {
+    var d = dbCfg();
+    var h = dbHealthRows();
+    var backupKeys = ['das_studio_tools', 'das_studio_settings', 'das_studio_feedbacks', 'das_studio_analytics',
+      'das_studio_users', 'das_studio_security', 'das_studio_media', 'das_studio_email', 'das_studio_notice_stats',
+      'das_studio_audit', 'das_studio_logins', 'das_studio_errors', 'das_studio_apilog', 'das_studio_reports', 'das_studio_db'];
+    var keyRows = h.keys ? storeSize('das_studio_').rows.slice(0, 12).map(function (r) {
+      return '<tr><td>' + escapeHtml(r.key) + '</td><td>' + kb(r.size) + '</td></tr>';
+    }).join('') : '<tr><td colspan="2">No data yet.</td></tr>';
+
+    $('tabDb').innerHTML =
+      '<div class="stats-grid">' + stat('Storage used', kb(h.total)) + stat('Records (keys)', h.keys) +
+        stat('Health', h.corrupt ? '<span class="xm-badge xm-bad">' + h.corrupt + ' issue(s)</span>' : '<span class="xm-badge xm-ok">OK</span>') +
+        stat('Schema version', 'v' + d.migration) + '</div>' +
+      '<div class="xm-note">Quota ≈ 5 MB · ' + h.pct.toFixed(1) + '% used</div><div class="xm-bar"><i style="width:' + Math.min(100, h.pct) + '%"></i></div>' +
+
+      '<div class="settings-section-title" style="margin-top:16px">🔌 Database connection</div>' +
+      '<div class="xm-row">' +
+        '<select id="dbProvider"><option value="local"' + (d.provider === 'local' ? ' selected' : '') + '>Local storage (this browser)</option>' +
+        '<option value="rest"' + (d.provider === 'rest' ? ' selected' : '') + '>REST backend / API</option></select>' +
+        '<input id="dbEndpoint" placeholder="https://api.example.com" value="' + escapeHtml(d.endpoint) + '" style="flex:1;min-width:180px">' +
+        '<button class="btn-primary" id="dbSaveCfg" type="button">Save</button>' +
+        '<button class="btn-secondary" id="dbTest" type="button">Test connection</button>' +
+      '</div>' +
+      '<div class="xm-note" id="dbTestMsg">A static site has no database of its own — the site data lives in this browser. Point the endpoint at your API if you run one; the panel will then test it and log the response time.</div>' +
+
+      '<div class="settings-section-title">💾 Backup &amp; restore</div>' +
+      '<div class="xm-row">' +
+        '<button class="btn-secondary" id="dbBackup" type="button">⬇️ Download full backup (JSON)</button>' +
+        '<label class="btn-secondary" style="cursor:pointer">⬆️ Restore backup<input type="file" id="dbRestore" accept=".json,application/json" hidden></label>' +
+        '<button class="btn-secondary" id="dbExportCsv" type="button">⬇️ Export data as CSV</button>' +
+      '</div>' +
+      '<div class="xm-note">Last backup: ' + (d.lastBackup ? ssFmtDateTime(d.lastBackup) : 'never') +
+        ' · Backup contains: ' + backupKeys.length + ' collections (tools, settings, tickets, users, media…).</div>' +
+
+      '<div class="settings-section-title">🩺 Database health</div>' +
+      '<div class="xm-scroll"><table class="analytics-table"><thead><tr><th>Key</th><th>Size</th></tr></thead><tbody>' + keyRows + '</tbody></table></div>' +
+      '<div class="xm-row" style="margin-top:10px"><button class="btn-secondary" id="dbCheck" type="button">🔄 Re-run integrity check</button></div>' +
+
+      '<div class="settings-section-title">🔄 Migration</div>' +
+      '<div class="xm-row"><button class="btn-secondary" id="dbMigrate" type="button">Run migration to v' + (d.migration + 1) + '</button></div>' +
+      '<div class="xm-note">Migrations normalise old records (ticket fields, tool statuses, announcement threads) and bump the schema number. A backup is taken automatically first.</div>';
+
+    $('dbSaveCfg').onclick = function () {
+      var c = dbCfg();
+      c.provider = $('dbProvider').value;
+      c.endpoint = $('dbEndpoint').value.trim();
+      dbSave(c);
+      logAct('database', 'Connection settings saved (' + c.provider + ')');
+      alert('Saved.');
+    };
+    $('dbTest').onclick = function () {
+      var url = $('dbEndpoint').value.trim();
+      var msg = $('dbTestMsg');
+      if (!url) { msg.textContent = 'Add an endpoint URL first — local storage is already working.'; return; }
+      msg.textContent = 'Testing…';
+      var t0 = Date.now();
+      fetch(url, { method: 'GET', mode: 'cors', cache: 'no-store' })
+        .then(function (r) { msg.textContent = 'Response: HTTP ' + r.status + ' in ' + (Date.now() - t0) + ' ms.'; })
+        .catch(function (e) { msg.textContent = 'Could not reach the endpoint (' + (e.message || 'network error') + '). CORS or offline.'; });
+    };
+    $('dbBackup').onclick = function () {
+      var data = { app: 'DAS Studio', type: 'das-full-backup', schema: dbCfg().migration,
+        exportedAt: new Date().toISOString(), collections: {} };
+      backupKeys.forEach(function (k) { var v = localStorage.getItem(k); if (v != null) data.collections[k] = v; });
+      downloadText('das-backup-' + new Date().toISOString().slice(0, 10) + '.json', JSON.stringify(data, null, 2), 'application/json');
+      var c = dbCfg(); c.lastBackup = Date.now(); dbSave(c);
+      logAct('database', 'Full backup downloaded');
+      dbRender();
+    };
+    $('dbRestore').onchange = function () {
+      var f = this.files && this.files[0];
+      if (!f) return;
+      var rd = new FileReader();
+      rd.onload = function () {
+        var data;
+        try { data = JSON.parse(rd.result); } catch (e) { return alert('Not valid JSON.'); }
+        if (!data || !data.collections) return alert('This is not a DAS Studio backup file.');
+        if (!confirm('Restore ' + Object.keys(data.collections).length + ' collections? Current data will be overwritten.')) return;
+        Object.keys(data.collections).forEach(function (k) { try { localStorage.setItem(k, data.collections[k]); } catch (e) {} });
+        logAct('database', 'Backup restored');
+        alert('Restored. The page will reload to apply everything.');
+        location.reload();
+      };
+      rd.readAsText(f);
+      this.value = '';
+    };
+    $('dbExportCsv').onclick = function () {
+      var t = loadFeedbacks();
+      var rows = [['collection', 'records']];
+      rows.push(['tools', tools.length]); rows.push(['tickets', t.length]);
+      rows.push(['users', usersAll().length]); rows.push(['media', mediaAll().length]);
+      rows.push(['activity log', lsGet(AUDIT_KEY, []).length]);
+      downloadText('das-data-summary.csv', rows.map(function (r) { return r.map(csvCell).join(','); }).join('\r\n'), 'text/csv');
+    };
+    $('dbCheck').onclick = function () { dbRender(); };
+    $('dbMigrate').onclick = function () {
+      var c = dbCfg();
+      if (!confirm('Run migration to schema v' + (c.migration + 1) + '? A backup file will download first.')) return;
+      $('dbBackup').click();
+      var t = loadFeedbacks().map(function (it) {
+        it.ticket = it.ticket || ('TK-' + new Date(it.createdAt || Date.now()).getFullYear() + '-LEGACY');
+        it.thread = it.thread || [];
+        it.unread = it.unread === true;
+        return it;
+      });
+      saveFeedbacks(t);
+      var tl = tools.map(function (x) {
+        x.status = x.status || (x.hidden ? 'draft' : 'published');
+        x.tags = Array.isArray(x.tags) ? x.tags : [];
+        return x;
+      });
+      tools = tl; saveToolsToStorage();
+      c.migration += 1; dbSave(c);
+      logAct('database', 'Migrated to schema v' + c.migration);
+      dbRender();
+      alert('Migration complete — schema v' + c.migration + '.');
+    };
+  }
+
+  /* ============================ SECURITY ============================ */
+  function secRender() {
+    var s = secGet(), lg = lsGet(LOGIN_KEY, []), lock = lsGet(LOCK_KEY, { fails: 0, until: 0 });
+    var failed = lg.filter(function (l) { return !l.ok; }).length;
+    var sessions = sessAll();
+    var loginRows = lg.slice(0, 15).map(function (l) {
+      return '<tr><td>' + ssFmtDateTime(l.t) + '</td><td><span class="xm-badge ' + (l.ok ? 'xm-ok' : 'xm-bad') + '">' +
+        (l.ok ? 'Success' : 'Failed') + '</span></td><td style="font-size:11px">' + escapeHtml(l.ua || '') + '</td></tr>';
+    }).join('') || '<tr><td colspan="3">No login attempts recorded.</td></tr>';
+    var sessRows = sessions.map(function (x) {
+      var live = (Date.now() - (x.lastSeen || 0)) < 5 * 60000;
+      return '<tr><td>' + ssFmtDateTime(x.start) + '</td><td style="font-size:11px">' + escapeHtml(x.device || '') + '</td>' +
+        '<td>' + (live ? '<span class="xm-badge xm-ok">active</span>' : '<span class="xm-badge">idle</span>') + '</td>' +
+        '<td>' + (x.id === sessCurrentId() ? 'this device' : '<button class="btn-secondary" data-revoke="' + x.id + '" type="button" style="padding:3px 8px;font-size:11px">Revoke</button>') + '</td></tr>';
+    }).join('') || '<tr><td colspan="4">No sessions recorded.</td></tr>';
+    var alertRows = s.alerts.slice(0, 12).map(function (a) {
+      return '<tr><td>' + ssFmtDateTime(a.t) + '</td><td><b>' + escapeHtml(a.kind) + '</b></td><td>' + escapeHtml(a.msg) + '</td></tr>';
+    }).join('') || '<tr><td colspan="3">No security alerts.</td></tr>';
+
+    $('tabSec').innerHTML =
+      (usingDefaultPass() ? '<div class="xm-alert bad">🔴 You are using the default password. Change it now.</div>'
+                          : '<div class="xm-alert ok">✅ Custom password is set.</div>') +
+      '<div class="stats-grid">' + stat('Failed attempts', failed) + stat('Lockout', lock.until > Date.now() ? 'Active' : 'None') +
+        stat('2FA', s.twoFA.enabled ? '<span class="xm-badge xm-ok">On</span>' : '<span class="xm-badge xm-warn">Off</span>') +
+        stat('Active sessions', sessions.filter(function (x) { return (Date.now() - (x.lastSeen || 0)) < 300000; }).length) + '</div>' +
+
+      '<div class="settings-section-title">🔑 Change admin password</div>' +
+      '<div class="form-group"><label>Current password</label><input type="password" id="secOld" autocomplete="off"></div>' +
+      '<div class="form-group"><label>New password (10+ chars, upper + lower + number)</label><input type="password" id="secNew" autocomplete="new-password"></div>' +
+      '<div class="form-group"><label>Confirm new password</label><input type="password" id="secNew2" autocomplete="new-password"></div>' +
+      '<div class="xm-row"><button class="btn-primary" id="secSave" type="button">Update password</button>' +
+        '<button class="btn-secondary" id="secOut" type="button">Force logout (this device)</button></div>' +
+
+      '<div class="settings-section-title">🔐 Two-factor authentication</div>' +
+      (s.twoFA.enabled
+        ? '<div class="xm-alert ok">✅ 2FA is ON — a 6-digit code from your authenticator app is required at login.</div>' +
+          '<div class="xm-row"><button class="btn-secondary" id="sec2faOff" type="button" style="color:#ef4444">Disable 2FA</button>' +
+          '<button class="btn-secondary" id="sec2faCodes" type="button">View backup codes</button></div>'
+        : '<div class="xm-row"><button class="btn-primary" id="sec2faOn" type="button">Enable 2FA</button></div>' +
+          '<div class="xm-note">Works with Google Authenticator, Authy, 1Password and similar apps (standard TOTP).</div>') +
+
+      '<div class="settings-section-title">🌐 IP access restriction</div>' +
+      '<div class="form-group"><label>Allowed IP addresses (one per line, empty = allow all)</label>' +
+        '<textarea id="secIpList" rows="3" placeholder="203.0.113.7">' + escapeHtml(s.ipAllow.join('\n')) + '</textarea></div>' +
+      '<div class="xm-row">' +
+        '<input id="secIpUrl" value="' + escapeHtml(s.ipLookupUrl) + '" placeholder="IP lookup URL" style="flex:1;min-width:200px">' +
+        '<label style="display:flex;align-items:center;gap:6px;font-size:12px"><input type="checkbox" id="secIpOn"' + (s.ipEnforce ? ' checked' : '') + ' style="width:auto"> Enforce</label>' +
+        '<button class="btn-secondary" id="secIpSave" type="button">Save</button>' +
+        '<button class="btn-secondary" id="secIpNow" type="button">Check my IP</button></div>' +
+      '<div class="xm-note" id="secIpMsg">' + (s.lastIp ? 'Last detected IP: ' + escapeHtml(s.lastIp) : 'The browser cannot read your IP by itself — the panel asks the lookup URL above.') + '</div>' +
+
+      '<div class="settings-section-title">💻 Active sessions</div>' +
+      '<div class="xm-scroll"><table class="analytics-table"><thead><tr><th>Started</th><th>Device</th><th>State</th><th></th></tr></thead><tbody>' + sessRows + '</tbody></table></div>' +
+
+      '<div class="settings-section-title">🚨 Security alerts</div>' +
+      '<div class="xm-scroll"><table class="analytics-table"><tbody>' + alertRows + '</tbody></table></div>' +
+
+      '<div class="settings-section-title">📜 Login history</div>' +
+      '<div class="xm-scroll"><table class="analytics-table"><thead><tr><th>Time</th><th>Result</th><th>Device</th></tr></thead><tbody>' + loginRows + '</tbody></table></div>' +
+      '<div class="xm-alert warn">ℹ️ <b>Important:</b> this site has no server, so the password is only hashed (SHA-256) and checked in the browser. It deters casual access but is <b>not</b> real security — anyone with DevTools can bypass it. For real protection, add a backend with server-side auth.</div>';
+
+    $('secSave').onclick = function () {
+      var o = $('secOld').value, n = $('secNew').value, n2 = $('secNew2').value;
+      if (n !== n2) return alert('New passwords do not match.');
+      if (n.length < 10 || !/[a-z]/.test(n) || !/[A-Z]/.test(n) || !/[0-9]/.test(n)) return alert('Password must be 10+ characters with upper-case, lower-case and a number.');
+      hashPass(o).then(function (oh) {
+        if (oh !== storedHash()) return alert('Current password is incorrect.');
+        hashPass(n).then(function (nh) {
+          lsSet(AUTH_KEY, { hash: nh, changed: Date.now() });
+          logAct('security', 'Admin password changed');
+          secAlert('password', 'Admin password changed');
+          alert('Password updated.');
+          secRender();
+        });
+      });
+    };
+    $('secOut').onclick = function () { adminLogout('Manual logout'); };
+    var two = $('sec2faOn');
+    if (two) two.onclick = function () {
+      var secret = newTotpSecret();
+      var code = prompt('2FA setup\n\nAdd this secret to your authenticator app:\n\n' + secret +
+        '\n\nThen enter the 6-digit code it shows:');
+      if (!code) return;
+      if (!totpVerify(secret, code)) return alert('That code did not match. Nothing was enabled.');
+      var st = secGet();
+      st.twoFA.enabled = true; st.twoFA.secret = secret;
+      st.twoFA.backup = [];
+      for (var i = 0; i < 6; i++) st.twoFA.backup.push(String(Math.floor(100000 + Math.random() * 900000)));
+      secSave(st);
+      secAlert('2fa', 'Two-factor authentication enabled');
+      alert('2FA is now ON.\n\nBackup codes (store them safely):\n' + st.twoFA.backup.join('\n'));
+      secRender();
+    };
+    var off = $('sec2faOff');
+    if (off) off.onclick = function () {
+      if (!confirm('Disable two-factor authentication?')) return;
+      var st = secGet(); st.twoFA = { enabled: false, secret: '', backup: [] }; secSave(st);
+      secAlert('2fa', 'Two-factor authentication disabled');
+      secRender();
+    };
+    var codes = $('sec2faCodes');
+    if (codes) codes.onclick = function () { alert('Backup codes:\n' + (secGet().twoFA.backup || []).join('\n')); };
+    $('secIpSave').onclick = function () {
+      var st = secGet();
+      st.ipAllow = $('secIpList').value.split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
+      st.ipLookupUrl = $('secIpUrl').value.trim() || 'https://api.ipify.org?format=json';
+      st.ipEnforce = $('secIpOn').checked;
+      secSave(st);
+      alert('IP restriction saved.');
+      secRender();
+    };
+    $('secIpNow').onclick = function () {
+      var st = secGet(), msg = $('secIpMsg');
+      msg.textContent = 'Looking up…';
+      fetch(st.ipLookupUrl || 'https://api.ipify.org?format=json')
+        .then(function (r) { return r.json(); })
+        .then(function (j) {
+          var ip = j.ip || j.query || '';
+          st.lastIp = ip; secSave(st);
+          msg.textContent = 'Your IP: ' + ip + (st.ipAllow.length ? (st.ipAllow.indexOf(ip) > -1 ? ' — allowed ✅' : ' — NOT in the allow list ⚠️') : '');
+        })
+        .catch(function () { msg.textContent = 'Could not look up the IP (offline or blocked).'; });
+    };
+    $('tabSec').querySelectorAll('[data-revoke]').forEach(function (b) {
+      b.onclick = function () {
+        sessRevoke(b.getAttribute('data-revoke'));
+        secAlert('session', 'Session revoked');
+        secRender();
+      };
+    });
+  }
+  /* ============================ REPORTS & LOGS ============================ */
+  var logTab = 'activity';
+  function logRender() {
+    var tabs = [['activity', '🧾 Admin activity'], ['errors', '🐞 Website errors'], ['api', '🔌 API calls'],
+                ['logins', '🔐 Login logs'], ['users', '👥 User activity'], ['scheduled', '⏰ Scheduled reports']];
+    var body = '';
+
+    if (logTab === 'activity') {
+      var a = lsGet(AUDIT_KEY, []);
+      body = '<div class="xm-row"><input id="rq" placeholder="Filter…" style="flex:1;min-width:160px">' +
+        '<button class="btn-secondary" id="rexp" type="button">⬇️ Export CSV</button></div>' +
+        '<div class="xm-scroll"><table class="analytics-table"><thead><tr><th>Time</th><th>Action</th><th>Details</th></tr></thead><tbody id="rbody">' +
+        (a.slice(0, 100).map(function (l) {
+          return '<tr><td style="width:150px">' + ssFmtDateTime(l.t) + '</td><td><b>' + escapeHtml(l.a) + '</b></td><td>' + escapeHtml(l.d) + '</td></tr>';
+        }).join('') || '<tr><td colspan="3">No entries.</td></tr>') + '</tbody></table></div>';
+    } else if (logTab === 'errors') {
+      var e = lsGet(ERR_KEY, []);
+      body = '<div class="xm-row"><button class="btn-secondary" id="rclr" type="button">🗑️ Clear errors</button></div>' +
+        '<div class="xm-scroll"><table class="analytics-table"><thead><tr><th>Time</th><th>Message</th><th>Source</th></tr></thead><tbody>' +
+        (e.slice(0, 60).map(function (x) {
+          return '<tr><td style="width:150px">' + ssFmtDateTime(x.t) + '</td><td>' + escapeHtml(x.m) + '</td><td style="font-size:11px">' + escapeHtml(x.s) + '</td></tr>';
+        }).join('') || '<tr><td colspan="3">No JavaScript errors captured. 🎉</td></tr>') + '</tbody></table></div>';
+    } else if (logTab === 'api') {
+      var api = lsGet(API_KEY, []);
+      var avg = api.length ? Math.round(api.reduce(function (s, x) { return s + (x.ms || 0); }, 0) / api.length) : 0;
+      var fails = api.filter(function (x) { return !x.ok; }).length;
+      body = '<div class="stats-grid">' + stat('Calls logged', api.length) + stat('Average', avg + ' ms') +
+        stat('Failures', fails) + stat('Slowest', api.length ? Math.max.apply(null, api.map(function (x) { return x.ms || 0; })) + ' ms' : '—') + '</div>' +
+        '<div class="xm-scroll"><table class="analytics-table"><thead><tr><th>Time</th><th>Endpoint</th><th>Status</th><th>Time</th></tr></thead><tbody>' +
+        (api.slice(0, 60).map(function (x) {
+          return '<tr><td style="width:130px">' + ssFmtDateTime(x.t) + '</td><td style="font-size:11px">' + escapeHtml(x.url) + '</td>' +
+            '<td><span class="xm-badge ' + (x.ok ? 'xm-ok' : 'xm-bad') + '">' + (x.status || 'ERR') + '</span></td><td>' + x.ms + ' ms</td></tr>';
+        }).join('') || '<tr><td colspan="4">No API calls recorded yet.</td></tr>') + '</tbody></table></div>';
+    } else if (logTab === 'logins') {
+      var lg = lsGet(LOGIN_KEY, []);
+      body = '<div class="xm-scroll"><table class="analytics-table"><thead><tr><th>Time</th><th>Result</th><th>Device</th></tr></thead><tbody>' +
+        (lg.slice(0, 60).map(function (l) {
+          return '<tr><td style="width:150px">' + ssFmtDateTime(l.t) + '</td><td><span class="xm-badge ' + (l.ok ? 'xm-ok' : 'xm-bad') + '">' +
+            (l.ok ? 'Success' : 'Failed') + '</span></td><td style="font-size:11px">' + escapeHtml(l.ua || '') + '</td></tr>';
+        }).join('') || '<tr><td colspan="3">No login attempts.</td></tr>') + '</tbody></table></div>';
+    } else if (logTab === 'users') {
+      var us = usersAll();
+      var rows = [];
+      us.forEach(function (u) { (u.activity || []).forEach(function (x) { rows.push({ t: x.t, u: u.name || u.email, a: x.a }); }); });
+      rows.sort(function (x, y) { return y.t - x.t; });
+      body = '<div class="xm-scroll"><table class="analytics-table"><thead><tr><th>Time</th><th>User</th><th>Action</th></tr></thead><tbody>' +
+        (rows.slice(0, 60).map(function (r) {
+          return '<tr><td style="width:150px">' + ssFmtDateTime(r.t) + '</td><td><b>' + escapeHtml(r.u) + '</b></td><td>' + escapeHtml(r.a) + '</td></tr>';
+        }).join('') || '<tr><td colspan="3">No user activity yet.</td></tr>') + '</tbody></table></div>';
+    } else {
+      var rep = lsGet(RPT_KEY, { scheduled: [], last: 0 });
+      var schedRows = (rep.scheduled || []).map(function (r, i) {
+        return '<tr><td><b>' + escapeHtml(r.name) + '</b></td><td>' + escapeHtml(r.freq) + '</td><td>' + escapeHtml(r.email || '—') + '</td>' +
+          '<td><button class="btn-secondary" data-delrep="' + i + '" type="button" style="padding:3px 8px;font-size:11px;color:#ef4444">Remove</button></td></tr>';
+      }).join('') || '<tr><td colspan="4">No scheduled reports.</td></tr>';
+      body = '<div class="xm-row">' +
+        '<input id="repName" placeholder="Report name" style="flex:1;min-width:130px">' +
+        '<select id="repFreq"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select>' +
+        '<input id="repEmail" placeholder="email@example.com" style="flex:1;min-width:150px">' +
+        '<button class="btn-primary" id="repAdd" type="button">Schedule</button></div>' +
+        '<div class="xm-note">Scheduled reports are a stored plan: the panel shows what is due and can generate the file on demand. Delivering them automatically by email needs a server.</div>' +
+        '<div class="xm-scroll"><table class="analytics-table"><thead><tr><th>Name</th><th>Frequency</th><th>Send to</th><th></th></tr></thead><tbody>' + schedRows + '</tbody></table></div>' +
+        '<div class="xm-row" style="margin-top:10px"><button class="btn-secondary" id="repRun" type="button">⬇️ Generate report now</button></div>';
+    }
+
+    $('tabLog').innerHTML =
+      '<div class="xm-row" style="gap:6px">' + tabs.map(function (t) {
+        return '<button class="btn-secondary" data-ltab="' + t[0] + '" type="button" style="padding:5px 10px;font-size:11.5px' +
+          (logTab === t[0] ? ';background:linear-gradient(135deg,var(--accent-grad-1),var(--accent-grad-2));color:#fff;border-color:transparent' : '') + '">' + t[1] + '</button>';
+      }).join('') + '</div>' + body;
+
+    $('tabLog').querySelectorAll('[data-ltab]').forEach(function (b) {
+      b.onclick = function () { logTab = b.getAttribute('data-ltab'); logRender(); };
+    });
+    if ($('rexp')) $('rexp').onclick = function () {
+      var a = lsGet(AUDIT_KEY, []);
+      downloadText('admin-activity.csv', '\ufeffTime,Action,Details\r\n' + a.map(function (l) {
+        return [new Date(l.t).toISOString(), l.a, l.d].map(csvCell).join(',');
+      }).join('\r\n'), 'text/csv');
+    };
+    if ($('rq')) $('rq').oninput = function () {
+      var q = this.value.toLowerCase();
+      $('rbody').querySelectorAll('tr').forEach(function (tr) {
+        tr.style.display = tr.textContent.toLowerCase().indexOf(q) > -1 ? '' : 'none';
+      });
+    };
+    if ($('rclr')) $('rclr').onclick = function () {
+      if (confirm('Clear the error log?')) { lsSet(ERR_KEY, []); logRender(); }
+    };
+    if ($('repAdd')) $('repAdd').onclick = function () {
+      var name = $('repName').value.trim();
+      if (!name) return alert('Give the report a name.');
+      var r = lsGet(RPT_KEY, { scheduled: [], last: 0 });
+      r.scheduled.push({ name: name, freq: $('repFreq').value, email: $('repEmail').value.trim(), created: Date.now() });
+      lsSet(RPT_KEY, r);
+      logAct('reports', 'Scheduled report: ' + name);
+      logRender();
+    };
+    $('tabLog').querySelectorAll('[data-delrep]').forEach(function (b) {
+      b.onclick = function () {
+        var r = lsGet(RPT_KEY, { scheduled: [], last: 0 });
+        r.scheduled.splice(Number(b.getAttribute('data-delrep')), 1);
+        lsSet(RPT_KEY, r);
+        logRender();
+      };
+    });
+    if ($('repRun')) $('repRun').onclick = function () {
+      var t = loadFeedbacks();
+      var lines = ['DAS Studio report — ' + new Date().toISOString(), '',
+        'Tools: ' + tools.length, 'Tickets: ' + t.length + ' (unread ' + fbUnreadCount() + ')',
+        'Visits: ' + (analyticsData.visits || 0), 'Unique visitors: ' + (analyticsData.uniques || 0),
+        'Users: ' + usersAll().length, 'Media files: ' + mediaAll().length,
+        'Storage: ' + kb(storeSize('das_studio_').total),
+        '', 'Recent admin activity:'].concat(lsGet(AUDIT_KEY, []).slice(0, 20).map(function (l) {
+          return '• ' + ssFmtDateTime(l.t) + ' — ' + l.a + ' ' + l.d;
+        }));
+      downloadText('das-report-' + new Date().toISOString().slice(0, 10) + '.txt', lines.join('\n'), 'text/plain');
+      var r = lsGet(RPT_KEY, { scheduled: [], last: 0 }); r.last = Date.now(); lsSet(RPT_KEY, r);
+    };
+  }
+
+  /* ============================ SYSTEM HEALTH ============================ */
+  function sysRender() {
+    var st = storeSize('das_studio_');
+    var pct = Math.min(100, st.total / (5 * 1024 * 1024) * 100);
+    var pe = (performance.getEntriesByType && performance.getEntriesByType('navigation')[0]) || null;
+    var errs = lsGet(ERR_KEY, []);
+    var api = lsGet(API_KEY, []);
+    var avgApi = api.length ? Math.round(api.reduce(function (s, x) { return s + (x.ms || 0); }, 0) / api.length) : 0;
+    var mem = (performance && performance.memory) ? (performance.memory.usedJSHeapSize / 1048576).toFixed(1) + ' MB' : 'n/a';
+    var lastUp = lsGet('das_studio_uptime', { checks: [], last: 0 });
+    var h = dbHealthRows();
+
+    $('tabSys').innerHTML =
+      '<div class="stats-grid">' + stat('Storage used', kb(st.total)) + stat('Records', st.rows.length) +
+        stat('JS heap', mem) + stat('JS errors', errs.length) + '</div>' +
+      '<div class="stats-grid">' + stat('Page load', pe ? Math.round(pe.loadEventEnd - pe.startTime) + ' ms' : 'n/a') +
+        stat('API avg', api.length ? avgApi + ' ms' : 'n/a') + stat('Network', navigator.onLine ? '<span class="xm-badge xm-ok">Online</span>' : '<span class="xm-badge xm-bad">Offline</span>') +
+        stat('Data health', h.corrupt ? '<span class="xm-badge xm-bad">issue</span>' : '<span class="xm-badge xm-ok">OK</span>') + '</div>' +
+      '<div class="xm-note">localStorage quota ≈ 5 MB (' + pct.toFixed(1) + '% used)</div><div class="xm-bar"><i style="width:' + pct + '%"></i></div>' +
+      (pct > 80 ? '<div class="xm-alert warn" style="margin-top:10px">⚠️ Storage is nearly full — export a backup and clean up media.</div>' : '') +
+
+      '<div class="settings-section-title" style="margin-top:16px">🌐 Uptime monitor</div>' +
+      '<div class="xm-row"><input id="sysPing" placeholder="URL to check (blank = this site)" style="flex:1;min-width:180px" value="' + escapeHtml(lastUp.url || '') + '">' +
+        '<button class="btn-secondary" id="sysCheck" type="button">Check now</button></div>' +
+      '<div class="xm-note" id="sysPingMsg">' + (lastUp.last ? 'Last check ' + ssFmtDateTime(lastUp.last) + ' — ' + (lastUp.ok ? 'up' : 'down') + ' (' + (lastUp.ms || 0) + ' ms)' : 'No checks run yet.') + '</div>' +
+      '<div class="xm-scroll" style="max-height:140px"><table class="analytics-table"><tbody>' +
+      ((lastUp.checks || []).slice(0, 10).map(function (c) {
+        return '<tr><td style="width:150px">' + ssFmtDateTime(c.t) + '</td><td>' + (c.ok ? '<span class="xm-badge xm-ok">up</span>' : '<span class="xm-badge xm-bad">down</span>') + '</td><td>' + c.ms + ' ms</td></tr>';
+      }).join('') || '<tr><td colspan="3">No checks yet.</td></tr>') + '</tbody></table></div>' +
+
+      '<div class="settings-section-title">💾 Storage by key</div>' +
+      '<div class="xm-scroll"><table class="analytics-table"><tbody>' +
+      (st.rows.slice(0, 14).map(function (r) { return '<tr><td>' + escapeHtml(r.key) + '</td><td>' + kb(r.size) + '</td></tr>'; }).join('') || '<tr><td colspan="2">No data.</td></tr>') +
+      '</tbody></table></div>' +
+
+      '<div class="settings-section-title">🐞 Recent JavaScript errors</div>' +
+      '<div class="xm-scroll"><table class="analytics-table"><tbody>' +
+      (errs.slice(0, 12).map(function (e) {
+        return '<tr><td style="width:150px">' + ssFmtDateTime(e.t) + '</td><td>' + escapeHtml(e.m) + '</td><td style="font-size:11px">' + escapeHtml(e.s) + '</td></tr>';
+      }).join('') || '<tr><td colspan="3">No errors captured. 🎉</td></tr>') + '</tbody></table></div>' +
+
+      '<div class="xm-alert warn" style="margin-top:12px">ℹ️ <b>Server metrics (CPU, RAM, disk, database uptime) cannot be measured from a static page.</b> ' +
+      'The panel shows everything the browser can actually observe — storage, memory, page load, API latency and uptime of your endpoints. ' +
+      'For real CPU/RAM/disk numbers, connect a backend health endpoint and read it in the Database → Connection test.</div>';
+
+    $('sysCheck').onclick = function () {
+      var url = $('sysPing').value.trim() || location.href;
+      var msg = $('sysPingMsg');
+      msg.textContent = 'Checking…';
+      var t0 = Date.now();
+      fetch(url, { method: 'HEAD', mode: 'no-cors', cache: 'no-store' })
+        .then(function () { done(true, Date.now() - t0); }, function () { done(false, Date.now() - t0); });
+      function done(ok, ms) {
+        var u = lsGet('das_studio_uptime', { checks: [], last: 0 });
+        u.checks.unshift({ t: Date.now(), ok: ok, ms: ms });
+        u.checks = u.checks.slice(0, 30);
+        u.last = Date.now(); u.ok = ok; u.ms = ms; u.url = $('sysPing').value.trim();
+        lsSet('das_studio_uptime', u);
+        sysRender();
+      }
+    };
+  }
+
+  /* ============================ TABS + LOGIN HOOK ============================ */
+  (function addConsoleTabs() {
+    var nav = document.querySelector('#adminModal .tab-nav');
+    var box = document.querySelector('#adminModal .modal');
+    if (!nav || !box) return;
+    [['tabUsersBtn', 'tabUsers', '👥 Users'], ['tabDbBtn', 'tabDb', '🗄️ Database'], ['tabMediaBtn', 'tabMedia', '🖼️ Media']]
+      .forEach(function (t) {
+        if (document.getElementById(t[0])) return;
+        var b = document.createElement('button');
+        b.className = 'tab-btn'; b.id = t[0]; b.type = 'button'; b.textContent = t[2];
+        nav.appendChild(b);
+        var c = document.createElement('div');
+        c.className = 'tab-content'; c.id = t[1];
+        box.appendChild(c);
+        tabBtns.push(t[0]); tabContents.push(t[1]);
+        b.addEventListener('click', function () { switchTab(t[0], t[1]); tabRenderers[t[1]](); });
+      });
+    tabRenderers.tabUsers = usersRender;
+    tabRenderers.tabDb = dbRender;
+    tabRenderers.tabMedia = mediaRender;
+    tabRenderers.tabSec = secRender;
+    tabRenderers.tabLog = logRender;
+    tabRenderers.tabSys = sysRender;
+  })();
+  /* ============================================================
+     ADMIN CONSOLE v2 — richer users, security, database, media,
+     reports and system health
+     ============================================================ */
+  var ROLES_V2 = [
+    { id: 'superadmin', label: 'Super Admin', badge: 'xm-bad' },
+    { id: 'admin', label: 'Admin', badge: 'xm-warn' },
+    { id: 'editor', label: 'Editor', badge: 'xm-warn' },
+    { id: 'moderator', label: 'Moderator', badge: 'xm-ok' },
+    { id: 'subscriber', label: 'Subscriber', badge: 'xm-ok' }
+  ];
+  var STATUS_V2 = { pending: 'Pending', verified: 'Verified', suspended: 'Suspended' };
+
+  function roleOf(id) {
+    var legacy = { owner: 'superadmin', active: 'verified', invited: 'pending', blocked: 'suspended', viewer: 'subscriber' };
+    var key = legacy[id] || id;
+    var hit = null;
+    ROLES_V2.forEach(function (r) { if (r.id === key) hit = r; });
+    return hit || ROLES_V2[4];
+  }
+  function statusOf(id) {
+    var legacy = { active: 'verified', invited: 'pending', blocked: 'suspended' };
+    var key = legacy[id] || id;
+    return STATUS_V2[key] ? key : 'pending';
+  }
+  function usersV2() {
+    var list = usersAll();
+    var changed = false;
+    list.forEach(function (u) {
+      if (!u.avatar) u.avatar = '';
+      if (!u.phone) u.phone = '';
+      if (!u.social) u.social = { facebook: '', twitter: '', linkedin: '', website: '' };
+      if (!u.prefs) u.prefs = { lang: 'en', emailNotifications: true };
+      if (!u.notes) u.notes = '';
+      if (u.role === 'owner') { u.role = 'superadmin'; changed = true; }
+      if (u.role === 'viewer') { u.role = 'subscriber'; changed = true; }
+      u.status = statusOf(u.status);
+    });
+    if (changed) usersSave(list);
+    return list;
+  }
+  var uFilter = { q: '', role: 'all', status: 'all' };
+  var uEdit = null;
+
+  function usersRender2() {
+    var list = usersV2();
+    var rows = list.filter(function (u) {
+      if (uFilter.role !== 'all' && u.role !== uFilter.role) return false;
+      if (uFilter.status !== 'all' && u.status !== uFilter.status) return false;
+      if (!uFilter.q) return true;
+      return ((u.name || '') + ' ' + (u.email || '') + ' ' + (u.phone || '')).toLowerCase().indexOf(uFilter.q) > -1;
+    }).map(function (u) {
+      var r = roleOf(u.role), st = u.status;
+      var badge = st === 'verified' ? 'xm-ok' : (st === 'suspended' ? 'xm-bad' : 'xm-warn');
+      var initial = (u.name || '?').charAt(0).toUpperCase();
+      return '<tr>' +
+        '<td><div style="display:flex;align-items:center;gap:8px">' +
+          (u.avatar ? '<img src="' + u.avatar + '" alt="" style="width:28px;height:28px;border-radius:50%;object-fit:cover">'
+                    : '<span style="width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent-grad-1),var(--accent-grad-2));color:#fff;font-size:12px;font-weight:700">' + escapeHtml(initial) + '</span>') +
+          '<div><b>' + escapeHtml(u.name || '—') + '</b><div class="xm-note" style="margin:0">' + escapeHtml(u.email || 'no email') + '</div></div>' +
+        '</div></td>' +
+        '<td><span class="xm-badge ' + r.badge + '">' + r.label + '</span></td>' +
+        '<td><span class="xm-badge ' + badge + '">' + STATUS_V2[st] + '</span></td>' +
+        '<td style="font-size:11px">' + (u.created ? ssFmtDateOnly(new Date(u.created)) : '—') + '</td>' +
+        '<td style="font-size:11px">' + (u.lastActive ? ssFmtDateTime(u.lastActive) : '—') + '</td>' +
+        '<td><div class="xm-row" style="margin:0;gap:4px">' +
+          '<button class="btn-secondary" data-u2="profile" data-id="' + u.id + '" type="button" style="padding:4px 7px;font-size:11px">👤</button>' +
+          '<button class="btn-secondary" data-u2="edit" data-id="' + u.id + '" type="button" style="padding:4px 7px;font-size:11px">✏️</button>' +
+          (u.role === 'superadmin' ? '' :
+            '<button class="btn-secondary" data-u2="block" data-id="' + u.id + '" type="button" style="padding:4px 7px;font-size:11px">' + (st === 'suspended' ? '🔓' : '🚫') + '</button>' +
+            '<button class="btn-secondary" data-u2="del" data-id="' + u.id + '" type="button" style="padding:4px 7px;font-size:11px;color:#ef4444">🗑️</button>') +
+        '</div></td></tr>';
+    }).join('') || '<tr><td colspan="6">No users match.</td></tr>';
+
+    var counts = { total: list.length, verified: 0, pending: 0, suspended: 0 };
+    list.forEach(function (u) { counts[u.status] = (counts[u.status] || 0) + 1; });
+
+    $('tabUsers').innerHTML =
+      '<div class="stats-grid">' + stat('Total users', counts.total) + stat('Verified', counts.verified) +
+        stat('Pending', counts.pending) + stat('Suspended', counts.suspended) + '</div>' +
+      '<div class="xm-row">' +
+        '<input id="u2q" placeholder="Search name, email, phone…" value="' + escapeHtml(uFilter.q) + '" style="flex:1;min-width:150px">' +
+        '<select id="u2role"><option value="all">All roles</option>' + ROLES_V2.map(function (r) {
+          return '<option value="' + r.id + '"' + (uFilter.role === r.id ? ' selected' : '') + '>' + r.label + '</option>';
+        }).join('') + '</select>' +
+        '<select id="u2status"><option value="all">All statuses</option>' + Object.keys(STATUS_V2).map(function (k) {
+          return '<option value="' + k + '"' + (uFilter.status === k ? ' selected' : '') + '>' + STATUS_V2[k] + '</option>';
+        }).join('') + '</select>' +
+        '<button class="btn-primary" id="u2new" type="button">➕ New user</button>' +
+      '</div>' +
+      '<div class="xm-scroll"><table class="analytics-table"><thead><tr><th>User</th><th>Role</th><th>Status</th><th>Registered</th><th>Last active</th><th></th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<div class="settings-section-title" style="margin-top:14px">📊 User activity</div>' +
+      '<div class="xm-scroll" id="u2acts"></div>';
+
+    var acts = [];
+    list.forEach(function (u) { (u.activity || []).forEach(function (a) { acts.push({ t: a.t, a: a.a, u: u.name || u.email }); }); });
+    acts.sort(function (a, b) { return b.t - a.t; });
+    $('u2acts').innerHTML = '<table class="analytics-table"><tbody>' +
+      (acts.slice(0, 30).map(function (a) {
+        return '<tr><td style="width:150px">' + ssFmtDateTime(a.t) + '</td><td><b>' + escapeHtml(a.u) + '</b></td><td>' + escapeHtml(a.a) + '</td></tr>';
+      }).join('') || '<tr><td>No activity recorded yet.</td></tr>') + '</tbody></table>';
+
+    $('u2q').oninput = function () { uFilter.q = this.value.trim().toLowerCase(); usersRender2(); var i = $('u2q'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } };
+    $('u2role').onchange = function () { uFilter.role = this.value; usersRender2(); };
+    $('u2status').onchange = function () { uFilter.status = this.value; usersRender2(); };
+    $('u2new').onclick = function () { u2Form(null); };
+    $('tabUsers').querySelectorAll('[data-u2]').forEach(function (b) {
+      b.onclick = function () {
+        var id = b.getAttribute('data-id'), act = b.getAttribute('data-u2');
+        var u = null; usersV2().forEach(function (x) { if (x.id === id) u = x; });
+        if (!u) return;
+        if (act === 'edit') u2Form(u);
+        else if (act === 'profile') u2Profile(u);
+        else if (act === 'block') {
+          var l2 = usersV2();
+          l2.forEach(function (x) { if (x.id === id) x.status = x.status === 'suspended' ? 'verified' : 'suspended'; });
+          usersSave(l2);
+          userLog(id, u.status === 'suspended' ? 'Account restored' : 'Account suspended');
+          secAlert('user', (u.name || 'User') + ' ' + (u.status === 'suspended' ? 'restored' : 'suspended'));
+          usersRender2();
+        } else if (act === 'del') {
+          if (!confirm('Delete user "' + (u.name || '') + '"? This cannot be undone.')) return;
+          usersSave(usersV2().filter(function (x) { return x.id !== id; }));
+          logAct('users', 'Deleted user: ' + (u.name || ''));
+          usersRender2();
+        }
+      };
+    });
+  }
+
+  function u2Form(u) {
+    var isNew = !u;
+    var box = document.createElement('div');
+    box.className = 'modal-overlay active';
+    box.style.zIndex = '120';
+    box.innerHTML = '<div class="modal" style="max-width:560px">' +
+      '<h2><span>' + (isNew ? '➕ New user' : '✏️ Edit user') + '</span><button type="button" class="modal-close" data-x>×</button></h2>' +
+      '<div style="display:flex;gap:12px;align-items:center;margin-bottom:12px">' +
+        '<img id="u2av" src="' + (u && u.avatar ? u.avatar : '') + '" alt="" style="width:56px;height:56px;border-radius:50%;object-fit:cover;background:var(--card);border:1px solid var(--border)">' +
+        '<label class="btn-secondary" style="cursor:pointer">📷 Photo<input type="file" id="u2avf" accept="image/*" hidden></label>' +
+        '<button type="button" class="btn-secondary" id="u2avc">Remove</button>' +
+      '</div>' +
+      '<div class="xm-grid2" style="display:grid;grid-template-columns:1fr 1fr;gap:0 12px">' +
+        '<div class="form-group"><label>Full name</label><input id="u2name" value="' + escapeHtml(u ? u.name : '') + '"></div>' +
+        '<div class="form-group"><label>Email</label><input id="u2email" value="' + escapeHtml(u ? u.email : '') + '"></div>' +
+        '<div class="form-group"><label>Phone</label><input id="u2phone" value="' + escapeHtml(u ? u.phone : '') + '"></div>' +
+        '<div class="form-group"><label>Role</label><select id="u2role2">' + ROLES_V2.map(function (r) {
+          return '<option value="' + r.id + '"' + (u && u.role === r.id ? ' selected' : '') + '>' + r.label + '</option>';
+        }).join('') + '</select></div>' +
+        '<div class="form-group"><label>Status</label><select id="u2status2">' + Object.keys(STATUS_V2).map(function (k) {
+          return '<option value="' + k + '"' + (u && u.status === k ? ' selected' : '') + '>' + STATUS_V2[k] + '</option>';
+        }).join('') + '</select></div>' +
+        '<div class="form-group"><label>Preferred language</label><select id="u2lang">' +
+          '<option value="en"' + (u && u.prefs && u.prefs.lang === 'en' ? ' selected' : '') + '>English</option>' +
+          '<option value="bn"' + (u && u.prefs && u.prefs.lang === 'bn' ? ' selected' : '') + '>বাংলা</option></select></div>' +
+      '</div>' +
+      '<div class="form-group"><label>Social links</label>' +
+        '<input id="u2fb" placeholder="Facebook URL" value="' + escapeHtml(u && u.social ? u.social.facebook : '') + '" style="margin-bottom:6px">' +
+        '<input id="u2tw" placeholder="Twitter / X URL" value="' + escapeHtml(u && u.social ? u.social.twitter : '') + '" style="margin-bottom:6px">' +
+        '<input id="u2li" placeholder="LinkedIn URL" value="' + escapeHtml(u && u.social ? u.social.linkedin : '') + '" style="margin-bottom:6px">' +
+        '<input id="u2web" placeholder="Website" value="' + escapeHtml(u && u.social ? u.social.website : '') + '">' +
+      '</div>' +
+      '<div class="form-group"><label>Internal notes</label><textarea id="u2notes" rows="2">' + escapeHtml(u ? u.notes : '') + '</textarea></div>' +
+      '<div class="form-group" style="display:flex;align-items:center;gap:8px"><input type="checkbox" id="u2mail" style="width:auto"' +
+        (u && u.prefs && u.prefs.emailNotifications === false ? '' : ' checked') + '><label for="u2mail" style="margin:0">Receives email notifications</label></div>' +
+      '<div class="modal-actions"><button type="button" class="btn-secondary" data-x>Cancel</button>' +
+        '<button type="button" class="btn-primary" id="u2save">💾 Save</button></div></div>';
+    document.body.appendChild(box);
+    var avatar = u ? (u.avatar || '') : '';
+    box.querySelectorAll('[data-x]').forEach(function (b) { b.onclick = function () { box.remove(); }; });
+    box.querySelector('#u2avf').onchange = function () {
+      var f = this.files && this.files[0];
+      if (!f) return;
+      if (f.size > 1024 * 1024) return alert('Please use an image under 1 MB.');
+      var rd = new FileReader();
+      rd.onload = function (ev) {
+        var img = new Image();
+        img.onload = function () {
+          var cv = document.createElement('canvas');
+          var s = Math.min(160 / img.width, 160 / img.height, 1);
+          cv.width = Math.round(img.width * s); cv.height = Math.round(img.height * s);
+          cv.getContext('2d').drawImage(img, 0, 0, cv.width, cv.height);
+          avatar = cv.toDataURL('image/jpeg', 0.85);
+          box.querySelector('#u2av').src = avatar;
+        };
+        img.src = ev.target.result;
+      };
+      rd.readAsDataURL(f);
+    };
+    box.querySelector('#u2avc').onclick = function () { avatar = ''; box.querySelector('#u2av').src = ''; };
+    box.querySelector('#u2save').onclick = function () {
+      var name = box.querySelector('#u2name').value.trim();
+      var email = box.querySelector('#u2email').value.trim();
+      if (!name) return alert('Enter a name.');
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email)) return alert('Enter a valid email address.');
+      var data = {
+        name: name, email: email, phone: box.querySelector('#u2phone').value.trim(),
+        role: box.querySelector('#u2role2').value, status: box.querySelector('#u2status2').value,
+        avatar: avatar, notes: box.querySelector('#u2notes').value.trim(),
+        social: {
+          facebook: box.querySelector('#u2fb').value.trim(),
+          twitter: box.querySelector('#u2tw').value.trim(),
+          linkedin: box.querySelector('#u2li').value.trim(),
+          website: box.querySelector('#u2web').value.trim()
+        },
+        prefs: { lang: box.querySelector('#u2lang').value, emailNotifications: box.querySelector('#u2mail').checked }
+      };
+      var list = usersV2();
+      if (isNew) {
+        list.push(Object.assign({ id: 'u_' + Date.now().toString(36), created: Date.now(), lastActive: Date.now(),
+          activity: [{ t: Date.now(), a: 'User created' }] }, data));
+        logAct('users', 'Added user: ' + name);
+      } else {
+        list.forEach(function (x) {
+          if (x.id !== u.id) return;
+          if (x.role === 'superadmin' && data.role !== 'superadmin') { alert('The Super Admin role cannot be changed.'); data.role = 'superadmin'; }
+          Object.assign(x, data);
+          x.activity = x.activity || [];
+          x.activity.unshift({ t: Date.now(), a: 'Profile updated' });
+        });
+        logAct('users', 'Updated user: ' + name);
+      }
+      usersSave(list);
+      box.remove();
+      usersRender2();
+    };
+  }
+
+  function u2Profile(u) {
+    var r = roleOf(u.role);
+    var box = document.createElement('div');
+    box.className = 'modal-overlay active';
+    box.style.zIndex = '120';
+    var links = [];
+    if (u.social) {
+      if (u.social.facebook) links.push('<a href="' + escapeHtml(u.social.facebook) + '" target="_blank" rel="noopener">Facebook</a>');
+      if (u.social.twitter) links.push('<a href="' + escapeHtml(u.social.twitter) + '" target="_blank" rel="noopener">Twitter / X</a>');
+      if (u.social.linkedin) links.push('<a href="' + escapeHtml(u.social.linkedin) + '" target="_blank" rel="noopener">LinkedIn</a>');
+      if (u.social.website) links.push('<a href="' + escapeHtml(u.social.website) + '" target="_blank" rel="noopener">Website</a>');
+    }
+    box.innerHTML = '<div class="modal" style="max-width:520px">' +
+      '<h2><span>👤 User profile</span><button type="button" class="modal-close" data-x>×</button></h2>' +
+      '<div style="display:flex;gap:14px;align-items:center;margin-bottom:14px">' +
+        (u.avatar ? '<img src="' + u.avatar + '" alt="" style="width:64px;height:64px;border-radius:50%;object-fit:cover">'
+                  : '<span style="width:64px;height:64px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--accent-grad-1),var(--accent-grad-2));color:#fff;font-size:24px;font-weight:700">' + escapeHtml((u.name || '?').charAt(0)) + '</span>') +
+        '<div><div style="font-size:16px;font-weight:700;color:var(--text)">' + escapeHtml(u.name || '—') + '</div>' +
+        '<div class="xm-note" style="margin:2px 0 0">' + escapeHtml(u.email || 'no email') + '</div>' +
+        '<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap"><span class="xm-badge ' + r.badge + '">' + r.label + '</span>' +
+        '<span class="xm-badge ' + (u.status === 'verified' ? 'xm-ok' : u.status === 'suspended' ? 'xm-bad' : 'xm-warn') + '">' + STATUS_V2[u.status] + '</span></div></div>' +
+      '</div>' +
+      '<table class="analytics-table"><tbody>' +
+        '<tr><td><b>Phone</b></td><td>' + escapeHtml(u.phone || '—') + '</td></tr>' +
+        '<tr><td><b>Registered</b></td><td>' + ssFmtDateTime(u.created) + '</td></tr>' +
+        '<tr><td><b>Last active</b></td><td>' + ssFmtDateTime(u.lastActive) + '</td></tr>' +
+        '<tr><td><b>Language</b></td><td>' + (u.prefs && u.prefs.lang === 'bn' ? 'বাংলা' : 'English') + '</td></tr>' +
+        '<tr><td><b>Emails</b></td><td>' + (u.prefs && u.prefs.emailNotifications === false ? 'off' : 'on') + '</td></tr>' +
+        '<tr><td><b>Notes</b></td><td>' + escapeHtml(u.notes || '—') + '</td></tr>' +
+        '<tr><td><b>Links</b></td><td>' + (links.join(' · ') || '—') + '</td></tr>' +
+      '</tbody></table>' +
+      '<div class="settings-section-title" style="margin-top:12px">Recent activity</div>' +
+      '<div class="xm-scroll" style="max-height:160px"><table class="analytics-table"><tbody>' +
+      ((u.activity || []).slice(0, 12).map(function (a) {
+        return '<tr><td style="width:150px">' + ssFmtDateTime(a.t) + '</td><td>' + escapeHtml(a.a) + '</td></tr>';
+      }).join('') || '<tr><td>No activity yet.</td></tr>') + '</tbody></table></div>' +
+      '<div class="modal-actions"><button type="button" class="btn-primary" data-x>Close</button></div></div>';
+    document.body.appendChild(box);
+    box.querySelectorAll('[data-x]').forEach(function (b) { b.onclick = function () { box.remove(); }; });
+  }
+  /* ---------------------------- SECURITY v2 ---------------------------- */
+  function secV2() {
+    var s = secGet();
+    if (!s.twoFA.method) s.twoFA.method = 'totp';
+    if (s.alertsEmail == null) s.alertsEmail = true;
+    if (!Array.isArray(s.ipBan)) s.ipBan = [];
+    if (!s.ipMode) s.ipMode = 'allow';
+    if (!s.otp) s.otp = { code: '', until: 0, tries: 0 };
+    return s;
+  }
+  function secNotifyAdmin(kind, msg) {
+    var s = secV2();
+    if (!s.alertsEmail) return;
+    var to = settings.supportEmail;
+    if (!to) return;
+    fbSendEmail({ to: to, subject: '[Security alert] ' + kind, text: msg + '\n\n' + ssFmtDateTime(Date.now()) });
+  }
+
+  function secRender2() {
+    var s = secV2(), lg = lsGet(LOGIN_KEY, []), lock = lsGet(LOCK_KEY, { fails: 0, until: 0 });
+    var failed = lg.filter(function (l) { return !l.ok; }).length;
+    var sessions = sessAll();
+    var live = sessions.filter(function (x) { return (Date.now() - (x.lastSeen || 0)) < 300000; });
+    var method = s.twoFA.method || 'totp';
+
+    var sessRows = sessions.map(function (x) {
+      var isLive = (Date.now() - (x.lastSeen || 0)) < 300000;
+      return '<tr><td>' + ssFmtDateTime(x.start) + '</td><td style="font-size:11px">' + escapeHtml(x.device || '') + '</td>' +
+        '<td>' + (isLive ? '<span class="xm-badge xm-ok">active</span>' : '<span class="xm-badge">idle</span>') + '</td>' +
+        '<td style="font-size:11px">' + ssFmtDateTime(x.lastSeen) + '</td>' +
+        '<td>' + (x.id === sessCurrentId() ? '<span class="xm-note">this device</span>' :
+          '<button class="btn-secondary" data-rev="' + x.id + '" type="button" style="padding:3px 8px;font-size:11px">Revoke</button>') + '</td></tr>';
+    }).join('') || '<tr><td colspan="5">No sessions recorded.</td></tr>';
+
+    var alertRows = s.alerts.slice(0, 15).map(function (a) {
+      return '<tr><td>' + ssFmtDateTime(a.t) + '</td><td><b>' + escapeHtml(a.kind) + '</b></td><td>' + escapeHtml(a.msg) + '</td></tr>';
+    }).join('') || '<tr><td colspan="3">No security alerts.</td></tr>';
+
+    var loginRows = lg.slice(0, 20).map(function (l) {
+      return '<tr><td>' + ssFmtDateTime(l.t) + '</td><td><span class="xm-badge ' + (l.ok ? 'xm-ok' : 'xm-bad') + '">' +
+        (l.ok ? 'Success' : 'Failed') + '</span></td><td style="font-size:11px">' + escapeHtml(l.ua || '') + '</td></tr>';
+    }).join('') || '<tr><td colspan="3">No login attempts recorded.</td></tr>';
+
+    $('tabSec').innerHTML =
+      (usingDefaultPass() ? '<div class="xm-alert bad">🔴 You are using the default password. Change it now.</div>'
+                          : '<div class="xm-alert ok">✅ Custom password is set.</div>') +
+      '<div class="stats-grid">' + stat('Failed attempts', failed) +
+        stat('Lockout', lock.until > Date.now() ? 'Active' : 'None') +
+        stat('2FA', s.twoFA.enabled ? '<span class="xm-badge xm-ok">' + (method === 'email' ? 'Email OTP' : 'Authenticator') + '</span>' : '<span class="xm-badge xm-warn">Off</span>') +
+        stat('Active sessions', live.length) + '</div>' +
+
+      '<div class="settings-section-title">🔑 Change admin password</div>' +
+      '<div class="form-group"><label>Current password</label><input type="password" id="s2old" autocomplete="off"></div>' +
+      '<div class="form-group"><label>New password (10+ chars, upper + lower + number)</label><input type="password" id="s2new" autocomplete="new-password"></div>' +
+      '<div class="form-group"><label>Confirm new password</label><input type="password" id="s2new2" autocomplete="new-password"></div>' +
+      '<div class="xm-row"><button class="btn-primary" id="s2save" type="button">Update password</button>' +
+        '<button class="btn-secondary" id="s2out" type="button">Force logout (this device)</button>' +
+        '<button class="btn-secondary" id="s2all" type="button" style="color:#ef4444">Log out all devices</button></div>' +
+
+      '<div class="settings-section-title">🔐 Two-factor authentication</div>' +
+      '<div class="xm-row"><label style="font-size:12px">Method</label>' +
+        '<select id="s2method"><option value="totp"' + (method === 'totp' ? ' selected' : '') + '>Authenticator app (TOTP)</option>' +
+        '<option value="email"' + (method === 'email' ? ' selected' : '') + '>Email one-time code</option></select>' +
+        (s.twoFA.enabled
+          ? '<button class="btn-secondary" id="s2off" type="button" style="color:#ef4444">Disable 2FA</button>' +
+            '<button class="btn-secondary" id="s2codes" type="button">Backup codes</button>'
+          : '<button class="btn-primary" id="s2on" type="button">Enable 2FA</button>') +
+      '</div>' +
+      '<div class="xm-note">' + (method === 'email'
+        ? 'Email OTP sends a 6-digit code to your support email through the email gateway set in Messages → Email setup. Without a gateway, use the authenticator method.'
+        : 'Works with Google Authenticator, Authy, 1Password and any standard TOTP app.') + '</div>' +
+
+      '<div class="settings-section-title">🌐 IP access control</div>' +
+      '<div class="xm-row"><label style="font-size:12px">Mode</label>' +
+        '<select id="s2ipmode"><option value="allow"' + (s.ipMode === 'allow' ? ' selected' : '') + '>Whitelist — only listed IPs may sign in</option>' +
+        '<option value="ban"' + (s.ipMode === 'ban' ? ' selected' : '') + '>Blacklist — listed IPs are blocked</option></select>' +
+        '<label style="display:flex;align-items:center;gap:6px;font-size:12px"><input type="checkbox" id="s2ipon"' + (s.ipEnforce ? ' checked' : '') + ' style="width:auto"> Enforce</label></div>' +
+      '<div class="form-group"><label>Whitelist (one IP per line)</label><textarea id="s2allow" rows="2" placeholder="203.0.113.7">' + escapeHtml(s.ipAllow.join('\n')) + '</textarea></div>' +
+      '<div class="form-group"><label>Blacklist / banned IPs (one per line)</label><textarea id="s2ban" rows="2" placeholder="198.51.100.9">' + escapeHtml((s.ipBan || []).join('\n')) + '</textarea></div>' +
+      '<div class="xm-row"><input id="s2ipurl" value="' + escapeHtml(s.ipLookupUrl) + '" style="flex:1;min-width:200px" placeholder="IP lookup URL">' +
+        '<button class="btn-secondary" id="s2ipsave" type="button">Save</button>' +
+        '<button class="btn-secondary" id="s2ipnow" type="button">Check my IP</button></div>' +
+      '<div class="xm-note" id="s2ipmsg">' + (s.lastIp ? 'Last detected IP: ' + escapeHtml(s.lastIp) : 'The browser cannot read your IP by itself — the panel asks the lookup URL above.') + '</div>' +
+
+      '<div class="settings-section-title">🚨 Security alerts</div>' +
+      '<div class="xm-row"><label style="display:flex;align-items:center;gap:8px;font-size:12px"><input type="checkbox" id="s2alertmail"' +
+        (s.alertsEmail ? ' checked' : '') + ' style="width:auto"> Email alerts to ' + escapeHtml(settings.supportEmail || 'your support address') + '</label></div>' +
+      '<div class="xm-scroll"><table class="analytics-table"><tbody>' + alertRows + '</tbody></table></div>' +
+
+      '<div class="settings-section-title">💻 Active sessions</div>' +
+      '<div class="xm-scroll"><table class="analytics-table"><thead><tr><th>Started</th><th>Device</th><th>State</th><th>Last seen</th><th></th></tr></thead><tbody>' + sessRows + '</tbody></table></div>' +
+
+      '<div class="settings-section-title">📜 Login history</div>' +
+      '<div class="xm-scroll"><table class="analytics-table"><thead><tr><th>Time</th><th>Result</th><th>Device</th></tr></thead><tbody>' + loginRows + '</tbody></table></div>' +
+      '<div class="xm-alert warn">ℹ️ <b>Important:</b> this site has no server, so the password is only hashed (SHA-256) and checked in the browser. It deters casual access but is <b>not</b> real security — anyone with DevTools can bypass it. For real protection, add a backend with server-side auth.</div>';
+
+    $('s2save').onclick = function () {
+      var o = $('s2old').value, n = $('s2new').value, n2 = $('s2new2').value;
+      if (n !== n2) return alert('New passwords do not match.');
+      if (n.length < 10 || !/[a-z]/.test(n) || !/[A-Z]/.test(n) || !/[0-9]/.test(n)) return alert('Password must be 10+ characters with upper-case, lower-case and a number.');
+      hashPass(o).then(function (oh) {
+        if (oh !== storedHash()) return alert('Current password is incorrect.');
+        hashPass(n).then(function (nh) {
+          lsSet(AUTH_KEY, { hash: nh, changed: Date.now() });
+          logAct('security', 'Admin password changed');
+          secAlert('password', 'Admin password changed');
+          secNotifyAdmin('password', 'The admin password was changed from ' + getDeviceInfo() + '.');
+          alert('Password updated.');
+          secRender2();
+        });
+      });
+    };
+    $('s2out').onclick = function () { adminLogout('Manual logout'); };
+    $('s2all').onclick = function () {
+      if (!confirm('Log out every device, including this one?')) return;
+      var st = secV2();
+      st.epoch = (st.epoch || 1) + 1;
+      secSave(st);
+      sessSave([]);
+      secAlert('session', 'All devices logged out');
+      adminLogout('Logged out everywhere');
+    };
+    $('s2method').onchange = function () {
+      var st = secV2(); st.twoFA.method = this.value; secSave(st); secRender2();
+    };
+    var on = $('s2on');
+    if (on) on.onclick = function () {
+      var st = secV2();
+      if (st.twoFA.method === 'email') {
+        if (!settings.supportEmail) return alert('Set a support email in Site Settings first.');
+        var code = String(Math.floor(100000 + Math.random() * 900000));
+        st.twoFA.enabled = true; st.twoFA.secret = ''; st.twoFA.backup = [];
+        st.otp = { code: code, until: Date.now() + 5 * 60000, tries: 0 };
+        secSave(st);
+        fbSendEmail({ to: settings.supportEmail, subject: 'Your DAS Studio login code', text: 'Your one-time code is ' + code + ' (valid 5 minutes).' });
+        alert('Email OTP enabled.\n\nA test code was ' + code + ' (shown here because this is a local demo — check the email gateway log for the real send).');
+        secRender2();
+        return;
+      }
+      var secret = newTotpSecret();
+      var c = prompt('2FA setup\n\nAdd this secret to your authenticator app:\n\n' + secret + '\n\nThen enter the 6-digit code it shows:');
+      if (!c) return;
+      if (!totpVerify(secret, c)) return alert('That code did not match. Nothing was enabled.');
+      st.twoFA.enabled = true; st.twoFA.secret = secret; st.twoFA.backup = [];
+      for (var i = 0; i < 6; i++) st.twoFA.backup.push(String(Math.floor(100000 + Math.random() * 900000)));
+      secSave(st);
+      secAlert('2fa', 'Two-factor authentication enabled');
+      secNotifyAdmin('2fa', 'Two-factor authentication was enabled.');
+      alert('2FA is ON.\n\nBackup codes:\n' + st.twoFA.backup.join('\n'));
+      secRender2();
+    };
+    var off = $('s2off');
+    if (off) off.onclick = function () {
+      if (!confirm('Disable two-factor authentication?')) return;
+      var st = secV2(); st.twoFA = { enabled: false, method: st.twoFA.method, secret: '', backup: [] }; secSave(st);
+      secAlert('2fa', 'Two-factor authentication disabled');
+      secRender2();
+    };
+    var codes = $('s2codes');
+    if (codes) codes.onclick = function () { alert('Backup codes:\n' + (secV2().twoFA.backup || []).join('\n')); };
+    $('s2ipsave').onclick = function () {
+      var st = secV2();
+      st.ipAllow = $('s2allow').value.split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
+      st.ipBan = $('s2ban').value.split('\n').map(function (x) { return x.trim(); }).filter(Boolean);
+      st.ipMode = $('s2ipmode').value;
+      st.ipEnforce = $('s2ipon').checked;
+      st.ipLookupUrl = $('s2ipurl').value.trim() || 'https://api.ipify.org?format=json';
+      secSave(st);
+      alert('IP rules saved.');
+      secRender2();
+    };
+    $('s2ipnow').onclick = function () {
+      var st = secV2(), msg = $('s2ipmsg');
+      msg.textContent = 'Looking up…';
+      fetch(st.ipLookupUrl).then(function (r) { return r.json(); }).then(function (j) {
+        var ip = j.ip || j.query || '';
+        st.lastIp = ip; secSave(st);
+        msg.textContent = 'Your IP: ' + ip +
+          (st.ipMode === 'ban' ? (st.ipBan.indexOf(ip) > -1 ? ' — banned ⛔' : ' — not banned ✅')
+                               : (st.ipAllow.length ? (st.ipAllow.indexOf(ip) > -1 ? ' — allowed ✅' : ' — not whitelisted ⚠️') : ''));
+      }).catch(function () { msg.textContent = 'Could not look up the IP (offline or blocked).'; });
+    };
+    $('s2alertmail').onchange = function () {
+      var st = secV2(); st.alertsEmail = this.checked; secSave(st);
+    };
+    $('tabSec').querySelectorAll('[data-rev]').forEach(function (b) {
+      b.onclick = function () { sessRevoke(b.getAttribute('data-rev')); secAlert('session', 'Session revoked'); secRender2(); };
+    });
+  }
+
+  /* ---------------------------- DATABASE v2 ---------------------------- */
+  function dbV2() {
+    var d = dbCfg();
+    if (d.host == null) d.host = '';
+    if (d.port == null) d.port = '';
+    if (d.dbName == null) d.dbName = d.name || 'das-studio-local';
+    if (d.dbUser == null) d.dbUser = '';
+    if (d.dbPass == null) d.dbPass = '';
+    if (d.schedule == null) d.schedule = 'off';
+    if (d.healthUrl == null) d.healthUrl = '';
+    return d;
+  }
+  function tableList() {
+    return [
+      { key: 'das_studio_tools', label: 'Tools' },
+      { key: 'das_studio_settings', label: 'Site settings' },
+      { key: 'das_studio_feedbacks', label: 'Tickets' },
+      { key: 'das_studio_users', label: 'Users' },
+      { key: 'das_studio_media', label: 'Media' },
+      { key: 'das_studio_analytics', label: 'Analytics' },
+      { key: 'das_studio_audit', label: 'Activity log' },
+      { key: 'das_studio_logins', label: 'Login log' },
+      { key: 'das_studio_errors', label: 'Error log' },
+      { key: 'das_studio_apilog', label: 'API log' }
+    ];
+  }
+
+  function dbRender2() {
+    var d = dbV2();
+    var h = dbHealthRows();
+    var api = lsGet(API_KEY, []);
+    var slow = api.filter(function (x) { return (x.ms || 0) > 800; }).length;
+    var rows = tableList().map(function (t) {
+      var raw = localStorage.getItem(t.key) || '';
+      var bytes = raw.length * 2;
+      var count = 0;
+      try { var j = JSON.parse(raw); count = Array.isArray(j) ? j.length : (j && typeof j === 'object' ? Object.keys(j).length : 0); } catch (e) {}
+      return '<tr><td><b>' + t.label + '</b><div class="xm-note" style="margin:0">' + t.key + '</div></td>' +
+        '<td>' + count + '</td><td>' + kb(bytes) + '</td>' +
+        '<td><div class="xm-bar" style="width:80px"><i style="width:' + Math.min(100, bytes / (1024 * 512) * 100) + '%"></i></div></td></tr>';
+    }).join('');
+
+    $('tabDb').innerHTML =
+      '<div class="stats-grid">' + stat('Storage used', kb(h.total)) + stat('Tables', tableList().length) +
+        stat('Health', h.corrupt ? '<span class="xm-badge xm-bad">' + h.corrupt + ' issue(s)</span>' : '<span class="xm-badge xm-ok">OK</span>') +
+        stat('Slow queries', slow) + '</div>' +
+      '<div class="xm-note">Quota ≈ 5 MB · ' + h.pct.toFixed(1) + '% used</div><div class="xm-bar"><i style="width:' + Math.min(100, h.pct) + '%"></i></div>' +
+
+      '<div class="settings-section-title" style="margin-top:16px">🔌 Database connection</div>' +
+      '<div class="xm-row">' +
+        '<select id="d2prov"><option value="local"' + (d.provider === 'local' ? ' selected' : '') + '>Local storage</option>' +
+        '<option value="rest"' + (d.provider === 'rest' ? ' selected' : '') + '>Remote (MySQL / Postgres / REST)</option></select>' +
+        '<input id="d2host" placeholder="Host (db.example.com)" value="' + escapeHtml(d.host) + '" style="flex:1;min-width:150px">' +
+        '<input id="d2port" placeholder="Port" value="' + escapeHtml(d.port) + '" style="width:80px">' +
+      '</div>' +
+      '<div class="xm-row">' +
+        '<input id="d2name" placeholder="Database name" value="' + escapeHtml(d.dbName) + '" style="flex:1;min-width:130px">' +
+        '<input type="text" value="🔒 server-side only" disabled style="flex:1;min-width:110px;opacity:.65">' +
+        '<input type="text" value="🔒 not stored in this browser" disabled title="Credentials stay on your server" style="flex:1;min-width:110px;opacity:.65">' +
+      '</div>' +
+      '<div class="xm-row">' +
+        '<input id="d2endpoint" placeholder="Health / API endpoint (https://…)" value="' + escapeHtml(d.endpoint) + '" style="flex:1;min-width:200px">' +
+        '<button class="btn-primary" id="d2save" type="button">Save</button>' +
+        '<button class="btn-secondary" id="d2test" type="button">Test connection</button></div>' +
+      '<div class="xm-note" id="d2msg">A static site has no database of its own — data lives in this browser. Add your API endpoint to test a real backend; credentials are stored locally and never sent anywhere by this page.</div>' +
+
+      '<div class="settings-section-title">💾 Backup &amp; restore</div>' +
+      '<div class="xm-row"><button class="btn-secondary" id="d2backup" type="button">⬇️ Full backup (JSON)</button>' +
+        '<label class="btn-secondary" style="cursor:pointer">⬆️ Restore<input type="file" id="d2restore" accept=".json,application/json" hidden></label>' +
+        '<select id="d2sched"><option value="off"' + (d.schedule === 'off' ? ' selected' : '') + '>No schedule</option>' +
+        '<option value="daily"' + (d.schedule === 'daily' ? ' selected' : '') + '>Daily reminder</option>' +
+        '<option value="weekly"' + (d.schedule === 'weekly' ? ' selected' : '') + '>Weekly reminder</option></select>' +
+        '<button class="btn-secondary" id="d2schedsave" type="button">Save schedule</button></div>' +
+      '<div class="xm-note">Last backup: ' + (d.lastBackup ? ssFmtDateTime(d.lastBackup) : 'never') +
+        (d.schedule !== 'off' && d.lastBackup && (Date.now() - d.lastBackup) > (d.schedule === 'daily' ? 86400000 : 604800000)
+          ? ' · <b style="color:#f59e0b">backup overdue</b>' : '') +
+        '. A static site cannot run cron jobs — the panel reminds you when a backup is due and can email a reminder.</div>' +
+
+      '<div class="settings-section-title">📤 Export</div>' +
+      '<div class="xm-row" style="gap:10px">' + tableList().map(function (t) {
+        return '<label style="display:flex;align-items:center;gap:5px;font-size:11.5px"><input type="checkbox" class="d2tbl" value="' + t.key + '" checked style="width:auto">' + t.label + '</label>';
+      }).join('') + '</div>' +
+      '<div class="xm-row"><select id="d2fmt"><option value="json">JSON</option><option value="csv">CSV</option><option value="sql">SQL insert dump</option></select>' +
+        '<button class="btn-secondary" id="d2export" type="button">⬇️ Export selected</button></div>' +
+
+      '<div class="settings-section-title">🩺 Health &amp; maintenance</div>' +
+      '<div class="xm-scroll"><table class="analytics-table"><thead><tr><th>Table</th><th>Rows</th><th>Size</th><th>Usage</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<div class="xm-row" style="margin-top:10px">' +
+        '<button class="btn-secondary" id="d2check" type="button">🔄 Integrity check</button>' +
+        '<button class="btn-secondary" id="d2opt" type="button">🧹 Optimise (drop empty keys)</button>' +
+        '<button class="btn-secondary" id="d2migrate" type="button">🔄 Migrate to v' + (d.migration + 1) + '</button></div>' +
+      '<div class="xm-note" id="d2healthmsg">Index errors and slow queries are server-side concerns; the API log above tracks request latency from this browser.</div>';
+
+    $('d2save').onclick = function () {
+      var c = dbV2();
+      c.provider = $('d2prov').value; c.host = $('d2host').value.trim(); c.port = $('d2port').value.trim();
+      c.dbName = $('d2name').value.trim(); delete c.dbUser; delete c.dbPass;
+      c.endpoint = $('d2endpoint').value.trim();
+      dbSave(c);
+      logAct('database', 'Connection settings saved');
+      alert('Saved.');
+    };
+    $('d2test').onclick = function () {
+      var url = $('d2endpoint').value.trim(), msg = $('d2msg');
+      if (!url) { msg.textContent = 'Add an endpoint URL first — local storage is already working.'; return; }
+      msg.textContent = 'Testing…';
+      var t0 = Date.now();
+      fetch(url, { method: 'GET', mode: 'cors', cache: 'no-store' })
+        .then(function (r) { msg.textContent = 'Response: HTTP ' + r.status + ' in ' + (Date.now() - t0) + ' ms.'; })
+        .catch(function (e) { msg.textContent = 'Could not reach the endpoint (' + (e.message || 'network error') + '). CORS or offline.'; });
+    };
+    $('d2backup').onclick = function () {
+      var data = { app: 'DAS Studio', type: 'das-full-backup', schema: dbV2().migration,
+        exportedAt: new Date().toISOString(), collections: {} };
+      tableList().forEach(function (t) { var v = localStorage.getItem(t.key); if (v != null) data.collections[t.key] = v; });
+      downloadText('das-backup-' + new Date().toISOString().slice(0, 10) + '.json', JSON.stringify(data, null, 2), 'application/json');
+      var c = dbV2(); c.lastBackup = Date.now(); dbSave(c);
+      logAct('database', 'Full backup downloaded');
+      dbRender2();
+    };
+    $('d2restore').onchange = function () {
+      var f = this.files && this.files[0];
+      if (!f) return;
+      var rd = new FileReader();
+      rd.onload = function () {
+        var data;
+        try { data = JSON.parse(rd.result); } catch (e) { return alert('Not valid JSON.'); }
+        if (!data || !data.collections) return alert('This is not a DAS Studio backup file.');
+        if (!confirm('Restore ' + Object.keys(data.collections).length + ' collections? Current data will be overwritten.')) return;
+        Object.keys(data.collections).forEach(function (k) { try { localStorage.setItem(k, data.collections[k]); } catch (e) {} });
+        logAct('database', 'Backup restored');
+        alert('Restored — reloading.');
+        location.reload();
+      };
+      rd.readAsText(f);
+      this.value = '';
+    };
+    $('d2schedsave').onclick = function () {
+      var c = dbV2(); c.schedule = $('d2sched').value; dbSave(c); dbRender2();
+    };
+    $('d2export').onclick = function () {
+      var keys = [].slice.call(document.querySelectorAll('.d2tbl:checked')).map(function (c) { return c.value; });
+      if (!keys.length) return alert('Select at least one table.');
+      var fmt = $('d2fmt').value;
+      if (fmt === 'json') {
+        var out = {};
+        keys.forEach(function (k) { try { out[k] = JSON.parse(localStorage.getItem(k)); } catch (e) { out[k] = null; } });
+        downloadText('das-db-export.json', JSON.stringify(out, null, 2), 'application/json');
+      } else if (fmt === 'csv') {
+        var lines = [];
+        keys.forEach(function (k) {
+          var arr = [];
+          try { arr = JSON.parse(localStorage.getItem(k)) || []; } catch (e) {}
+          if (!Array.isArray(arr)) arr = [arr];
+          var cols = {};
+          arr.forEach(function (r) { Object.keys(r || {}).forEach(function (c) { cols[c] = 1; }); });
+          var cs = Object.keys(cols);
+          lines.push('# ' + k);
+          lines.push(cs.map(csvCell).join(','));
+          arr.forEach(function (r) { lines.push(cs.map(function (c) { return csvCell(r && r[c]); }).join(',')); });
+          lines.push('');
+        });
+        downloadText('das-db-export.csv', '\ufeff' + lines.join('\r\n'), 'text/csv');
+      } else {
+        var sql = keys.map(function (k) {
+          var arr = [];
+          try { arr = JSON.parse(localStorage.getItem(k)) || []; } catch (e) {}
+          if (!Array.isArray(arr)) arr = [arr];
+          var table = k.replace('das_studio_', '');
+          return arr.map(function (r) {
+            var cols = Object.keys(r || {});
+            return 'INSERT INTO ' + table + ' (' + cols.join(', ') + ') VALUES (' +
+              cols.map(function (c) {
+                var v = r[c];
+                if (v === null || v === undefined) return 'NULL';
+                if (typeof v === 'number') return v;
+                return "'" + String(typeof v === 'object' ? JSON.stringify(v) : v).replace(/'/g, "''").slice(0, 4000) + "'";
+              }).join(', ') + ');';
+          }).join('\n');
+        }).join('\n\n');
+        downloadText('das-db-export.sql', sql, 'text/plain');
+      }
+      logAct('database', 'Exported ' + keys.length + ' table(s) as ' + fmt.toUpperCase());
+    };
+    $('d2check').onclick = function () {
+      var bad = 0;
+      tableList().forEach(function (t) { try { JSON.parse(localStorage.getItem(t.key) || 'null'); } catch (e) { bad++; } });
+      $('d2healthmsg').textContent = bad ? (bad + ' table(s) contain invalid JSON — restore from a backup.') : 'All tables read correctly. No index errors detectable from the browser.';
+    };
+    $('d2opt').onclick = function () {
+      var removed = 0;
+      for (var i = localStorage.length - 1; i >= 0; i--) {
+        var k = localStorage.key(i);
+        if (k.indexOf('das_studio') !== 0) continue;
+        var v = localStorage.getItem(k);
+        if (v === '[]' || v === '{}' || v === 'null') { localStorage.removeItem(k); removed++; }
+      }
+      logAct('database', 'Optimised storage (' + removed + ' empty keys removed)');
+      alert(removed + ' empty key(s) removed.');
+      dbRender2();
+    };
+    $('d2migrate').onclick = function () {
+      var c = dbV2();
+      if (!confirm('Run migration to schema v' + (c.migration + 1) + '? A backup will download first.')) return;
+      $('d2backup').click();
+      var t = loadFeedbacks().map(function (it) {
+        it.ticket = it.ticket || ('TK-' + new Date(it.createdAt || Date.now()).getFullYear() + '-LEGACY');
+        it.thread = it.thread || [];
+        return it;
+      });
+      saveFeedbacks(t);
+      tools = tools.map(function (x) { x.status = x.status || (x.hidden ? 'draft' : 'published'); return x; });
+      saveToolsToStorage();
+      c.migration += 1; dbSave(c);
+      logAct('database', 'Migrated to schema v' + c.migration);
+      dbRender2();
+      alert('Migration complete — schema v' + c.migration + '.');
+    };
+  }
+  /* ---------------------------- MEDIA v2 ---------------------------- */
+  var mView = { q: '', folder: 'All', sort: 'newest', sel: {} };
+  function mediaCfg() {
+    var c = lsGet('das_studio_media_cfg', null) || {};
+    if (c.limitMB == null) c.limitMB = 3;
+    if (!c.format) c.format = 'jpeg';
+    return c;
+  }
+  function mediaRender2() {
+    var cfg = mediaCfg();
+    var all = mediaAll();
+    var folders = mediaFolders();
+    var total = storeSize(MEDIA_KEY).total;
+    var refs = '';
+    try { refs = JSON.stringify(tools) + JSON.stringify(settings); } catch (e) {}
+    var unused = all.filter(function (m) { return refs.indexOf(m.data) === -1; });
+
+    var list = all.filter(function (m) {
+      if (mView.folder !== 'All' && m.folder !== mView.folder) return false;
+      if (mView.q && ((m.name || '') + ' ' + (m.folder || '')).toLowerCase().indexOf(mView.q) === -1) return false;
+      return true;
+    });
+    list.sort(function (a, b) {
+      if (mView.sort === 'name') return String(a.name).localeCompare(String(b.name));
+      if (mView.sort === 'size') return (b.size || 0) - (a.size || 0);
+      if (mView.sort === 'oldest') return (a.created || 0) - (b.created || 0);
+      return (b.created || 0) - (a.created || 0);
+    });
+
+    var cards = list.map(function (m) {
+      var isImg = /^image\//.test(m.type);
+      var checked = mView.sel[m.id] ? ' checked' : '';
+      return '<div class="md-card">' +
+        '<label class="md-check"><input type="checkbox" data-mcheck="' + m.id + '"' + checked + '></label>' +
+        '<div class="md-thumb">' + (isImg ? '<img src="' + m.data + '" alt="">'
+          : '<span>' + (m.type.indexOf('video') === 0 ? '🎬' : m.type.indexOf('audio') === 0 ? '🎵' : '📄') + '</span>') + '</div>' +
+        '<div class="md-name" title="' + escapeHtml(m.name) + '">' + escapeHtml(m.name) + '</div>' +
+        '<div class="md-meta">' + kb(m.size) + ' · ' + escapeHtml(m.folder) + '</div>' +
+        '<div class="md-actions">' +
+          '<button class="btn-secondary" data-m2="use" data-id="' + m.id + '" type="button" style="padding:3px 6px;font-size:10px">🔗</button>' +
+          '<button class="btn-secondary" data-m2="rename" data-id="' + m.id + '" type="button" style="padding:3px 6px;font-size:10px">✏️</button>' +
+          '<button class="btn-secondary" data-m2="move" data-id="' + m.id + '" type="button" style="padding:3px 6px;font-size:10px">📁</button>' +
+          (isImg ? '<button class="btn-secondary" data-m2="opt" data-id="' + m.id + '" type="button" style="padding:3px 6px;font-size:10px">⚡</button>' : '') +
+          '<button class="btn-secondary" data-m2="del" data-id="' + m.id + '" type="button" style="padding:3px 6px;font-size:10px;color:#ef4444">🗑️</button>' +
+        '</div></div>';
+    }).join('') || '<div class="xm-note">No files here yet — upload something above.</div>';
+
+    var selCount = Object.keys(mView.sel).filter(function (k) { return mView.sel[k]; }).length;
+
+    $('tabMedia').innerHTML =
+      '<div class="stats-grid">' + stat('Files', all.length) + stat('Storage', kb(total)) +
+        stat('Unused', unused.length) + stat('Max upload', cfg.limitMB + ' MB') + '</div>' +
+      '<div class="xm-row">' +
+        '<input id="m2q" placeholder="🔍 Search files…" value="' + escapeHtml(mView.q) + '" style="flex:1;min-width:130px">' +
+        '<select id="m2folder"><option value="All">All folders</option>' + folders.map(function (f) {
+          return '<option value="' + escapeHtml(f) + '"' + (mView.folder === f ? ' selected' : '') + '>' + escapeHtml(f) + '</option>';
+        }).join('') + '</select>' +
+        '<select id="m2sort"><option value="newest">Newest</option><option value="oldest">Oldest</option>' +
+          '<option value="name">Name</option><option value="size">Size</option></select>' +
+      '</div>' +
+      '<div class="xm-row">' +
+        '<label class="btn-secondary" style="cursor:pointer">🖼️ Image<input type="file" id="m2img" accept="image/*" hidden></label>' +
+        '<label class="btn-secondary" style="cursor:pointer">🎬 Video<input type="file" id="m2vid" accept="video/*" hidden></label>' +
+        '<label class="btn-secondary" style="cursor:pointer">🎵 Audio<input type="file" id="m2aud" accept="audio/*" hidden></label>' +
+        '<input id="m2newfolder" placeholder="New folder" style="min-width:110px">' +
+        '<button class="btn-secondary" id="m2addfolder" type="button">➕ Folder</button>' +
+        '<span style="flex:1"></span>' +
+        '<button class="btn-secondary" id="m2batchdel" type="button"' + (selCount ? ' style="color:#ef4444"' : '') + '>🗑️ Delete selected (' + selCount + ')</button>' +
+      '</div>' +
+      '<div class="xm-row">' +
+        '<label style="font-size:11.5px;display:flex;align-items:center;gap:6px">Max upload size ' +
+          '<input id="m2limit" type="number" min="1" max="10" value="' + cfg.limitMB + '" style="width:64px"> MB</label>' +
+        '<label style="font-size:11.5px;display:flex;align-items:center;gap:6px">Optimise to ' +
+          '<select id="m2format"><option value="jpeg"' + (cfg.format === 'jpeg' ? ' selected' : '') + '>JPEG</option>' +
+          '<option value="webp"' + (cfg.format === 'webp' ? ' selected' : '') + '>WebP</option></select></label>' +
+        '<button class="btn-secondary" id="m2savecfg" type="button">Save</button>' +
+        '<button class="btn-secondary" id="m2clean" type="button">🧹 Clean ' + unused.length + ' unused</button>' +
+      '</div>' +
+      '<div class="md-grid">' + cards + '</div>' +
+      '<div class="xm-note">Files live in this browser as Base64 (≈5 MB total). Images are resized to 1200 px on upload; “⚡” re-encodes an image with the chosen format.</div>';
+
+    $('m2q').oninput = function () { mView.q = this.value.trim().toLowerCase(); mediaRender2(); var i = $('m2q'); if (i) { i.focus(); i.setSelectionRange(i.value.length, i.value.length); } };
+    $('m2folder').onchange = function () { mView.folder = this.value; mediaRender2(); };
+    $('m2sort').onchange = function () { mView.sort = this.value; mediaRender2(); };
+    $('m2addfolder').onclick = function () {
+      var n = $('m2newfolder').value.trim();
+      if (!n) return;
+      var f = mediaFolders();
+      if (f.indexOf(n) === -1) f.push(n);
+      lsSet('das_studio_media_folders', f);
+      mediaRender2();
+    };
+    $('m2savecfg').onclick = function () {
+      lsSet('das_studio_media_cfg', { limitMB: Number($('m2limit').value) || 3, format: $('m2format').value });
+      alert('Upload settings saved.');
+      mediaRender2();
+    };
+    $('m2batchdel').onclick = function () {
+      var ids = Object.keys(mView.sel).filter(function (k) { return mView.sel[k]; });
+      if (!ids.length) return alert('Tick some files first.');
+      if (!confirm('Delete ' + ids.length + ' file(s)?')) return;
+      mediaSave(mediaAll().filter(function (m) { return ids.indexOf(m.id) === -1; }));
+      mView.sel = {};
+      logAct('media', 'Deleted ' + ids.length + ' files');
+      mediaRender2();
+    };
+    $('m2clean').onclick = function () {
+      if (!unused.length) return alert('Nothing unused.');
+      if (!confirm('Remove ' + unused.length + ' unused file(s)?')) return;
+      mediaSave(all.filter(function (m) { return unused.indexOf(m) === -1; }));
+      logAct('media', 'Cleaned ' + unused.length + ' unused files');
+      mediaRender2();
+    };
+    function addFile(file) {
+      if (!file) return;
+      var cfg2 = mediaCfg();
+      if (file.size > cfg2.limitMB * 1048576) return alert('File exceeds the ' + cfg2.limitMB + ' MB limit.');
+      var rd = new FileReader();
+      rd.onload = function (ev) {
+        var raw = ev.target.result;
+        var finish = function (dataUrl, size, type) {
+          var l = mediaAll();
+          l.unshift({ id: 'md_' + Date.now().toString(36), name: file.name,
+            folder: mView.folder === 'All' ? 'General' : mView.folder, type: type || file.type,
+            size: size || file.size, data: dataUrl, created: Date.now() });
+          mediaSave(l);
+          logAct('media', 'Uploaded ' + file.name);
+          mediaRender2();
+        };
+        if (/^image\/(png|jpe?g|webp)$/i.test(file.type)) {
+          var img = new Image();
+          img.onload = function () {
+            try {
+              var max = 1200, w = img.width, h = img.height;
+              if (w > max || h > max) { var r = Math.min(max / w, max / h); w = Math.round(w * r); h = Math.round(h * r); }
+              var cv = document.createElement('canvas'); cv.width = w; cv.height = h;
+              cv.getContext('2d').drawImage(img, 0, 0, w, h);
+              var mime = cfg2.format === 'webp' ? 'image/webp' : 'image/jpeg';
+              var out = cv.toDataURL(mime, 0.85);
+              finish(out.length < raw.length ? out : raw, Math.round((out.length < raw.length ? out : raw).length * 0.75),
+                out.length < raw.length ? mime : file.type);
+            } catch (e) { finish(raw, file.size); }
+          };
+          img.onerror = function () { finish(raw, file.size); };
+          img.src = raw;
+        } else finish(raw, file.size);
+      };
+      rd.readAsDataURL(file);
+    }
+    ['m2img', 'm2vid', 'm2aud'].forEach(function (id) {
+      var el = $(id);
+      if (el) el.onchange = function () { addFile(this.files && this.files[0]); this.value = ''; };
+    });
+    $('tabMedia').querySelectorAll('[data-mcheck]').forEach(function (c) {
+      c.onchange = function () { mView.sel[c.getAttribute('data-mcheck')] = c.checked; mediaRender2(); };
+    });
+    $('tabMedia').querySelectorAll('[data-m2]').forEach(function (b) {
+      b.onclick = function () {
+        var id = b.getAttribute('data-id'), act = b.getAttribute('data-m2');
+        var m = mediaAll().filter(function (x) { return x.id === id; })[0];
+        if (!m) return;
+        if (act === 'use') {
+          fbCopy(m.data, 'Data URL copied — paste it into any image or icon field.');
+        } else if (act === 'rename') {
+          var n = prompt('Rename file', m.name);
+          if (!n) return;
+          var l = mediaAll(); l.forEach(function (x) { if (x.id === id) x.name = n.trim(); });
+          mediaSave(l); mediaRender2();
+        } else if (act === 'move') {
+          var f = prompt('Move to folder (existing or new):', m.folder);
+          if (!f) return;
+          var folders2 = mediaFolders();
+          if (folders2.indexOf(f) === -1) { folders2.push(f); lsSet('das_studio_media_folders', folders2); }
+          var l2 = mediaAll(); l2.forEach(function (x) { if (x.id === id) x.folder = f; });
+          mediaSave(l2); mediaRender2();
+        } else if (act === 'opt') {
+          var img = new Image();
+          img.onload = function () {
+            try {
+              var cfg3 = mediaCfg();
+              var cv = document.createElement('canvas');
+              var w = Math.min(1200, img.width), h = Math.round(img.height * (Math.min(1200, img.width) / img.width));
+              cv.width = w; cv.height = h;
+              cv.getContext('2d').drawImage(img, 0, 0, w, h);
+              var mime = cfg3.format === 'webp' ? 'image/webp' : 'image/jpeg';
+              var out = cv.toDataURL(mime, 0.75);
+              var l3 = mediaAll();
+              l3.forEach(function (x) { if (x.id === id) { x.data = out; x.type = mime; x.size = Math.round(out.length * 0.75); } });
+              mediaSave(l3); mediaRender2();
+              alert('Optimised to ' + kb(Math.round(out.length * 0.75)) + ' (' + (cfg3.format === 'webp' ? 'WebP' : 'JPEG') + ').');
+            } catch (e) { alert('Could not optimise this image.'); }
+          };
+          img.src = m.data;
+        } else if (act === 'del') {
+          if (!confirm('Delete "' + m.name + '"?')) return;
+          mediaSave(mediaAll().filter(function (x) { return x.id !== id; }));
+          mediaRender2();
+        }
+      };
+    });
+  }
+
+  /* ---------------------------- REPORTS v2 ---------------------------- */
+  var logTab2 = 'activity';
+  function reportData() {
+    var t = loadFeedbacks();
+    return {
+      generated: Date.now(),
+      tools: tools.length,
+      tickets: t.length,
+      unread: fbUnreadCount(),
+      visits: analyticsData.visits || 0,
+      uniques: analyticsData.uniques || 0,
+      users: usersV2().length,
+      media: mediaAll().length,
+      storage: kb(storeSize('das_studio_').total),
+      errors: lsGet(ERR_KEY, []).length,
+      logins: lsGet(LOGIN_KEY, []).length,
+      api: lsGet(API_KEY, []).length
+    };
+  }
+  function reportText() {
+    var r = reportData();
+    return 'DAS Studio — system report\nGenerated: ' + ssFmtDateTime(r.generated) + '\n\n' +
+      'Tools: ' + r.tools + '\nTickets: ' + r.tickets + ' (unread ' + r.unread + ')\n' +
+      'Visits: ' + r.visits + '\nUnique visitors: ' + r.uniques + '\n' +
+      'Users: ' + r.users + '\nMedia files: ' + r.media + '\nStorage: ' + r.storage + '\n' +
+      'JS errors logged: ' + r.errors + '\nLogin attempts: ' + r.logins + '\nAPI calls: ' + r.api + '\n';
+  }
+  function reportPdf() {
+    var r = reportData();
+    var rows = [['Tools', r.tools], ['Tickets', r.tickets], ['Unread tickets', r.unread],
+      ['Visits', r.visits], ['Unique visitors', r.uniques], ['Users', r.users],
+      ['Media files', r.media], ['Storage used', r.storage], ['JS errors', r.errors],
+      ['Login attempts', r.logins], ['API calls', r.api]];
+    var html = '<html><head><meta charset="utf-8"><title>DAS Studio report</title>' +
+      '<style>body{font-family:Inter,Arial,sans-serif;padding:32px;color:#111}h1{font-size:20px}' +
+      'table{border-collapse:collapse;width:100%;margin-top:16px}td,th{border:1px solid #ccc;padding:8px;font-size:13px;text-align:left}' +
+      'th{background:#f3f4f6}</style></head><body>' +
+      '<h1>DAS Studio — system report</h1><p>' + ssFmtDateTime(r.generated) + '</p>' +
+      '<table><tr><th>Metric</th><th>Value</th></tr>' +
+      rows.map(function (x) { return '<tr><td>' + escapeHtml(x[0]) + '</td><td>' + escapeHtml(String(x[1])) + '</td></tr>'; }).join('') +
+      '</table></body></html>';
+    try {
+      var w = window.open('', '_blank');
+      if (w) { w.document.write(html); w.document.close(); setTimeout(function () { try { w.print(); } catch (e) {} }, 400); }
+      else downloadText('das-report.html', html, 'text/html');
+    } catch (e) { downloadText('das-report.html', html, 'text/html'); }
+  }
+
+  function logRender2() {
+    var tabs = [['activity', '🧾 Admin activity'], ['errors', '🐞 Errors'], ['api', '🔌 API'],
+                ['logins', '🔐 Logins'], ['users', '👥 User activity'], ['summary', '📊 Summary'], ['scheduled', '⏰ Scheduled']];
+    var body = '';
+    if (logTab2 === 'activity') {
+      var a = lsGet(AUDIT_KEY, []);
+      body = '<div class="xm-row"><input id="r2q" placeholder="Filter…" style="flex:1;min-width:150px">' +
+        '<button class="btn-secondary" id="r2csv" type="button">⬇️ CSV</button>' +
+        '<button class="btn-secondary" id="r2pdf" type="button">🖨️ PDF</button></div>' +
+        '<div class="xm-scroll"><table class="analytics-table"><thead><tr><th>Time</th><th>Action</th><th>Details</th></tr></thead><tbody id="r2body">' +
+        (a.slice(0, 120).map(function (l) {
+          return '<tr><td style="width:150px">' + ssFmtDateTime(l.t) + '</td><td><b>' + escapeHtml(l.a) + '</b></td><td>' + escapeHtml(l.d) + '</td></tr>';
+        }).join('') || '<tr><td colspan="3">No entries.</td></tr>') + '</tbody></table></div>';
+    } else if (logTab2 === 'errors') {
+      var e = lsGet(ERR_KEY, []);
+      body = '<div class="xm-row"><button class="btn-secondary" id="r2clr" type="button">🗑️ Clear</button></div>' +
+        '<div class="xm-scroll"><table class="analytics-table"><thead><tr><th>Time</th><th>Message</th><th>Source</th></tr></thead><tbody>' +
+        (e.slice(0, 60).map(function (x) {
+          return '<tr><td style="width:150px">' + ssFmtDateTime(x.t) + '</td><td>' + escapeHtml(x.m) + '</td><td style="font-size:11px">' + escapeHtml(x.s) + '</td></tr>';
+        }).join('') || '<tr><td colspan="3">No errors captured. 🎉</td></tr>') + '</tbody></table></div>';
+    } else if (logTab2 === 'api') {
+      var api = lsGet(API_KEY, []);
+      var avg = api.length ? Math.round(api.reduce(function (s, x) { return s + (x.ms || 0); }, 0) / api.length) : 0;
+      body = '<div class="stats-grid">' + stat('Calls', api.length) + stat('Average', avg + ' ms') +
+        stat('Failures', api.filter(function (x) { return !x.ok; }).length) +
+        stat('Slowest', api.length ? Math.max.apply(null, api.map(function (x) { return x.ms || 0; })) + ' ms' : '—') + '</div>' +
+        '<div class="xm-scroll"><table class="analytics-table"><thead><tr><th>Time</th><th>Endpoint</th><th>Status</th><th>Time</th></tr></thead><tbody>' +
+        (api.slice(0, 60).map(function (x) {
+          return '<tr><td style="width:130px">' + ssFmtDateTime(x.t) + '</td><td style="font-size:11px">' + escapeHtml(x.url) + '</td>' +
+            '<td><span class="xm-badge ' + (x.ok ? 'xm-ok' : 'xm-bad') + '">' + (x.status || 'ERR') + '</span></td><td>' + x.ms + ' ms</td></tr>';
+        }).join('') || '<tr><td colspan="4">No API calls yet.</td></tr>') + '</tbody></table></div>';
+    } else if (logTab2 === 'logins') {
+      var lg = lsGet(LOGIN_KEY, []);
+      body = '<div class="stats-grid">' + stat('Total attempts', lg.length) +
+        stat('Successful', lg.filter(function (l) { return l.ok; }).length) +
+        stat('Failed', lg.filter(function (l) { return !l.ok; }).length) +
+        stat('Unique devices', Object.keys(lg.reduce(function (m, l) { m[l.ua || '?'] = 1; return m; }, {})).length) + '</div>' +
+        '<div class="xm-scroll"><table class="analytics-table"><thead><tr><th>Time</th><th>Result</th><th>Device</th></tr></thead><tbody>' +
+        (lg.slice(0, 60).map(function (l) {
+          return '<tr><td style="width:150px">' + ssFmtDateTime(l.t) + '</td><td><span class="xm-badge ' + (l.ok ? 'xm-ok' : 'xm-bad') + '">' +
+            (l.ok ? 'Success' : 'Failed') + '</span></td><td style="font-size:11px">' + escapeHtml(l.ua || '') + '</td></tr>';
+        }).join('') || '<tr><td colspan="3">No login attempts.</td></tr>') + '</tbody></table></div>';
+    } else if (logTab2 === 'users') {
+      var rows = [];
+      usersV2().forEach(function (u) { (u.activity || []).forEach(function (x) { rows.push({ t: x.t, u: u.name || u.email, a: x.a }); }); });
+      rows.sort(function (x, y) { return y.t - x.t; });
+      body = '<div class="xm-scroll"><table class="analytics-table"><thead><tr><th>Time</th><th>User</th><th>Action</th></tr></thead><tbody>' +
+        (rows.slice(0, 60).map(function (r) {
+          return '<tr><td style="width:150px">' + ssFmtDateTime(r.t) + '</td><td><b>' + escapeHtml(r.u) + '</b></td><td>' + escapeHtml(r.a) + '</td></tr>';
+        }).join('') || '<tr><td colspan="3">No user activity yet.</td></tr>') + '</tbody></table></div>';
+    } else if (logTab2 === 'summary') {
+      var r = reportData();
+      var d7 = anRangeDays(7);
+      var v7 = d7.reduce(function (s, x) { return s + (x.data.visits || 0); }, 0);
+      body = '<div class="stats-grid">' + stat('Visits (7 days)', v7) + stat('Tickets', r.tickets) +
+        stat('Users', r.users) + stat('Storage', r.storage) + '</div>' +
+        '<div class="xm-scroll"><table class="analytics-table"><tbody>' +
+        [['Tools', r.tools], ['Open tickets (unread)', r.unread], ['Unique visitors', r.uniques],
+         ['Media files', r.media], ['JS errors', r.errors], ['Login attempts', r.logins], ['API calls', r.api]]
+          .map(function (x) { return '<tr><td><b>' + x[0] + '</b></td><td>' + x[1] + '</td></tr>'; }).join('') +
+        '</tbody></table></div>' +
+        '<div class="xm-row" style="margin-top:10px"><button class="btn-secondary" id="r2pdf2" type="button">🖨️ PDF report</button>' +
+        '<button class="btn-secondary" id="r2txt" type="button">⬇️ Text report</button></div>';
+    } else {
+      var rep = lsGet(RPT_KEY, { scheduled: [], last: 0 });
+      var rows2 = (rep.scheduled || []).map(function (x, i) {
+        return '<tr><td><b>' + escapeHtml(x.name) + '</b></td><td>' + escapeHtml(x.freq) + '</td><td>' + escapeHtml(x.email || '—') + '</td>' +
+          '<td><button class="btn-secondary" data-send="' + i + '" type="button" style="padding:3px 7px;font-size:10.5px">Send now</button> ' +
+          '<button class="btn-secondary" data-del2="' + i + '" type="button" style="padding:3px 7px;font-size:10.5px;color:#ef4444">✕</button></td></tr>';
+      }).join('') || '<tr><td colspan="4">No scheduled reports.</td></tr>';
+      body = '<div class="xm-row"><input id="r2name" placeholder="Report name" style="flex:1;min-width:120px">' +
+        '<select id="r2freq"><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select>' +
+        '<input id="r2email" placeholder="email@example.com" style="flex:1;min-width:140px">' +
+        '<button class="btn-primary" id="r2add" type="button">Schedule</button></div>' +
+        '<div class="xm-note">“Send now” emails the report through the gateway configured in Messages → Email setup. Automatic delivery at the scheduled time needs a server cron job.</div>' +
+        '<div class="xm-scroll"><table class="analytics-table"><thead><tr><th>Name</th><th>Frequency</th><th>Send to</th><th></th></tr></thead><tbody>' + rows2 + '</tbody></table></div>';
+    }
+
+    $('tabLog').innerHTML = '<div class="xm-row" style="gap:6px">' + tabs.map(function (t) {
+      return '<button class="btn-secondary" data-ltab2="' + t[0] + '" type="button" style="padding:5px 10px;font-size:11.5px' +
+        (logTab2 === t[0] ? ';background:linear-gradient(135deg,var(--accent-grad-1),var(--accent-grad-2));color:#fff;border-color:transparent' : '') + '">' + t[1] + '</button>';
+    }).join('') + '</div>' + body;
+
+    $('tabLog').querySelectorAll('[data-ltab2]').forEach(function (b) {
+      b.onclick = function () { logTab2 = b.getAttribute('data-ltab2'); logRender2(); };
+    });
+    if ($('r2csv')) $('r2csv').onclick = function () {
+      var a = lsGet(AUDIT_KEY, []);
+      downloadText('admin-activity.csv', '\ufeffTime,Action,Details\r\n' + a.map(function (l) {
+        return [new Date(l.t).toISOString(), l.a, l.d].map(csvCell).join(',');
+      }).join('\r\n'), 'text/csv');
+    };
+    if ($('r2pdf')) $('r2pdf').onclick = reportPdf;
+    if ($('r2pdf2')) $('r2pdf2').onclick = reportPdf;
+    if ($('r2txt')) $('r2txt').onclick = function () { downloadText('das-report.txt', reportText(), 'text/plain'); };
+    if ($('r2q')) $('r2q').oninput = function () {
+      var q = this.value.toLowerCase();
+      $('r2body').querySelectorAll('tr').forEach(function (tr) {
+        tr.style.display = tr.textContent.toLowerCase().indexOf(q) > -1 ? '' : 'none';
+      });
+    };
+    if ($('r2clr')) $('r2clr').onclick = function () { if (confirm('Clear the error log?')) { lsSet(ERR_KEY, []); logRender2(); } };
+    if ($('r2add')) $('r2add').onclick = function () {
+      var name = $('r2name').value.trim();
+      if (!name) return alert('Give the report a name.');
+      var r = lsGet(RPT_KEY, { scheduled: [], last: 0 });
+      r.scheduled.push({ name: name, freq: $('r2freq').value, email: $('r2email').value.trim(), created: Date.now() });
+      lsSet(RPT_KEY, r);
+      logAct('reports', 'Scheduled report: ' + name);
+      logRender2();
+    };
+    $('tabLog').querySelectorAll('[data-del2]').forEach(function (b) {
+      b.onclick = function () {
+        var r = lsGet(RPT_KEY, { scheduled: [], last: 0 });
+        r.scheduled.splice(Number(b.getAttribute('data-del2')), 1);
+        lsSet(RPT_KEY, r); logRender2();
+      };
+    });
+    $('tabLog').querySelectorAll('[data-send]').forEach(function (b) {
+      b.onclick = function () {
+        var r = lsGet(RPT_KEY, { scheduled: [], last: 0 });
+        var item = r.scheduled[Number(b.getAttribute('data-send'))];
+        if (!item) return;
+        if (!item.email) return alert('No email address on this report.');
+        fbSendEmail({ to: item.email, subject: 'DAS Studio report — ' + item.name, text: reportText() })
+          .then(function (res) { alert(res.ok ? 'Report sent.' : 'Could not send: ' + res.error); });
+      };
+    });
+  }
+
+  /* ---------------------------- SYSTEM HEALTH v2 ---------------------------- */
+  function sysRender2() {
+    var st = storeSize('das_studio_');
+    var pct = Math.min(100, st.total / (5 * 1024 * 1024) * 100);
+    var pe = (performance.getEntriesByType && performance.getEntriesByType('navigation')[0]) || null;
+    var errs = lsGet(ERR_KEY, []);
+    var api = lsGet(API_KEY, []);
+    var avgApi = api.length ? Math.round(api.reduce(function (s, x) { return s + (x.ms || 0); }, 0) / api.length) : 0;
+    var up = lsGet('das_studio_uptime', { checks: [], last: 0 });
+    var checks = up.checks || [];
+    var upOk = checks.filter(function (c) { return c.ok; }).length;
+    var uptimePct = checks.length ? ((upOk / checks.length) * 100).toFixed(1) + '%' : '—';
+    var d = dbV2();
+    var backend = lsGet('das_studio_backend_health', null);
+
+    function gauge(label, value, max, color, note) {
+      var p = Math.max(0, Math.min(100, (Number(value) || 0) / (max || 100) * 100));
+      return '<div class="h-gauge"><div class="h-gauge-top"><span>' + label + '</span><b>' + (value == null ? '—' : value + (max === 100 ? '%' : '')) + '</b></div>' +
+        '<div class="xm-bar"><i style="width:' + p + '%;background:' + color + '"></i></div>' +
+        (note ? '<div class="xm-note" style="margin:4px 0 0">' + note + '</div>' : '') + '</div>';
+    }
+
+    $('tabSys').innerHTML =
+      '<div class="stats-grid">' + stat('Storage used', kb(st.total)) + stat('Records', st.rows.length) +
+        stat('Uptime', uptimePct) + stat('JS errors', errs.length) + '</div>' +
+      '<div class="stats-grid">' + stat('Page load', pe ? Math.round(pe.loadEventEnd - pe.startTime) + ' ms' : 'n/a') +
+        stat('API average', api.length ? avgApi + ' ms' : 'n/a') +
+        stat('Network', navigator.onLine ? '<span class="xm-badge xm-ok">Online</span>' : '<span class="xm-badge xm-bad">Offline</span>') +
+        stat('Data health', dbHealthRows().corrupt ? '<span class="xm-badge xm-bad">issue</span>' : '<span class="xm-badge xm-ok">OK</span>') + '</div>' +
+
+      '<div class="settings-section-title" style="margin-top:14px">🖥️ Server resources</div>' +
+      '<div class="xm-row"><input id="h2url" placeholder="Backend health endpoint (https://api.example.com/health)" value="' + escapeHtml(d.healthUrl || '') + '" style="flex:1;min-width:220px">' +
+        '<button class="btn-secondary" id="h2fetch" type="button">Fetch</button></div>' +
+      '<div id="h2server">' + (backend
+        ? '<div class="h-grid">' + gauge('CPU', backend.cpu, 100, '#6366f1') + gauge('RAM', backend.ram, 100, '#a855f7') +
+          gauge('Disk', backend.disk, 100, '#f59e0b') + gauge('Database', backend.db == null ? null : backend.db, 100, '#10b981') + '</div>' +
+          '<div class="xm-note">Reported by ' + escapeHtml(d.healthUrl) + ' at ' + ssFmtDateTime(backend.t) + '.</div>'
+        : '<div class="xm-alert warn">⚠️ <b>CPU, RAM, disk and database status cannot be read from a static page.</b> Point the field above at a small health endpoint on your server that returns JSON like <code>{"cpu":42,"ram":61,"disk":38,"db":true}</code> and this panel will show the real numbers.</div>') + '</div>' +
+
+      '<div class="settings-section-title">🌐 Uptime monitor</div>' +
+      '<div class="xm-row"><input id="h2ping" placeholder="URL to check (blank = this site)" value="' + escapeHtml(up.url || '') + '" style="flex:1;min-width:180px">' +
+        '<button class="btn-secondary" id="h2check" type="button">Check now</button></div>' +
+      '<div class="xm-note">' + (checks.length ? checks.length + ' checks · ' + upOk + ' up · uptime ' + uptimePct : 'No checks run yet.') + '</div>' +
+      '<div class="xm-scroll" style="max-height:130px"><table class="analytics-table"><tbody>' +
+      (checks.slice(0, 10).map(function (c) {
+        return '<tr><td style="width:150px">' + ssFmtDateTime(c.t) + '</td><td>' + (c.ok ? '<span class="xm-badge xm-ok">up</span>' : '<span class="xm-badge xm-bad">down</span>') + '</td><td>' + c.ms + ' ms</td></tr>';
+      }).join('') || '<tr><td colspan="3">No checks yet.</td></tr>') + '</tbody></table></div>' +
+
+      '<div class="settings-section-title">⚡ API response time (last 12 calls)</div>' +
+      '<div class="xm-chart-mini">' + (api.slice(0, 12).reverse().map(function (x) {
+        var h = Math.min(100, (x.ms || 0) / 10);
+        return '<span title="' + escapeHtml(x.url) + ' — ' + x.ms + ' ms" style="height:' + Math.max(4, h) + '%;background:' + (x.ok ? 'linear-gradient(180deg,var(--accent-grad-1),var(--accent-grad-2))' : '#ef4444') + '"></span>';
+      }).join('') || '<span class="xm-note">No API calls logged.</span>') + '</div>' +
+
+      '<div class="settings-section-title">💾 Storage by key</div>' +
+      '<div class="xm-scroll"><table class="analytics-table"><tbody>' +
+      (st.rows.slice(0, 14).map(function (r) { return '<tr><td>' + escapeHtml(r.key) + '</td><td>' + kb(r.size) + '</td></tr>'; }).join('') || '<tr><td colspan="2">No data.</td></tr>') +
+      '</tbody></table></div>' +
+
+      '<div class="settings-section-title">🐞 Error monitoring</div>' +
+      '<div class="xm-scroll"><table class="analytics-table"><tbody>' +
+      (errs.slice(0, 10).map(function (e) {
+        return '<tr><td style="width:150px">' + ssFmtDateTime(e.t) + '</td><td>' + escapeHtml(e.m) + '</td><td style="font-size:11px">' + escapeHtml(e.s) + '</td></tr>';
+      }).join('') || '<tr><td colspan="3">No errors captured. 🎉</td></tr>') + '</tbody></table></div>';
+
+    $('h2fetch').onclick = function () {
+      var url = $('h2url').value.trim();
+      if (!url) return alert('Enter your backend health endpoint first.');
+      var c = dbV2(); c.healthUrl = url; dbSave(c);
+      $('h2server').innerHTML = '<div class="xm-note">Fetching…</div>';
+      fetch(url).then(function (r) { return r.json(); }).then(function (j) {
+        lsSet('das_studio_backend_health', { cpu: j.cpu, ram: j.ram, disk: j.disk, db: j.db, t: Date.now() });
+        sysRender2();
+      }).catch(function () {
+        $('h2server').innerHTML = '<div class="xm-alert bad">Could not read the endpoint — check the URL, CORS headers and that the server is running.</div>';
+      });
+    };
+    $('h2check').onclick = function () {
+      var url = $('h2ping').value.trim() || location.href;
+      var t0 = Date.now();
+      fetch(url, { method: 'HEAD', mode: 'no-cors', cache: 'no-store' }).then(function () { done(true); }, function () { done(false); });
+      function done(ok) {
+        var u = lsGet('das_studio_uptime', { checks: [], last: 0 });
+        u.checks.unshift({ t: Date.now(), ok: ok, ms: Date.now() - t0 });
+        u.checks = u.checks.slice(0, 30);
+        u.last = Date.now(); u.ok = ok; u.ms = Date.now() - t0; u.url = $('h2ping').value.trim();
+        lsSet('das_studio_uptime', u);
+        sysRender2();
+      }
+    };
+  }
+
+  (function wireConsoleV2() {
+    tabRenderers.tabUsers = usersRender2;
+    tabRenderers.tabSec = secRender2;
+    tabRenderers.tabDb = dbRender2;
+    tabRenderers.tabMedia = mediaRender2;
+    tabRenderers.tabLog = logRender2;
+    tabRenderers.tabSys = sysRender2;
+  })();
+  /* ============================================================
+     FULL-PAGE ADMIN SHELL — sidebar, breadcrumbs, search, alerts
+     ============================================================ */
+  var ADM_MENU = [
+    { group: 'Main menu', items: [
+      ['tabDashBtn', '🏠', 'Dashboard'],
+      ['tabToolsBtn', '🛠️', 'Manage Tools'],
+      ['tabTMBtn', '🧰', 'Tool Manager'],
+      ['tabUsersBtn', '👥', 'Users'],
+      ['tabAnalyticsBtn', '📊', 'Analytics'],
+      ['tabMsgsBtn', '📩', 'Messages']
+    ] },
+    { group: 'Management', items: [
+      ['tabAppearanceBtn', '🎨', 'Appearance'],
+      ['tabSettingsBtn', '⚙️', 'Site Settings'],
+      ['tabNoticeBtn', '🔔', 'Announcements'],
+      ['tabMediaBtn', '🖼️', 'Media Library'],
+      ['tabSeoBtn', '🔍', 'SEO']
+    ] },
+    { group: 'System', items: [
+      ['tabSecBtn', '🔐', 'Security'],
+      ['tabDbBtn', '🗄️', 'Database'],
+      ['tabLogBtn', '🧾', 'Activity Logs'],
+      ['tabSysBtn', '🩺', 'System Health']
+    ] }
+  ];
+
+  function admMenuLabel(btnId) {
+    var out = { group: '', label: '' };
+    ADM_MENU.forEach(function (g) {
+      g.items.forEach(function (i) {
+        if (i[0] === btnId) { out.group = g.group; out.label = i[2]; }
+      });
+    });
+    if (!out.label) {
+      var b = document.getElementById(btnId);
+      if (b) out.label = b.textContent.replace(/^[^\w]+/, '').trim();
+    }
+    return out;
+  }
+
+  function admBuildNav() {
+    var navEl = document.getElementById('admNav');
+    if (!navEl) return;
+    var seen = {}, html = '';
+    ADM_MENU.forEach(function (g) {
+      var items = g.items.filter(function (i) { return document.getElementById(i[0]); });
+      if (!items.length) return;
+      html += '<div class="adm-group">' + g.group + '</div>';
+      items.forEach(function (i) {
+        seen[i[0]] = 1;
+        html += '<button type="button" class="adm-item" data-tab="' + i[0] + '">' +
+          '<span class="ico">' + i[1] + '</span><span class="lbl">' + escapeHtml(i[2]) + '</span>' +
+          '<span class="cnt" data-cnt="' + i[0] + '" style="display:none"></span></button>';
+      });
+    });
+    var extras = (typeof tabBtns !== 'undefined' ? tabBtns : []).filter(function (id) {
+      return !seen[id] && document.getElementById(id);
+    });
+    if (extras.length) {
+      html += '<div class="adm-group">More</div>';
+      extras.forEach(function (id) {
+        var b = document.getElementById(id);
+        html += '<button type="button" class="adm-item" data-tab="' + id + '">' +
+          '<span class="ico">•</span><span class="lbl">' + escapeHtml((b.textContent || '').replace(/^[^\w]+/, '').trim()) + '</span></button>';
+      });
+    }
+    navEl.innerHTML = html;
+    navEl.querySelectorAll('[data-tab]').forEach(function (b) {
+      b.onclick = function () { admGo(b.getAttribute('data-tab')); };
+    });
+  }
+
+  function admSync() {
+    var active = document.querySelector('#adminModal .tab-content.active');
+    var contentId = active ? active.id : '';
+    var idx = (typeof tabContents !== 'undefined') ? tabContents.indexOf(contentId) : -1;
+    var btnId = idx > -1 ? tabBtns[idx] : '';
+    document.querySelectorAll('#admNav [data-tab]').forEach(function (b) {
+      b.classList.toggle('active', b.getAttribute('data-tab') === btnId);
+    });
+    var meta = admMenuLabel(btnId);
+    var crumbs = document.getElementById('admCrumbs');
+    if (crumbs) {
+      crumbs.innerHTML = '<span>' + escapeHtml(meta.group || 'Admin') + '</span><span class="sep">›</span><b>' +
+        escapeHtml(meta.label || 'Dashboard') + '</b>';
+    }
+    admCounts();
+  }
+
+  function admCounts() {
+    var unread = 0, alerts = 0, errs = 0;
+    try { unread = (typeof fbUnreadCount === 'function') ? fbUnreadCount() : 0; } catch (e) {}
+    try {
+      var s = (typeof secGet === 'function') ? secGet() : null;
+      alerts = s && s.alerts ? s.alerts.filter(function (a) { return Date.now() - a.t < 7 * 86400000; }).length : 0;
+    } catch (e) {}
+    try { errs = (lsGet(ERR_KEY, []) || []).length; } catch (e) {}
+    function set(tabId, n) {
+      var el = document.querySelector('[data-cnt="' + tabId + '"]');
+      if (!el) return;
+      el.textContent = n;
+      el.style.display = n ? 'inline-block' : 'none';
+    }
+    set('tabMsgsBtn', unread);
+    set('tabSecBtn', alerts);
+    set('tabSysBtn', errs);
+    var bell = document.querySelector('#admBell .badge');
+    var total = unread + alerts + errs;
+    if (bell) { bell.textContent = total; bell.style.display = total ? 'inline-block' : 'none'; }
+    var mb = document.getElementById('tabMsgsBtn');
+    if (mb && !mb.querySelector('.fb-tab-count') && unread) {
+      mb.innerHTML = '📩 Messages <span class="fb-tab-count">' + unread + '</span>';
+    }
+  }
+
+  function admGo(btnId) {
+    var btn = document.getElementById(btnId);
+    if (!btn) return;
+    try { btn.click(); } catch (e) {}
+    admSync();
+    var shell = document.getElementById('adminModal');
+    if (shell) shell.classList.remove('adm-open');
+    var content = document.querySelector('#adminModal .modal');
+    if (content) content.scrollTop = 0;
+  }
+
+  function admOpen(tabId) {
+    var shell = document.getElementById('adminModal');
+    if (!shell) return;
+    shell.classList.add('active');
+    admBuildNav();
+    admGo(tabId || 'tabDashBtn');
+    admNotifRender();
+  }
+
+  /* ---- notifications ---- */
+  function admNotifRender() {
+    var box = document.getElementById('admNotifBody');
+    if (!box) return;
+    var items = [];
+    try {
+      loadFeedbacks().filter(function (f) { return f.unread && !f.spam; }).slice(0, 4).forEach(function (f) {
+        items.push({ icon: '📩', text: 'Ticket ' + (f.ticket || '') + ' — ' + (f.name || 'Anonymous'), tab: 'tabMsgsBtn' });
+      });
+    } catch (e) {}
+    try {
+      var s = secGet();
+      (s.alerts || []).slice(0, 3).forEach(function (a) {
+        items.push({ icon: '🚨', text: a.kind + ': ' + a.msg, tab: 'tabSecBtn' });
+      });
+    } catch (e) {}
+    try {
+      (lsGet(ERR_KEY, []) || []).slice(0, 3).forEach(function (e2) {
+        items.push({ icon: '🐞', text: String(e2.m || '').slice(0, 60), tab: 'tabSysBtn' });
+      });
+    } catch (e) {}
+    box.innerHTML = items.length ? items.map(function (i, n) {
+      return '<button type="button" data-n="' + n + '" data-tab="' + i.tab + '"><span>' + i.icon + '</span><span>' +
+        escapeHtml(i.text) + '</span></button>';
+    }).join('') : '<div class="empty">Nothing needs your attention 🎉</div>';
+    box.querySelectorAll('[data-tab]').forEach(function (b) {
+      b.onclick = function () {
+        document.getElementById('admNotif').classList.remove('show');
+        admGo(b.getAttribute('data-tab'));
+      };
+    });
+  }
+
+  /* ---- global search ---- */
+  function admSearch(q) {
+    var box = document.getElementById('admResults');
+    if (!box) return;
+    q = String(q || '').trim().toLowerCase();
+    if (!q) { box.classList.remove('show'); return; }
+    var out = [];
+    ADM_MENU.forEach(function (g) {
+      g.items.forEach(function (i) {
+        if (document.getElementById(i[0]) && i[2].toLowerCase().indexOf(q) > -1) {
+          out.push({ icon: i[1], label: i[2], hint: g.group, tab: i[0] });
+        }
+      });
+    });
+    try {
+      tools.filter(function (t) {
+        return ((t.titleMain || '') + (t.titleAccent || '')).toLowerCase().indexOf(q) > -1;
+      }).slice(0, 5).forEach(function (t) {
+        out.push({ icon: '🛠️', label: (t.titleMain || '') + (t.titleAccent || ''), hint: 'Tool', tool: t.id });
+      });
+    } catch (e) {}
+    try {
+      loadFeedbacks().filter(function (f) {
+        return ((f.ticket || '') + ' ' + (f.name || '') + ' ' + (f.message || '')).toLowerCase().indexOf(q) > -1;
+      }).slice(0, 4).forEach(function (f) {
+        out.push({ icon: '📩', label: (f.ticket || '') + ' — ' + (f.name || 'Anonymous'), hint: 'Ticket', tab: 'tabMsgsBtn' });
+      });
+    } catch (e) {}
+    box.innerHTML = out.length ? out.slice(0, 12).map(function (r, i) {
+      return '<button type="button" data-r="' + i + '"><span>' + r.icon + '</span><span style="flex:1">' +
+        escapeHtml(r.label) + '</span><span style="font-size:10px;color:var(--muted)">' + escapeHtml(r.hint) + '</span></button>';
+    }).join('') : '<div class="empty">No matches for “' + escapeHtml(q) + '”.</div>';
+    box.classList.add('show');
+    box.querySelectorAll('[data-r]').forEach(function (b) {
+      b.onclick = function () {
+        var r = out[Number(b.getAttribute('data-r'))];
+        box.classList.remove('show');
+        var inp = document.getElementById('admSearch');
+        if (inp) inp.value = '';
+        if (!r) return;
+        if (r.tool) {
+          var t = null;
+          tools.forEach(function (x) { if (String(x.id) === String(r.tool)) t = x; });
+          admOpen('tabToolsBtn');
+          if (t && typeof openModal === 'function') openModal(t);
+        } else admGo(r.tab);
+      };
+    });
+  }
+
+  /* ---- build the shell ---- */
+  (function buildAdminShell() {
+    var shell = document.getElementById('adminModal');
+    if (!shell || shell.querySelector('.adm-sidebar')) return;
+    var box = shell.querySelector('.modal');
+    if (!box) return;
+
+    var side = document.createElement('aside');
+    side.className = 'adm-sidebar';
+    side.innerHTML =
+      '<div class="adm-brand"><span class="dot"></span><div>' + escapeHtml(settings.title || 'DAS Studio') +
+        '<small>Admin dashboard</small></div></div>' +
+      '<div class="adm-searchbox"><input id="admSearch" placeholder="Search anything…" autocomplete="off">' +
+        '<div class="adm-results" id="admResults"></div></div>' +
+      '<nav class="adm-nav" id="admNav"></nav>' +
+      '<div class="adm-side-foot"><button type="button" id="admThemeBtn">🌓 Theme</button>' +
+        '<button type="button" id="admExitBtn">🚪 Exit</button></div>';
+    shell.insertBefore(side, box);
+
+    var top = document.createElement('div');
+    top.className = 'adm-top';
+    top.innerHTML =
+      '<button type="button" class="adm-tools adm-burger" id="admBurger" style="padding:6px 9px">☰</button>' +
+      '<div class="adm-crumbs" id="admCrumbs"><span>Admin</span><span class="sep">›</span><b>Dashboard</b></div>' +
+      '<div class="adm-tools">' +
+        '<button type="button" class="primary" data-qa="tool">➕ <span class="label">Tool</span></button>' +
+        '<button type="button" data-qa="user">👤 <span class="label">User</span></button>' +
+        '<button type="button" data-qa="notice">📢 <span class="label">Announce</span></button>' +
+        '<span class="adm-bell" id="admBell" style="position:relative">' +
+          '<button type="button" id="admBellBtn">🔔<span class="badge" style="display:none">0</span></button>' +
+          '<div class="adm-notif" id="admNotif"><h4>Notifications</h4><div id="admNotifBody"></div></div>' +
+        '</span>' +
+        '<button type="button" id="admCloseBtn" title="Close dashboard">✕</button>' +
+      '</div>';
+    box.insertBefore(top, box.firstChild);
+
+    document.getElementById('admSearch').addEventListener('input', function () { admSearch(this.value); });
+    document.getElementById('admSearch').addEventListener('blur', function () {
+      setTimeout(function () { var r = document.getElementById('admResults'); if (r) r.classList.remove('show'); }, 180);
+    });
+    document.getElementById('admThemeBtn').onclick = function () {
+      var t = document.getElementById('themeBtn');
+      if (t) t.click();
+    };
+    document.getElementById('admExitBtn').onclick = function () {
+      shell.classList.remove('active');
+      var b = document.getElementById('adminToggleBtn');
+      if (b) b.click();
+    };
+    document.getElementById('admCloseBtn').onclick = function () { shell.classList.remove('active'); };
+    document.getElementById('admBurger').onclick = function () { shell.classList.toggle('adm-open'); };
+    document.getElementById('admBellBtn').onclick = function (e) {
+      e.stopPropagation();
+      var n = document.getElementById('admNotif');
+      admNotifRender();
+      n.classList.toggle('show');
+    };
+    document.addEventListener('click', function (e) {
+      var n = document.getElementById('admNotif');
+      if (n && n.classList.contains('show') && !e.target.closest('#admBell')) n.classList.remove('show');
+    });
+    top.querySelectorAll('[data-qa]').forEach(function (b) {
+      b.onclick = function () {
+        var k = b.getAttribute('data-qa');
+        if (k === 'tool') { admGo('tabToolsBtn'); if (typeof openModal === 'function') openModal(); }
+        else if (k === 'user') { admGo('tabUsersBtn'); var n = document.getElementById('u2new'); if (n) n.click(); }
+        else if (k === 'notice') { admGo('tabNoticeBtn'); var f = document.getElementById('annTitle'); if (f) { f.focus(); f.scrollIntoView({ block: 'center' }); } }
+      };
+    });
+
+    /* keep the sidebar in sync with every tab switch */
+    var _switch = switchTab;
+    switchTab = function (btnId, contentId) {
+      _switch(btnId, contentId);
+      try { admSync(); } catch (e) {}
+    };
+
+    /* open the dashboard as soon as the admin logs in */
+    var adminBtnEl = document.getElementById('adminToggleBtn');
+    if (adminBtnEl) {
+      var wasAdmin = false;
+      new MutationObserver(function () {
+        var isNow = adminBtnEl.textContent.indexOf('Exit') > -1;
+        if (isNow && !wasAdmin) admOpen('tabDashBtn');
+        wasAdmin = isNow;
+      }).observe(adminBtnEl, { childList: true, characterData: true, subtree: true });
+    }
+
+    admBuildNav();
+    admSync();
+  })();
+  /* ============================================================
+     PUBLIC SITE v2 — behaviour: nav, sort, load-more, back-to-top
+     ============================================================ */
+  (function publicSiteV2() {
+    var NAV_LINKS = [
+      ['Home', '#top', true],
+      ['Tools', '#directory', false],
+      ['Categories', '#filters', false],
+      ['About', '#about', false],
+      ['Contact', '#contact', false]
+    ];
+
+    /* ---------- header navigation ---------- */
+    var topLinks = document.getElementById('topLinks');
+    if (topLinks) {
+      topLinks.innerHTML = NAV_LINKS.map(function (l) {
+        return '<a href="' + l[1] + '"' + (l[2] ? ' class="active"' : '') + '>' + l[0] + '</a>';
+      }).join('');
+      topLinks.addEventListener('click', function (e) {
+        if (e.target.tagName === 'A') topLinks.classList.remove('open');
+      });
+    }
+    var navToggle = document.getElementById('navToggle');
+    if (navToggle) {
+      navToggle.addEventListener('click', function (e) {
+        e.stopPropagation();
+        topLinks.classList.toggle('open');
+      });
+      document.addEventListener('click', function (e) {
+        if (!e.target.closest('#topLinks') && !e.target.closest('#navToggle')) topLinks.classList.remove('open');
+      });
+    }
+
+    /* ---------- hero statistics ---------- */
+    function heroStats() {
+      var box = document.getElementById('heroStats');
+      if (!box) return;
+      var pub = tools.filter(function (t) { return toolStatusOf(t) === 'published'; });
+      var cats = {};
+      pub.forEach(function (t) { if (t.category) cats[t.category] = 1; });
+      box.innerHTML =
+        '<div><b>' + pub.length + '</b><span>Tools</span></div>' +
+        '<div><b>' + Object.keys(cats).length + '</b><span>Categories</span></div>' +
+        '<div><b>100%</b><span>Free access</span></div>' +
+        '<div><b>0</b><span>Installs needed</span></div>';
+    }
+
+    /* ---------- search clear button ---------- */
+    var searchEl = document.getElementById('search');
+    var clearBtn = document.getElementById('searchClear');
+    if (searchEl && clearBtn) {
+      var syncClear = function () { clearBtn.classList.toggle('show', !!searchEl.value); };
+      searchEl.addEventListener('input', syncClear);
+      clearBtn.addEventListener('click', function () {
+        searchEl.value = '';
+        syncClear();
+        if (typeof applyFilters === 'function') applyFilters();
+        searchEl.focus();
+      });
+      syncClear();
+    }
+
+    /* ---------- sorting ---------- */
+    var sortEl = document.getElementById('sortTools');
+    function clicksOf(id) {
+      var c = (typeof analyticsData !== 'undefined' && analyticsData.clicks) ? analyticsData.clicks : {};
+      var t = null;
+      for (var k in c) { if (c[k] && String(c[k].id) === String(id)) t = c[k]; }
+      var total = 0;
+      for (var n in c) total += c[n].count || 0;
+      return total;
+    }
+    function sortCards(mode) {
+      var gridEl = document.getElementById('grid');
+      if (!gridEl) return;
+      var cards = Array.prototype.slice.call(gridEl.children);
+      cards.sort(function (a, b) {
+        var ta = (a.querySelector('.card-title') || {}).textContent || '';
+        var tb = (b.querySelector('.card-title') || {}).textContent || '';
+        if (mode === 'az') return ta.localeCompare(tb);
+        if (mode === 'newest') return Number(b.getAttribute('data-id')) - Number(a.getAttribute('data-id'));
+        if (mode === 'featured') {
+          var fa = a.querySelector('.card-featured') ? 1 : 0;
+          var fb = b.querySelector('.card-featured') ? 1 : 0;
+          if (fa !== fb) return fb - fa;
+          return Number(b.getAttribute('data-id')) - Number(a.getAttribute('data-id'));
+        }
+        if (mode === 'popular') {
+          var ca = clicksOf(a.getAttribute('data-id'));
+          var cb = clicksOf(b.getAttribute('data-id'));
+          if (ca !== cb) return cb - ca;
+          return ta.localeCompare(tb);
+        }
+        return 0;
+      });
+      cards.forEach(function (c) { gridEl.appendChild(c); });
+      if (typeof applyFilters === 'function') applyFilters();
+    }
+    if (sortEl) {
+      sortEl.addEventListener('change', function () {
+        sortCards(this.value);
+        try { logAct('public', 'Sorted tools: ' + this.value); } catch (e) {}
+      });
+    }
+
+    /* ---------- load more ---------- */
+    var LM_STEP = 8, lmShown = LM_STEP;
+    function lmApply(reset) {
+      var gridEl = document.getElementById('grid');
+      var bar = document.getElementById('loadMoreBar');
+      if (!gridEl || !bar) return;
+      if (reset) lmShown = LM_STEP;
+      var cards = Array.prototype.slice.call(gridEl.children).filter(function (c) {
+        return !c.classList.contains('hidden');
+      });
+      cards.forEach(function (c, i) { c.classList.toggle('lm-hide', i >= lmShown); });
+      var rest = cards.length - lmShown;
+      bar.style.display = rest > 0 ? 'flex' : 'none';
+      bar.querySelector('button').textContent = 'Load more tools (' + rest + ' left)';
+    }
+    var lmBtn = document.getElementById('loadMoreBtn');
+    if (lmBtn) lmBtn.addEventListener('click', function () { lmShown += LM_STEP; lmApply(false); });
+
+    if (typeof renderGrid === 'function') {
+      var _render = renderGrid;
+      renderGrid = function () {
+        _render.apply(null, arguments);
+        heroStats();
+        var sk = document.getElementById('skeleton');
+        if (sk) sk.style.display = 'none';
+        lmApply(true);
+        Array.prototype.forEach.call(document.querySelectorAll('#grid .card'), function (card) {
+          var body = card.querySelector('.card-body');
+          if (!body || body.querySelector('.card-open')) return;
+          var open = document.createElement('span');
+          open.className = 'card-open';
+          open.textContent = 'Open tool ↗';
+          body.appendChild(open);
+        });
+        var dc = document.getElementById('dirCount');
+        if (dc) {
+          var n = document.querySelectorAll('#grid .card').length;
+          dc.textContent = n + (n === 1 ? ' tool' : ' tools');
+        }
+        if (sortEl && sortEl.value !== 'default') sortCards(sortEl.value);
+      };
+    }
+    if (typeof applyFilters === 'function') {
+      var _af = applyFilters;
+      applyFilters = function () {
+        _af.apply(null, arguments);
+        lmApply(true);
+      };
+    }
+
+    /* ---------- back to top ---------- */
+    var back = document.getElementById('backTop');
+    if (back) {
+      window.addEventListener('scroll', function () {
+        back.classList.toggle('show', window.scrollY > 500);
+      }, { passive: true });
+      back.addEventListener('click', function () { window.scrollTo({ top: 0, behavior: 'smooth' }); });
+    }
+
+    /* ---------- footer headings ---------- */
+    function footerHeadings() {
+      var cols = document.querySelectorAll('#footerGrid .footer-col');
+      var titles = ['DAS Studio', 'Products', 'Support', 'Newsletter'];
+      Array.prototype.forEach.call(cols, function (col, i) {
+        if (col.querySelector('h4')) return;
+        var h = document.createElement('h4');
+        h.textContent = titles[i] || 'More';
+        col.insertBefore(h, col.firstChild);
+      });
+      var brand = document.querySelector('#footerGrid .footer-col h4');
+      if (brand) brand.className = 'footer-brand-h';
+    }
+
+    /* ---------- first paint ---------- */
+    setTimeout(function () {
+      heroStats();
+      footerHeadings();
+      lmApply(true);
+      var sk = document.getElementById('skeleton');
+      if (sk && document.querySelectorAll('#grid .card').length) sk.style.display = 'none';
+    }, 60);
+    setTimeout(footerHeadings, 900);
+    setTimeout(footerHeadings, 2200);
+  })();
+  /* ============================================================
+     FEEDBACK FIX — detach overlays from the admin panel, restore
+     public behaviour, add dropzone + keyboard support
+     ============================================================ */
+  (function feedbackFix() {
+    /* 1. every modal was accidentally nested inside #adminModal,
+          so it could never appear on the public site */
+    var OVERLAYS = ['userFeedbackModal', 'fbThreadModal', 'fbEmailModal', 'fbPublicReplyModal',
+      'toolPreviewModal', 'devicePreviewModal', 'legalModal', 'fbReplyModal', 'fbLightbox',
+      'cookieBanner', 'annPopup'];
+    OVERLAYS.forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el && el.parentElement && el.parentElement !== document.body) {
+        document.body.appendChild(el);
+      }
+    });
+
+    var fbModal = document.getElementById('userFeedbackModal');
+    function openFeedback(e) {
+      if (e) e.preventDefault();
+      if (!fbModal) return;
+      fbModal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+      var first = document.getElementById('fbName');
+      if (first) setTimeout(function () { try { first.focus(); } catch (err) {} }, 80);
+    }
+    function closeFeedback() {
+      if (!fbModal) return;
+      fbModal.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    /* 2. delegation: survives any earlier script error and works even
+          if another element overlaps the button */
+    document.addEventListener('click', function (e) {
+      if (e.target && e.target.closest('#openFeedbackModalBtn')) openFeedback(e);
+    }, true);
+
+    if (fbModal) {
+      fbModal.addEventListener('click', function (e) {
+        if (e.target === fbModal) closeFeedback();
+      });
+      document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && fbModal.classList.contains('active')) closeFeedback();
+      });
+      var closeBtn = document.getElementById('feedbackModalClose');
+      if (closeBtn) closeBtn.addEventListener('click', closeFeedback);
+      var cancelBtn = document.getElementById('feedbackCancel');
+      if (cancelBtn) cancelBtn.addEventListener('click', closeFeedback);
+    }
+
+    /* 3. dropzone instead of the plain file input */
+    var fileInput = document.getElementById('fbAttachment');
+    if (fileInput && !fileInput.closest('.fb-drop')) {
+      var drop = document.createElement('label');
+      drop.className = 'fb-drop';
+      drop.setAttribute('tabindex', '0');
+      drop.innerHTML = '<span class="ic">📎</span><b>Drop a screenshot here or click to browse</b>' +
+        '<small>PNG, JPG, PDF, TXT, LOG — up to 3 MB</small>';
+      fileInput.parentNode.insertBefore(drop, fileInput);
+      fileInput.removeAttribute('style');
+      drop.appendChild(fileInput);
+
+      function markFile() {
+        var has = fileInput.files && fileInput.files.length;
+        drop.classList.toggle('has-file', !!has);
+        var b = drop.querySelector('b');
+        if (b) b.textContent = has ? fileInput.files[0].name : 'Drop a screenshot here or click to browse';
+      }
+      fileInput.addEventListener('change', markFile);
+
+      ['dragenter', 'dragover'].forEach(function (ev) {
+        drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('drag'); });
+      });
+      ['dragleave', 'drop'].forEach(function (ev) {
+        drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('drag'); });
+      });
+      drop.addEventListener('drop', function (e) {
+        var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+        if (!f) return;
+        try {
+          var dt = new DataTransfer();
+          dt.items.add(f);
+          fileInput.files = dt.files;
+          fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+        } catch (err) {
+          alert('Your browser blocked the drop — please click the box and choose the file instead.');
+        }
+      });
+
+      var form = document.getElementById('userFeedbackForm');
+      if (form) form.addEventListener('reset', function () { setTimeout(markFile, 30); });
+    }
+
+    /* 4. character counter on the message box */
+    var msg = document.getElementById('fbMessage');
+    if (msg && !document.getElementById('fbCount')) {
+      var count = document.createElement('div');
+      count.className = 'fb-count';
+      count.id = 'fbCount';
+      msg.parentNode.appendChild(count);
+      function sync() {
+        var n = msg.value.length;
+        count.textContent = n + ' characters' + (n < 20 && n > 0 ? ' — a little more detail helps us' : '');
+        count.classList.toggle('warn', n > 0 && n < 20);
+      }
+      msg.addEventListener('input', sync);
+      sync();
+    }
+
+    /* 5. the Type / Priority row gets a real two-column layout */
+    var typeRow = document.querySelector('#userFeedbackForm .form-group[style*="grid-template-columns"]');
+    if (typeRow) {
+      typeRow.removeAttribute('style');
+      typeRow.classList.add('fb-split');
+    }
+  })();
+  /* ============================================================
+     20 MODERN THEMES — data, gallery, apply
+     ============================================================ */
+  function t20(c1, c2, b3, b4, fam, mode, radius, glass, blur, shadow, blob, font, btnR) {
+    return {
+      color1: c1, color2: c2, blob1: c1, blob2: c2, blob3: b3, blob4: b4,
+      fontFamily: font || 'inter', cardRadius: radius, glassAlpha: glass, glassBlur: blur,
+      shadowStrength: shadow, blobOpacity: blob, fontSize: 100
+    };
+  }
+  var THEMES20 = [
+    { id: 'glass', name: 'Glassmorphism', tag: 'Dark', fam: 'glass', mode: 'dark', btn: 12, sw: ['#818cf8', '#22d3ee', '#0f172a'],
+      v: t20('#818cf8', '#22d3ee', '#a855f7', '#0ea5e9', 'glass', 'dark', 20, 52, 16, 60, 60) },
+    { id: 'neo', name: 'Neumorphism', tag: 'Light', fam: 'neo', mode: 'light', btn: 14, sw: ['#5b7cfa', '#94a3b8', '#e8edf7'],
+      v: t20('#5b7cfa', '#94a3b8', '#c7d2fe', '#e2e8f0', 'neo', 'light', 22, 100, 0, 30, 22) },
+    { id: 'minimal', name: 'Minimalist', tag: 'Light', fam: 'minimal', mode: 'light', btn: 8, sw: ['#111827', '#6b7280', '#ffffff'],
+      v: t20('#111827', '#6b7280', '#d1d5db', '#e5e7eb', 'minimal', 'light', 10, 100, 0, 12, 8) },
+    { id: 'darkmode', name: 'Dark Mode', tag: 'Dark', fam: 'dark', mode: 'dark', btn: 10, sw: ['#22d3ee', '#6366f1', '#0b1120'],
+      v: t20('#22d3ee', '#6366f1', '#0ea5e9', '#4f46e5', 'dark', 'dark', 12, 100, 0, 55, 40) },
+    { id: 'cyber', name: 'Cyberpunk Neon', tag: 'Bold', fam: 'cyber', mode: 'dark', btn: 4, sw: ['#facc15', '#ff2e88', '#00e5ff'],
+      v: t20('#facc15', '#ff2e88', '#00e5ff', '#7c3aed', 'cyber', 'dark', 6, 78, 8, 90, 72, 'mono', 4) },
+    { id: 'gradient', name: 'Gradient', tag: 'Bold', fam: 'grad', mode: 'dark', btn: 14, sw: ['#8b5cf6', '#f43f5e', '#f59e0b'],
+      v: t20('#8b5cf6', '#f43f5e', '#f59e0b', '#22d3ee', 'grad', 'dark', 18, 92, 0, 70, 70) },
+    { id: 'threed', name: '3D Modern', tag: 'Bold', fam: '3d', mode: 'dark', btn: 12, sw: ['#38bdf8', '#a855f7', '#0b1220'],
+      v: t20('#38bdf8', '#a855f7', '#6366f1', '#22d3ee', '3d', 'dark', 16, 96, 0, 95, 55) },
+    { id: 'apple', name: 'Apple Style', tag: 'Light', fam: 'apple', mode: 'light', btn: 12, sw: ['#0a84ff', '#5e5ce6', '#f5f5f7'],
+      v: t20('#0a84ff', '#5e5ce6', '#64d2ff', '#bf5af2', 'apple', 'light', 18, 100, 0, 40, 25) },
+    { id: 'material', name: 'Material Design', tag: 'Light', fam: 'material', mode: 'light', btn: 6, sw: ['#6200ee', '#03dac6', '#ffffff'],
+      v: t20('#6200ee', '#03dac6', '#3700b3', '#018786', 'material', 'light', 8, 100, 0, 45, 20) },
+    { id: 'corporate', name: 'Corporate Professional', tag: 'Light', fam: 'corp', mode: 'light', btn: 8, sw: ['#1e3a8a', '#0ea5e9', '#f1f5f9'],
+      v: t20('#1e3a8a', '#0ea5e9', '#3b82f6', '#64748b', 'corp', 'light', 10, 100, 0, 25, 18) },
+    { id: 'retro', name: 'Retro Vintage', tag: 'Light', fam: 'retro', mode: 'light', btn: 4, sw: ['#b45309', '#7c2d12', '#f5ecd7'],
+      v: t20('#b45309', '#7c2d12', '#d97706', '#a16207', 'retro', 'light', 4, 100, 0, 30, 12) },
+    { id: 'holo', name: 'Futuristic Holographic', tag: 'Bold', fam: 'holo', mode: 'dark', btn: 12, sw: ['#22d3ee', '#f472b6', '#0a0f1e'],
+      v: t20('#22d3ee', '#f472b6', '#a855f7', '#38bdf8', 'holo', 'dark', 16, 88, 6, 80, 75) },
+    { id: 'luxury', name: 'Luxury', tag: 'Dark', fam: 'luxury', mode: 'dark', btn: 4, sw: ['#d4af37', '#f7e7a1', '#0b0b0b'],
+      v: t20('#d4af37', '#f7e7a1', '#b8860b', '#8b6f1f', 'luxury', 'dark', 6, 100, 0, 70, 30) },
+    { id: 'pastel', name: 'Pastel Soft', tag: 'Soft', fam: 'pastel', mode: 'light', btn: 16, sw: ['#a78bfa', '#f9a8d4', '#d1fae5'],
+      v: t20('#a78bfa', '#f9a8d4', '#99f6e4', '#fbcfe8', 'pastel', 'light', 20, 100, 0, 35, 38) },
+    { id: 'brutal', name: 'Brutalism', tag: 'Bold', fam: 'brutal', mode: 'light', btn: 0, sw: ['#facc15', '#000000', '#ffffff'],
+      v: t20('#facc15', '#111111', '#ef4444', '#3b82f6', 'brutal', 'light', 0, 100, 0, 0, 0) },
+    { id: 'aurora', name: 'Aurora', tag: 'Dark', fam: 'aurora', mode: 'dark', btn: 14, sw: ['#34d399', '#818cf8', '#0b1226'],
+      v: t20('#34d399', '#818cf8', '#22d3ee', '#a855f7', 'aurora', 'dark', 18, 90, 4, 70, 80) },
+    { id: 'nature', name: 'Nature Organic', tag: 'Light', fam: 'nature', mode: 'light', btn: 14, sw: ['#16a34a', '#a16207', '#f0fdf4'],
+      v: t20('#16a34a', '#a16207', '#65a30d', '#84cc16', 'nature', 'light', 14, 100, 0, 35, 30) },
+    { id: 'mono', name: 'Monochrome', tag: 'Light', fam: 'mono', mode: 'light', btn: 8, sw: ['#111827', '#9ca3af', '#f9fafb'],
+      v: t20('#111827', '#9ca3af', '#4b5563', '#d1d5db', 'mono', 'light', 12, 100, 0, 22, 8) },
+    { id: 'auroraglass', name: 'Aurora Glass', tag: 'Dark', fam: 'auroraglass', mode: 'dark', btn: 14, sw: ['#5eead4', '#818cf8', '#f472b6'],
+      v: t20('#5eead4', '#818cf8', '#f472b6', '#38bdf8', 'auroraglass', 'dark', 20, 46, 18, 65, 85) },
+    { id: 'saas', name: 'SaaS Modern', tag: 'Light', fam: 'saas', mode: 'light', btn: 10, sw: ['#4f46e5', '#0ea5e9', '#f8fafc'],
+      v: t20('#4f46e5', '#0ea5e9', '#6366f1', '#22d3ee', 'saas', 'light', 12, 100, 0, 50, 28) }
+  ];
+
+  var t20Filter = 'all';
+
+  function t20Render() {
+    var grid = document.getElementById('t20Grid');
+    if (!grid) return;
+    var list = THEMES20.filter(function (t) {
+      if (t20Filter === 'all') return true;
+      return t.tag.toLowerCase() === t20Filter;
+    });
+    grid.innerHTML = list.map(function (t) {
+      var active = settings.theme20 === t.id;
+      return '<button type="button" class="t20-card' + (active ? ' active' : '') + '" data-t20="' + t.id + '" title="' + t.name + '">' +
+        (active ? '<span class="t20-check">✓</span>' : '') +
+        '<span class="t20-prev" style="background:linear-gradient(135deg,' + t.sw[0] + ',' + t.sw[1] + ')">' +
+          '<i></i><i></i></span>' +
+        '<span class="t20-name">' + t.name + '</span>' +
+        '<span class="t20-tag">' + t.tag + '</span>' +
+      '</button>';
+    }).join('') || '<p class="ap-hint">No themes in this group.</p>';
+    grid.querySelectorAll('[data-t20]').forEach(function (b) {
+      b.onclick = function () { t20Apply(b.getAttribute('data-t20')); };
+    });
+  }
+
+  function t20Apply(id) {
+    var t = null;
+    THEMES20.forEach(function (x) { if (x.id === id) t = x; });
+    if (!t) return;
+    Object.keys(t.v).forEach(function (k) { settings[k] = t.v[k]; });
+    settings.theme20 = id;
+    settings.themePreset = 'custom';
+    settings.cardBorderColor = '';
+    settings.cardBorderW = 1;
+    settings.cardBorderStyle = 'solid';
+    settings.cardHover = 'lift';
+    settings.btnRadius = (t.btn == null ? 12 : t.btn);
+    try { localStorage.setItem('das_studio_settings', JSON.stringify(settings)); } catch (e) {}
+
+    var root = document.documentElement;
+    Array.prototype.slice.call(root.classList).forEach(function (c) {
+      if (c.indexOf('t-') === 0) root.classList.remove(c);
+    });
+    root.classList.add('t-' + t.fam);
+    root.setAttribute('data-theme', t.mode);
+
+    try { applySettingsToDOM(); } catch (e) {}
+    root.style.setProperty('--btn-radius', (t.btn == null ? 12 : t.btn) + 'px');
+    try { apFillUI(); } catch (e) {}
+    t20FillCustomizer();
+    t20Render();
+    try { logAct('theme', 'Applied theme: ' + t.name); } catch (e) {}
+  }
+
+  function t20FillCustomizer() {
+    var p = document.getElementById('apPrimary');
+    var s = document.getElementById('apSecondary');
+    var m = document.getElementById('apMode');
+    if (p) p.value = settings.color1 || '#6366f1';
+    if (s) s.value = settings.color2 || '#ec4899';
+    if (m) m.value = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  }
+
+  (function wireThemes20() {
+    /* restore the saved theme's structural family + base mode on every load */
+    (function restore() {
+      var t = null;
+      THEMES20.forEach(function (x) { if (x.id === settings.theme20) t = x; });
+      if (!t) return;
+      var root = document.documentElement;
+      root.classList.add('t-' + t.fam);
+      root.setAttribute('data-theme', t.mode);
+      root.style.setProperty('--btn-radius', (t.btn == null ? 12 : t.btn) + 'px');
+    })();
+    t20Render();
+    t20FillCustomizer();
+
+    var bar = document.getElementById('t20Bar');
+    if (bar) {
+      bar.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-f]');
+        if (!b) return;
+        t20Filter = b.getAttribute('data-f');
+        bar.querySelectorAll('[data-f]').forEach(function (x) { x.classList.toggle('active', x === b); });
+        t20Render();
+      });
+    }
+
+    ['apPrimary', 'apSecondary'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', function () {
+        if (id === 'apPrimary') { settings.color1 = this.value; settings.blob1 = this.value; }
+        else { settings.color2 = this.value; settings.blob2 = this.value; }
+        try { localStorage.setItem('das_studio_settings', JSON.stringify(settings)); } catch (e) {}
+        try { applySettingsToDOM(); } catch (e) {}
+      });
+    });
+    var mode = document.getElementById('apMode');
+    if (mode) {
+      mode.addEventListener('change', function () {
+        document.documentElement.setAttribute('data-theme', this.value);
+        try { localStorage.setItem('das_studio_settings', JSON.stringify(settings)); } catch (e) {}
+      });
+    }
+
+    /* re-render the gallery whenever the Appearance tab is opened */
+    var btn = document.getElementById('tabAppearanceBtn');
+    if (btn) btn.addEventListener('click', function () { setTimeout(function () { t20Render(); t20FillCustomizer(); }, 30); });
+  })();
+  /* ============================================================
+     20 THEMES v2 — exact palettes + detail panel
+     ============================================================ */
+  function tp(bg, bg2, panel, pborder, border, text, muted) {
+    return { bg: bg, bg2: bg2, panel: panel, 'panel-border': pborder, border: border, text: text, muted: muted };
+  }
+  THEMES20 = [
+    { id: 'glass', name: 'Glassmorphism', tag: 'Dark', fam: 'glass', mode: 'dark', btn: 12,
+      sw: ['#6366F1', '#8B5CF6', '#0F172A'],
+      p: tp('#0F172A', '#0B1220', '#1B2545', 'rgba(255,255,255,.20)', 'rgba(255,255,255,.14)', '#FFFFFF', '#B8C2DA'),
+      v: t20('#6366F1', '#8B5CF6', '#22d3ee', '#a855f7', 'glass', 'dark', 20, 55, 16, 60, 60),
+      feat: ['Frosted glass cards with 16px backdrop blur', 'Semi-transparent panels over a gradient', 'Soft white borders and floating cards'],
+      best: 'Admin dashboard, SaaS dashboards, login pages, portfolios',
+      pros: 'Premium, modern, eye-catching',
+      cons: 'Low contrast if over-used; blur varies by browser',
+      css: '.glass-card{background:rgba(255,255,255,.12);backdrop-filter:blur(16px);\n  border:1px solid rgba(255,255,255,.2);border-radius:20px;\n  box-shadow:0 8px 32px rgba(0,0,0,.2)}' },
+
+    { id: 'neo', name: 'Neumorphism', tag: 'Light', fam: 'neo', mode: 'light', btn: 14,
+      sw: ['#6C63FF', '#A3B1C6', '#E0E5EC'],
+      p: tp('#E0E5EC', '#E8EDF3', '#E6EBF2', '#FFFFFF', 'rgba(163,177,198,.55)', '#333D4B', '#6B7A8F'),
+      v: t20('#6C63FF', '#A3B1C6', '#C7D2FE', '#E2E8F0', 'neo', 'light', 20, 100, 0, 30, 18),
+      feat: ['Soft UI with dual light + dark shadows', 'Embossed buttons and raised cards', 'Same-colour surfaces, subtle depth'],
+      best: 'Settings panels, calculators, personal dashboards',
+      pros: 'Soft, clean and distinctive',
+      cons: 'Hard to tell buttons from surfaces — keep contrast strong',
+      css: '.neumorphic-card{background:#e0e5ec;border-radius:20px;\n  box-shadow:8px 8px 16px #a3b1c6,-8px -8px 16px #fff}' },
+
+    { id: 'minimal', name: 'Minimalist', tag: 'Light', fam: 'minimal', mode: 'light', btn: 8,
+      sw: ['#2563EB', '#64748B', '#FFFFFF'],
+      p: tp('#FFFFFF', '#F8FAFC', '#FFFFFF', '#E5E7EB', '#E5E7EB', '#111827', '#6B7280'),
+      v: t20('#2563EB', '#64748B', '#93C5FD', '#CBD5E1', 'minimal', 'light', 10, 100, 0, 12, 6),
+      feat: ['White background, few colours, plenty of space', 'Clear typography and simple navigation', 'Almost no shadow or animation'],
+      best: 'Business sites, blogs, documentation, admin panels',
+      pros: 'Fast, readable, content-first',
+      cons: 'Can feel plain without strong typography',
+      css: ':root{--bg:#fff;--text:#111827;--border:#e5e7eb}\n.card{box-shadow:none;border:1px solid #e5e7eb}' },
+
+    { id: 'darkmode', name: 'Dark Mode', tag: 'Dark', fam: 'dark', mode: 'dark', btn: 10,
+      sw: ['#6366F1', '#22C55E', '#0B1120'],
+      p: tp('#0B1120', '#0F172A', '#1E293B', '#243044', 'rgba(148,163,184,.22)', '#F8FAFC', '#94A3B8'),
+      v: t20('#6366F1', '#8B5CF6', '#22C55E', '#EF4444', 'dark', 'dark', 12, 100, 0, 55, 40),
+      feat: ['Dark background with light typography', 'Dark cards, muted borders, bright accents', 'Easy on the eyes at night'],
+      best: 'Developer tools, dashboards, reading-heavy sites',
+      pros: 'Modern look; easier on the eyes in low light',
+      cons: 'Watch contrast — small text can get hard to read',
+      css: '[data-theme="dark"]{--bg:#0b1120;--card:#1e293b;--text:#f8fafc}' },
+
+    { id: 'cyber', name: 'Cyberpunk Neon', tag: 'Bold', fam: 'cyber', mode: 'dark', btn: 4,
+      sw: ['#00E5FF', '#FF00C8', '#080816'],
+      p: tp('#080816', '#0A0A1C', '#111128', '#00E5FF55', 'rgba(0,229,255,.28)', '#F8FAFC', '#9FB4D0'),
+      v: t20('#00E5FF', '#FF00C8', '#A855F7', '#39FF14', 'cyber', 'dark', 6, 82, 6, 90, 72, 'mono', 4),
+      feat: ['Neon glow borders and shadows', 'Dark background with electric accents', 'Futuristic, HUD-like typography'],
+      best: 'Gaming, AI dashboards, security consoles, portfolios',
+      pros: 'Striking and futuristic',
+      cons: 'Glow is tiring for long sessions; not for corporate sites',
+      css: '.neon-card{background:#080816;border:1px solid #00e5ff;border-radius:14px;\n  box-shadow:0 0 8px #00e5ff,0 0 20px rgba(0,229,255,.4)}' },
+
+    { id: 'gradient', name: 'Gradient', tag: 'Bold', fam: 'grad', mode: 'dark', btn: 14,
+      sw: ['#7C3AED', '#EC4899', '#06B6D4'],
+      p: tp('#0E0A1F', '#130E2B', '#1B1436', '#2A2050', 'rgba(167,139,250,.25)', '#F8FAFC', '#B9AEDC'),
+      v: t20('#7C3AED', '#EC4899', '#2563EB', '#F97316', 'grad', 'dark', 18, 92, 0, 70, 70),
+      feat: ['Multi-colour gradients on cards and buttons', 'Vibrant accent palette', 'Animated gradient headings'],
+      best: 'Landing pages, SaaS marketing, product pages',
+      pros: 'Colourful and creative',
+      cons: 'Too much colour can hurt readability',
+      css: '.gradient-card{background:linear-gradient(135deg,#7c3aed,#2563eb,#06b6d4);\n  border-radius:20px;color:#fff}' },
+
+    { id: 'threed', name: '3D Modern', tag: 'Bold', fam: '3d', mode: 'dark', btn: 12,
+      sw: ['#38BDF8', '#A855F7', '#0B1220'],
+      p: tp('#0B1220', '#0E1730', '#16213D', '#22304F', 'rgba(148,163,184,.22)', '#F1F5F9', '#94A3B8'),
+      v: t20('#38BDF8', '#A855F7', '#6366F1', '#22D3EE', '3d', 'dark', 16, 96, 0, 95, 55),
+      feat: ['Cards tilt in 3D perspective on hover', 'Layered depth and floating elements', 'Strong shadow separation'],
+      best: 'Product showcases, portfolios, interactive landing pages',
+      pros: 'Draws attention; great for product presentation',
+      cons: 'Heavy animation can cost performance',
+      css: '.card-3d{transform-style:preserve-3d;perspective:1000px;transition:transform .4s}\n.card-3d:hover{transform:rotateY(8deg) rotateX(5deg) translateY(-8px)}' },
+
+    { id: 'apple', name: 'Apple Style', tag: 'Light', fam: 'apple', mode: 'light', btn: 12,
+      sw: ['#0071E3', '#86868B', '#F5F5F7'],
+      p: tp('#F5F5F7', '#FFFFFF', '#FFFFFF', '#D2D2D7', '#D2D2D7', '#1D1D1F', '#86868B'),
+      v: t20('#0071E3', '#86868B', '#64D2FF', '#BF5AF2', 'apple', 'light', 18, 100, 0, 40, 20),
+      feat: ['Large headings, generous white space', 'Rounded corners, very soft shadows', 'Pill buttons, smooth transitions'],
+      best: 'Premium e-commerce, product pages, portfolios',
+      pros: 'Premium brand feel',
+      cons: 'Needs careful spacing and quality images',
+      css: '.card{background:#fff;border-radius:18px;\n  box-shadow:0 12px 30px -18px rgba(0,0,0,.5)}' },
+
+    { id: 'material', name: 'Material Design', tag: 'Light', fam: 'material', mode: 'light', btn: 6,
+      sw: ['#6200EE', '#03DAC6', '#FFFFFF'],
+      p: tp('#FFFFFF', '#F5F5F5', '#FFFFFF', '#E0E0E0', '#E0E0E0', '#212121', '#757575'),
+      v: t20('#6200EE', '#03DAC6', '#3700B3', '#018786', 'material', 'light', 8, 100, 0, 45, 18),
+      feat: ['Elevation shadows and structured layout', 'Uppercase action buttons', 'Clear hierarchy and spacing'],
+      best: 'E-commerce, business apps, admin panels',
+      pros: 'Familiar, systematic, scalable',
+      cons: 'Can feel generic without custom accents',
+      css: '.card{box-shadow:0 1px 3px rgba(0,0,0,.16),0 8px 22px -10px rgba(0,0,0,.32)}' },
+
+    { id: 'corporate', name: 'Corporate Professional', tag: 'Light', fam: 'corp', mode: 'light', btn: 8,
+      sw: ['#1E3A8A', '#0EA5E9', '#F1F5F9'],
+      p: tp('#F8FAFC', '#FFFFFF', '#FFFFFF', '#E2E8F0', '#E2E8F0', '#0F172A', '#64748B'),
+      v: t20('#1E3A8A', '#0EA5E9', '#3B82F6', '#64748B', 'corp', 'light', 10, 100, 0, 25, 18),
+      feat: ['Navy, white and grey business palette', 'Flat cards with crisp borders', 'Conservative, trustworthy tone'],
+      best: 'Business websites, agencies, consultancies',
+      pros: 'Professional and safe',
+      cons: 'Less memorable than expressive themes',
+      css: '.card{border:1px solid #e2e8f0;box-shadow:none;background:#fff}' },
+
+    { id: 'retro', name: 'Retro Vintage', tag: 'Light', fam: 'retro', mode: 'light', btn: 4,
+      sw: ['#B45309', '#7C2D12', '#F5ECD7'],
+      p: tp('#F5ECD7', '#EFE3C8', '#FBF4E4', '#D9C7A3', '#D9C7A3', '#3F2A14', '#7C5A33'),
+      v: t20('#B45309', '#7C2D12', '#D97706', '#A16207', 'retro', 'light', 4, 100, 0, 30, 10),
+      feat: ['Warm sepia palette with serif type', 'Hard offset shadows, small radii', 'Classic print-inspired layout'],
+      best: 'Portfolios, blogs, coffee shops, heritage brands',
+      pros: 'Warm and distinctive',
+      cons: 'Not suited to data-heavy dashboards',
+      css: ':root{--bg:#f5ecd7;--text:#3f2a14;font-family:Georgia,serif}' },
+
+    { id: 'holo', name: 'Futuristic Holographic', tag: 'Bold', fam: 'holo', mode: 'dark', btn: 12,
+      sw: ['#22D3EE', '#F472B6', '#0A0F1E'],
+      p: tp('#0A0F1E', '#0D1428', '#141C33', '#243055', 'rgba(34,211,238,.28)', '#F8FAFC', '#9FB0CF'),
+      v: t20('#22D3EE', '#F472B6', '#A855F7', '#38BDF8', 'holo', 'dark', 16, 88, 6, 80, 75),
+      feat: ['Animated iridescent gradient borders', 'Sci-fi interface accents', 'Glowing focus states'],
+      best: 'AI dashboards, tech launches, developer portfolios',
+      pros: 'Very modern and memorable',
+      cons: 'Animation can distract; keep it subtle',
+      css: '.card::before{content:"";position:absolute;inset:0;padding:1px;border-radius:inherit;\n  background:linear-gradient(120deg,#22d3ee,#a855f7,#f472b6,#22d3ee)}' },
+
+    { id: 'luxury', name: 'Luxury', tag: 'Dark', fam: 'luxury', mode: 'dark', btn: 4,
+      sw: ['#D4AF37', '#F7E7A1', '#0B0B0B'],
+      p: tp('#0B0B0B', '#121212', '#161513', '#3A3320', 'rgba(212,175,55,.35)', '#F7F3E8', '#B9A97C'),
+      v: t20('#D4AF37', '#F7E7A1', '#B8860B', '#8B6F1F', 'luxury', 'dark', 6, 100, 0, 70, 25),
+      feat: ['Black and gold palette', 'Gold gradient headings', 'Elegant, restrained spacing'],
+      best: 'Premium brands, jewellery, hospitality, agencies',
+      pros: 'Reads as high-end immediately',
+      cons: 'Gold on black needs care for contrast',
+      css: '.card{border:1px solid rgba(212,175,55,.45);\n  box-shadow:0 12px 34px -18px rgba(212,175,55,.55)}' },
+
+    { id: 'pastel', name: 'Pastel Soft', tag: 'Soft', fam: 'pastel', mode: 'light', btn: 16,
+      sw: ['#A78BFA', '#F9A8D4', '#D1FAE5'],
+      p: tp('#FBF7FF', '#F5EFFF', '#FFFFFF', '#EDE4FA', '#EDE4FA', '#3B2F4A', '#8B7BA3'),
+      v: t20('#A78BFA', '#F9A8D4', '#99F6E4', '#FBCFE8', 'pastel', 'light', 20, 100, 0, 35, 35),
+      feat: ['Pink, mint and lavender palette', 'Large radii and soft shadows', 'Gentle, friendly feel'],
+      best: 'Lifestyle brands, education, wellness apps',
+      pros: 'Friendly and approachable',
+      cons: 'Low contrast — use darker text',
+      css: ':root{--bg:#fbf7ff;--text:#3b2f4a}\n.card{box-shadow:0 16px 36px -24px rgba(167,139,250,.75)}' },
+
+    { id: 'brutal', name: 'Brutalism', tag: 'Bold', fam: 'brutal', mode: 'light', btn: 0,
+      sw: ['#FACC15', '#000000', '#FFFFFF'],
+      p: tp('#FFFFFF', '#F5F5F5', '#FFFFFF', '#000000', '#000000', '#000000', '#3F3F46'),
+      v: t20('#FACC15', '#111111', '#EF4444', '#3B82F6', 'brutal', 'light', 0, 100, 0, 0, 0),
+      feat: ['Thick black borders and hard shadows', 'Square corners, uppercase headings', 'High-contrast, unapologetic layout'],
+      best: 'Portfolios, creative studios, event sites',
+      pros: 'Bold and instantly memorable',
+      cons: 'Too aggressive for business or data apps',
+      css: '.card{border:3px solid #000;border-radius:0;box-shadow:7px 7px 0 #000}' },
+
+    { id: 'aurora', name: 'Aurora', tag: 'Dark', fam: 'aurora', mode: 'dark', btn: 14,
+      sw: ['#34D399', '#818CF8', '#0B1226'],
+      p: tp('#0B1226', '#0E1830', '#15213C', '#1F3155', 'rgba(52,211,153,.25)', '#F0FDFA', '#9FB8CF'),
+      v: t20('#34D399', '#818CF8', '#22D3EE', '#A855F7', 'aurora', 'dark', 18, 90, 4, 70, 80),
+      feat: ['Northern-lights gradient glow', 'Green, blue and purple blending', 'Soft luminous edges'],
+      best: 'SaaS landing pages, AI products, dashboards',
+      pros: 'Calm yet striking',
+      cons: 'Glow can wash out small text',
+      css: '.card{box-shadow:0 0 0 1px rgba(56,189,248,.22),0 22px 54px -30px rgba(56,189,248,.65)}' },
+
+    { id: 'nature', name: 'Nature Organic', tag: 'Light', fam: 'nature', mode: 'light', btn: 14,
+      sw: ['#16A34A', '#A16207', '#F0FDF4'],
+      p: tp('#F4FBF4', '#EAF6EC', '#FFFFFF', '#D6EBD9', '#D6EBD9', '#1B3323', '#5F7A66'),
+      v: t20('#16A34A', '#A16207', '#65A30D', '#84CC16', 'nature', 'light', 14, 100, 0, 35, 28),
+      feat: ['Forest green with earth tones', 'Soft organic radii', 'Natural, grounded feel'],
+      best: 'Health, food, sustainability, eco brands',
+      pros: 'Calming and trustworthy',
+      cons: 'Limited contrast range in the green family',
+      css: ':root{--bg:#f4fbf4;--text:#1b3323}\n.card{border-color:rgba(34,197,94,.30)}' },
+
+    { id: 'mono', name: 'Monochrome', tag: 'Light', fam: 'mono', mode: 'light', btn: 8,
+      sw: ['#111827', '#9CA3AF', '#F9FAFB'],
+      p: tp('#F9FAFB', '#F3F4F6', '#FFFFFF', '#E5E7EB', '#E5E7EB', '#111827', '#6B7280'),
+      v: t20('#111827', '#9CA3AF', '#4B5563', '#D1D5DB', 'mono', 'light', 12, 100, 0, 22, 8),
+      feat: ['Pure black, white and grey', 'Typography-led hierarchy', 'No colour distraction'],
+      best: 'Editorial sites, portfolios, documentation',
+      pros: 'Timeless and elegant',
+      cons: 'Lacks visual warmth; colour cues must be added manually',
+      css: ':root{--bg:#f9fafb;--text:#111827}\n.card{filter:grayscale(.2)}' },
+
+    { id: 'auroraglass', name: 'Aurora Glass', tag: 'Dark', fam: 'auroraglass', mode: 'dark', btn: 14,
+      sw: ['#5EEAD4', '#818CF8', '#F472B6'],
+      p: tp('#0A1224', '#0C1730', '#16233F', 'rgba(94,234,212,.22)', 'rgba(129,140,248,.28)', '#F0FDFA', '#A5C0DA'),
+      v: t20('#5EEAD4', '#818CF8', '#F472B6', '#38BDF8', 'auroraglass', 'dark', 20, 46, 18, 65, 85),
+      feat: ['Glassmorphism over aurora gradients', 'Translucent cards with colour bleed', 'Luminous borders'],
+      best: 'AI dashboards, SaaS, creative agencies',
+      pros: 'The most "modern" look of the set',
+      cons: 'Needs strong text contrast on glass',
+      css: '.card{background:rgba(22,35,63,.46);backdrop-filter:blur(18px) saturate(170%);\n  box-shadow:0 0 0 1px rgba(94,234,212,.25)}' },
+
+    { id: 'saas', name: 'SaaS Modern', tag: 'Light', fam: 'saas', mode: 'light', btn: 10,
+      sw: ['#4F46E5', '#0EA5E9', '#F8FAFC'],
+      p: tp('#F8FAFC', '#FFFFFF', '#FFFFFF', '#E2E8F0', '#E2E8F0', '#0F172A', '#64748B'),
+      v: t20('#4F46E5', '#0EA5E9', '#6366F1', '#22D3EE', 'saas', 'light', 12, 100, 0, 50, 25),
+      feat: ['Sidebar + card dashboard layout', 'Crisp borders, gentle elevation', 'Indigo/blue product palette'],
+      best: 'SaaS products, admin dashboards, analytics',
+      pros: 'Clean and immediately professional',
+      cons: 'Similar to many modern SaaS products',
+      css: '.card{box-shadow:0 1px 2px rgba(0,0,0,.10),0 14px 34px -22px rgba(79,70,229,.55)}' }
+  ];
+
+  function t20ById(id) {
+    var t = null;
+    THEMES20.forEach(function (x) { if (x.id === id) t = x; });
+    return t;
+  }
+  function t20Paint(t) {
+    var r = document.documentElement;
+    ['bg', 'bg2', 'panel', 'panel-border', 'border', 'text', 'muted'].forEach(function (k) {
+      r.style.removeProperty('--' + k);
+    });
+    if (!t || !t.p) return;
+    Object.keys(t.p).forEach(function (k) { r.style.setProperty('--' + k, t.p[k]); });
+  }
+
+  t20Render = function () {
+    var grid = document.getElementById('t20Grid');
+    if (!grid) return;
+    var list = THEMES20.filter(function (t) { return t20Filter === 'all' || t.tag.toLowerCase() === t20Filter; });
+    grid.innerHTML = list.map(function (t) {
+      var active = settings.theme20 === t.id;
+      return '<button type="button" class="t20-card' + (active ? ' active' : '') + '" data-t20="' + t.id + '" title="' + t.name + '">' +
+        '<span class="t20-info" data-info="' + t.id + '" title="Theme details">ⓘ</span>' +
+        (active ? '<span class="t20-check">✓</span>' : '') +
+        '<span class="t20-prev" style="background:linear-gradient(135deg,' + t.sw[0] + ',' + t.sw[1] + ')"><i></i><i></i></span>' +
+        '<span class="t20-name">' + t.name + '</span>' +
+        '<span class="t20-tag">' + t.tag + '</span></button>';
+    }).join('') || '<p class="ap-hint">No themes in this group.</p>';
+    grid.querySelectorAll('[data-t20]').forEach(function (b) {
+      b.onclick = function (e) {
+        var info = e.target.closest('[data-info]');
+        if (info) { e.stopPropagation(); t20Detail(info.getAttribute('data-info')); return; }
+        t20Apply(b.getAttribute('data-t20'));
+      };
+    });
+  };
+
+  t20Apply = function (id) {
+    var t = t20ById(id);
+    if (!t) return;
+    Object.keys(t.v).forEach(function (k) { settings[k] = t.v[k]; });
+    settings.theme20 = id;
+    settings.themePreset = 'custom';
+    settings.btnRadius = (t.btn == null ? 12 : t.btn);
+    try { localStorage.setItem('das_studio_settings', JSON.stringify(settings)); } catch (e) {}
+
+    var root = document.documentElement;
+    Array.prototype.slice.call(root.classList).forEach(function (c) {
+      if (c.indexOf('t-') === 0) root.classList.remove(c);
+    });
+    root.classList.add('t-' + t.fam);
+    root.setAttribute('data-theme', t.mode);
+    t20Paint(t);
+
+    try { applySettingsToDOM(); } catch (e) {}
+    root.style.setProperty('--btn-radius', (t.btn == null ? 12 : t.btn) + 'px');
+    try { apFillUI(); } catch (e) {}
+    t20FillCustomizer();
+    t20Render();
+    try { logAct('theme', 'Applied theme: ' + t.name); } catch (e) {}
+  };
+
+  function t20Detail(id) {
+    var t = t20ById(id);
+    if (!t) return;
+    var swatches = (t.sw || []).concat([t.p.text, t.p.panel]).map(function (c, i) {
+      return '<span style="background:' + c + '"><i>' + ['Accent', 'Accent 2', 'Base', 'Text', 'Surface'][i] + '</i></span>';
+    }).join('');
+    var box = document.createElement('div');
+    box.className = 'modal-overlay active';
+    box.style.zIndex = '220';
+    box.innerHTML = '<div class="modal" style="max-width:560px">' +
+      '<h2><span>' + t.name + '</span><button type="button" class="modal-close" data-x>×</button></h2>' +
+      '<p class="ap-hint" style="margin-top:0">' + t.tag + ' theme · ' + (t.mode === 'light' ? 'light' : 'dark') + ' base</p>' +
+      '<div class="t20-pal">' + swatches + '</div>' +
+      '<div class="settings-section-title" style="margin-top:18px">Key features</div>' +
+      '<ul class="t20-feat">' + t.feat.map(function (f) { return '<li>' + f + '</li>'; }).join('') + '</ul>' +
+      '<div class="settings-section-title">Best for</div>' +
+      '<p class="ap-hint">' + t.best + '</p>' +
+      '<div class="t20-pp"><div><b>Pros</b><span>' + t.pros + '</span></div><div><b>Watch out</b><span>' + t.cons + '</span></div></div>' +
+      '<div class="settings-section-title">CSS reference</div>' +
+      '<pre class="t20-css">' + escapeHtml(t.css) + '</pre>' +
+      '<div class="modal-actions"><button type="button" class="btn-secondary" data-x>Close</button>' +
+      '<button type="button" class="btn-primary" data-apply="' + t.id + '">Apply this theme</button></div></div>';
+    document.body.appendChild(box);
+    box.querySelectorAll('[data-x]').forEach(function (b) { b.onclick = function () { box.remove(); }; });
+    box.querySelector('[data-apply]').onclick = function () {
+      t20Apply(box.querySelector('[data-apply]').getAttribute('data-apply'));
+      box.remove();
+    };
+    box.addEventListener('click', function (e) { if (e.target === box) box.remove(); });
+  }
+
+  /* restore palette + family on every load */
+  (function t20Restore() {
+    var t = t20ById(settings.theme20);
+    if (!t) return;
+    var root = document.documentElement;
+    root.classList.add('t-' + t.fam);
+    root.setAttribute('data-theme', t.mode);
+    root.style.setProperty('--btn-radius', (t.btn == null ? 12 : t.btn) + 'px');
+    t20Paint(t);
+  })();
+  t20Render();
+  t20FillCustomizer();
+  /* ============================================================
+     THEMES 9–15 — exact palettes from the design specs
+     ============================================================ */
+  (function patchThemes915() {
+    var P = {
+      material: {
+        sw: ['#6750A4', '#625B71', '#FFFBFE'], btn: 6,
+        p: tp('#FFFBFE', '#F3EDF7', '#FFFFFF', '#E7E0EC', '#E7E0EC', '#1D1B20', '#625B71'),
+        v: t20('#6750A4', '#625B71', '#B3261E', '#7D5260', 'material', 'light', 12, 100, 0, 45, 12),
+        feat: ['Material 3 elevation and surface tints', 'Structured cards, chips and tabs', 'Consistent type scale and spacing'],
+        best: 'Admin dashboards, Android web apps, enterprise software',
+        pros: 'Consistent, familiar interaction patterns',
+        cons: 'Can look generic without brand accents',
+        css: '.card{background:#fff;border-radius:12px;\n  box-shadow:0 1px 2px rgba(0,0,0,.30),0 2px 6px 2px rgba(0,0,0,.15)}'
+      },
+      corporate: {
+        sw: ['#1D4ED8', '#475569', '#F8FAFC'], btn: 8,
+        p: tp('#F8FAFC', '#FFFFFF', '#FFFFFF', '#E2E8F0', '#E2E8F0', '#0F172A', '#475569'),
+        v: t20('#1D4ED8', '#475569', '#3B82F6', '#64748B', 'corp', 'light', 10, 100, 0, 25, 12),
+        feat: ['Blue, white and grey business palette', 'Organised tables and clean sidebar', 'Formal buttons, simple icons'],
+        best: 'Company admin panels, ERP, CRM, HR and finance tools',
+        pros: 'Trustworthy and comfortable for long sessions',
+        cons: 'Can feel dry if over-formalised',
+        css: '.card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;box-shadow:none}'
+      },
+      retro: {
+        sw: ['#D97736', '#795548', '#F4E8D0'], btn: 4,
+        p: tp('#F4E8D0', '#FBF2DF', '#FFF5E1', '#D9C39B', '#D9C39B', '#30251D', '#795548'),
+        v: t20('#D97736', '#795548', '#657153', '#A16207', 'retro', 'light', 4, 100, 0, 30, 10),
+        feat: ['Paper-toned background with grain feel', 'Serif type and classic borders', 'Warm brown, orange and cream palette'],
+        best: 'Restaurants, vintage stores, photography, artistic blogs',
+        pros: 'Distinctive, nostalgic branding',
+        cons: 'Too much texture hurts readability',
+        css: ':root{--bg:#f4e8d0;--text:#30251d}\n.card{background:#fff5e1;border:1px solid #d9c39b;box-shadow:4px 4px 0 #d9c39b}'
+      },
+      holo: {
+        sw: ['#00F5FF', '#FF4ECD', '#090B1A'], btn: 12,
+        p: tp('#090B1A', '#0C0F22', '#12152B', 'rgba(0,245,255,.28)', 'rgba(0,245,255,.22)', '#F5F7FF', '#9FB0CF'),
+        v: t20('#00F5FF', '#FF4ECD', '#A855F7', '#3B82F6', 'holo', 'dark', 16, 88, 6, 80, 75),
+        feat: ['Iridescent rainbow borders that animate', 'Transparent panels with glow', 'Cyan, purple, pink and blue reflections'],
+        best: 'AI dashboards, Web3 platforms, sci-fi and gaming UIs',
+        pros: 'Very modern, futuristic identity',
+        cons: 'Effects can pull attention from the content',
+        css: '.card::before{background:linear-gradient(120deg,#00f5ff,#a855f7,#ff4ecd,#3b82f6);\n  animation:holoShift 6s linear infinite}'
+      },
+      luxury: {
+        sw: ['#D4AF37', '#F5D98E', '#0A0A0A'], btn: 4,
+        p: tp('#0A0A0A', '#0F0F0F', '#171717', '#2A2A2A', 'rgba(212,175,55,.35)', '#F5F5F5', '#A3A3A3'),
+        v: t20('#D4AF37', '#F5D98E', '#B8860B', '#8B6F1F', 'luxury', 'dark', 6, 100, 0, 70, 25),
+        feat: ['Black and gold palette with thin borders', 'Elegant typography, large spacing', 'Minimal animation, premium feel'],
+        best: 'Jewellery, hotels, premium fashion, real estate',
+        pros: 'Reads as exclusive and high-end',
+        cons: 'Too much gold cheapens it; not for every brand',
+        css: ':root{--bg:#0a0a0a;--card:#171717;--text:#f5f5f5}\n.card{border:1px solid rgba(212,175,55,.45)}'
+      },
+      pastel: {
+        sw: ['#DDD6FE', '#FBCFE8', '#FFF7FB'], btn: 16,
+        p: tp('#FFF7FB', '#FDF2F8', '#FFFFFF', '#F3E8F5', '#F3E8F5', '#374151', '#7C6F8A'),
+        v: t20('#DDD6FE', '#FBCFE8', '#A7F3D0', '#BFDBFE', 'pastel', 'light', 20, 100, 0, 35, 35),
+        feat: ['Pink, mint, lavender and baby blue', 'Rounded cards with soft shadows', 'Friendly, light typography'],
+        best: 'Education, beauty, lifestyle, kids and personal blogs',
+        pros: 'Friendly, soft and pleasant',
+        cons: 'Light tones need darker text for contrast',
+        css: ':root{--bg:#fff7fb;--text:#374151}\n.card{border-radius:20px;box-shadow:0 16px 36px -24px rgba(167,139,250,.75)}'
+      },
+      brutal: {
+        sw: ['#FFE500', '#FF70A6', '#FFFDF5'], btn: 0,
+        p: tp('#FFFDF5', '#FFFFFF', '#FFFFFF', '#111111', '#111111', '#111111', '#4B5563'),
+        v: t20('#FFE500', '#FF70A6', '#4D96FF', '#6BCB77', 'brutal', 'light', 0, 100, 0, 0, 0),
+        feat: ['Thick 3px black borders and hard shadows', 'Square corners, oversized buttons', 'Bright yellow, pink, blue and green'],
+        best: 'Creative portfolios, agencies, startup landing pages',
+        pros: 'Bold, memorable, impossible to ignore',
+        cons: 'Not suited to corporate or enterprise software',
+        css: '.brutal-card{background:#ffe500;border:3px solid #111;border-radius:0;\n  box-shadow:7px 7px 0 #111}\n.brutal-button{background:#ff70a6;border:3px solid #111;box-shadow:4px 4px 0 #111;font-weight:900}'
+      }
+    };
+
+    THEMES20.forEach(function (t) {
+      var patch = P[t.id];
+      if (!patch) return;
+      Object.keys(patch).forEach(function (k) { t[k] = patch[k]; });
+    });
+
+    t20Render();
+
+    /* if one of these themes is already active, refresh its palette */
+    if (P[settings.theme20]) {
+      var active = t20ById(settings.theme20);
+      if (active) t20Paint(active);
+    }
+  })();
+  /* ============================================================
+     THEMES 16–20 — exact palettes + density / animation controls
+     ============================================================ */
+  (function patchThemes1620() {
+    var P = {
+      aurora: {
+        sw: ['#2563EB', '#8B5CF6', '#080D20'], btn: 14,
+        p: tp('#080D20', '#0A1130', '#121A3A', 'rgba(139,92,246,.28)', 'rgba(148,163,184,.20)', '#F5F8FF', '#A5B4D4'),
+        v: t20('#2563EB', '#8B5CF6', '#10B981', '#06B6D4', 'aurora', 'dark', 18, 90, 4, 70, 80),
+        feat: ['Moving northern-lights gradient', 'Blue, green, purple and cyan glow', 'Atmospheric blurred shapes'],
+        best: 'SaaS sites, AI platforms, technology dashboards',
+        pros: 'Modern, atmospheric and eye-catching',
+        cons: 'Heavy animation can hurt performance and text readability',
+        css: '.aurora-bg{background:radial-gradient(ellipse at 20% 30%,rgba(16,185,129,.5),transparent 45%),\n  radial-gradient(ellipse at 80% 20%,rgba(139,92,246,.5),transparent 45%),#080d20}'
+      },
+      nature: {
+        sw: ['#14532D', '#4D7C0F', '#FAF7EF'], btn: 14,
+        p: tp('#FAF7EF', '#F3EDDF', '#FFFFFF', '#E0D5BE', '#E0D5BE', '#292D25', '#6B6A5C'),
+        v: t20('#14532D', '#4D7C0F', '#795548', '#E8DCC4', 'nature', 'light', 14, 100, 0, 35, 22),
+        feat: ['Forest green, leaf green and earth tones', 'Cream and beige paper surfaces', 'Rounded, organic shapes'],
+        best: 'Organic products, agriculture, gardening, eco brands',
+        pros: 'Natural, trustworthy and relaxing',
+        cons: 'Muted greens give a narrow contrast range',
+        css: ':root{--bg:#faf7ef;--text:#292d25}\n.card{border-color:#e0d5be;border-radius:14px}'
+      },
+      mono: {
+        sw: ['#000000', '#737373', '#FFFFFF'], btn: 8,
+        p: tp('#FFFFFF', '#F5F5F5', '#FFFFFF', '#D4D4D4', '#D4D4D4', '#000000', '#737373'),
+        v: t20('#000000', '#737373', '#262626', '#D4D4D4', 'mono', 'light', 12, 100, 0, 22, 6),
+        feat: ['Pure black, white and four greys', 'High contrast, minimal decoration', 'Typography-led hierarchy'],
+        best: 'Photography, editorial, fashion, portfolios',
+        pros: 'Timeless, elegant and consistent',
+        cons: 'No colour cues — statuses and buttons need shape or weight',
+        css: ':root{--bg:#fff;--text:#000;--muted:#737373}\n.card{filter:grayscale(.2)}'
+      },
+      auroraglass: {
+        sw: ['#2563EB', '#8B5CF6', '#081225'], btn: 14,
+        p: tp('#081225', '#0A1730', '#132244', 'rgba(255,255,255,.20)', 'rgba(255,255,255,.14)', '#FFFFFF', '#B9C6E2'),
+        v: t20('#2563EB', '#8B5CF6', '#10B981', '#06B6D4', 'auroraglass', 'dark', 20, 46, 20, 65, 85),
+        feat: ['Frosted glass cards over aurora gradients', 'Transparent navigation and glass sidebar', 'Glowing borders, floating panels'],
+        best: 'AI admin dashboards, SaaS analytics, premium portfolios',
+        pros: 'Premium, futuristic and visually attractive',
+        cons: 'Every card as glass weakens visual hierarchy',
+        css: '.glass-panel{background:rgba(255,255,255,.10);backdrop-filter:blur(20px);\n  border:1px solid rgba(255,255,255,.20);border-radius:20px}'
+      },
+      saas: {
+        sw: ['#4F46E5', '#64748B', '#F8FAFC'], btn: 10,
+        p: tp('#F8FAFC', '#FFFFFF', '#FFFFFF', '#E2E8F0', '#E2E8F0', '#0F172A', '#64748B'),
+        v: t20('#4F46E5', '#64748B', '#16A34A', '#DC2626', 'saas', 'light', 12, 100, 0, 50, 22),
+        feat: ['Sidebar + top bar + card dashboard', 'Data tables, charts, notification centre', 'Indigo primary with slate secondary'],
+        best: 'E-commerce admin, CRM, ERP, project management',
+        pros: 'Scalable, professional and data-oriented',
+        cons: 'Needs clear information architecture to avoid clutter',
+        css: '.card{box-shadow:0 1px 2px rgba(0,0,0,.10),0 14px 34px -22px rgba(79,70,229,.55)}'
+      }
+    };
+
+    THEMES20.forEach(function (t) {
+      var patch = P[t.id];
+      if (!patch) return;
+      Object.keys(patch).forEach(function (k) { t[k] = patch[k]; });
+    });
+    t20Render();
+    if (P[settings.theme20]) {
+      var active = t20ById(settings.theme20);
+      if (active) t20Paint(active);
+    }
+  })();
+
+  /* ---- density / animation / appearance extras ---- */
+  (function appearanceExtras() {
+    function applyDensity(v) {
+      document.documentElement.setAttribute('data-density', v || 'comfortable');
+    }
+    function applyAnim(v) {
+      document.documentElement.setAttribute('data-anim', v || 'smooth');
+    }
+    function applyAppearance(v) {
+      if (v === 'system') {
+        var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        document.documentElement.setAttribute('data-theme', dark ? 'dark' : 'light');
+      } else {
+        document.documentElement.setAttribute('data-theme', v === 'light' ? 'light' : 'dark');
+      }
+    }
+    function applyAccent(v) {
+      if (!v) return;
+      settings.color3 = v;
+      document.documentElement.style.setProperty('--accent-3', v);
+    }
+
+    applyDensity(settings.density);
+    applyAnim(settings.anim);
+    if (settings.color3) document.documentElement.style.setProperty('--accent-3', settings.color3);
+
+    var dSel = document.getElementById('apDensity');
+    if (dSel) {
+      dSel.value = settings.density || 'comfortable';
+      dSel.addEventListener('change', function () {
+        settings.density = this.value;
+        applyDensity(this.value);
+        try { localStorage.setItem('das_studio_settings', JSON.stringify(settings)); } catch (e) {}
+      });
+    }
+    var aSel = document.getElementById('apAnim');
+    if (aSel) {
+      aSel.value = settings.anim || 'smooth';
+      aSel.addEventListener('change', function () {
+        settings.anim = this.value;
+        applyAnim(this.value);
+        try { localStorage.setItem('das_studio_settings', JSON.stringify(settings)); } catch (e) {}
+      });
+    }
+    var acc = document.getElementById('apAccent');
+    if (acc) {
+      acc.value = settings.color3 || '#f59e0b';
+      acc.addEventListener('input', function () {
+        applyAccent(this.value);
+        try { localStorage.setItem('das_studio_settings', JSON.stringify(settings)); } catch (e) {}
+      });
+    }
+    var modeSel = document.getElementById('apMode');
+    if (modeSel) {
+      modeSel.addEventListener('change', function () {
+        settings.appearance = this.value;
+        applyAppearance(this.value);
+        try { localStorage.setItem('das_studio_settings', JSON.stringify(settings)); } catch (e) {}
+      });
+      if (settings.appearance) modeSel.value = settings.appearance;
+    }
+    if (window.matchMedia) {
+      try {
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function () {
+          if (settings.appearance === 'system') applyAppearance('system');
+        });
+      } catch (e) {}
+    }
+  })();
+  /* ============================================================
+     9 THEMES MATCHING THE SUPPLIED DASHBOARD DESIGNS
+     ============================================================ */
+  (function addScreenshotThemes() {
+    var extra = [
+      { id: 'abc-gold', name: 'A&BC Black Gold', tag: 'Dark', fam: 'gold', mode: 'dark', btn: 14,
+        sw: ['#E5C07B', '#C9A227', '#1B1B1B'],
+        p: tp('#1B1B1B', '#151515', '#242424', '#3A3A3A', 'rgba(229,192,123,.28)', '#F6F1E7', '#B9AE97'),
+        v: t20('#E5C07B', '#C9A227', '#8B6F1F', '#3A3A3A', 'gold', 'dark', 16, 100, 0, 70, 8),
+        feat: ['Charcoal surfaces with warm gold accents', 'Rounded cards, gold icons and gold charts', 'Soft borders, no heavy glow'],
+        best: 'Premium dashboards, finance and executive reporting',
+        pros: 'Rich, expensive-looking and easy on the eyes',
+        cons: 'Gold on dark needs care for small text',
+        css: ':root{--bg:#1b1b1b;--card:#242424;--text:#f6f1e7}\n.card{border:1px solid rgba(229,192,123,.30)}' },
+
+      { id: 'lavender-light', name: 'Lavender Light', tag: 'Light', fam: 'softlight', mode: 'light', btn: 12,
+        sw: ['#111114', '#8E8EA0', '#D9D9E3'],
+        p: tp('#D9D9E3', '#E4E4EE', '#FFFFFF', '#E8E8F0', '#E4E4EC', '#111114', '#6B6B7B'),
+        v: t20('#111114', '#8E8EA0', '#C9C9DC', '#A9A9C4', 'softlight', 'light', 14, 100, 0, 30, 14),
+        feat: ['Lavender-grey canvas with white cards', 'Black typography, no colour noise', 'Soft rounded corners and light shadows'],
+        best: 'Clean business dashboards, finance overviews',
+        pros: 'Calm, modern and highly readable',
+        cons: 'Very restrained — needs strong data hierarchy',
+        css: ':root{--bg:#d9d9e3;--card:#fff;--text:#111114}\n.card{border-radius:14px;box-shadow:0 10px 28px -20px rgba(20,20,40,.45)}' },
+
+      { id: 'idraft-glass', name: 'iDraft Glass', tag: 'Light', fam: 'glasslight', mode: 'light', btn: 14,
+        sw: ['#111111', '#6B6B75', '#E8E8E8'],
+        p: tp('#E8E8E8', '#F0F0F0', '#FFFFFF', 'rgba(255,255,255,.65)', 'rgba(0,0,0,.08)', '#111111', '#5F5F66'),
+        v: t20('#111111', '#6B6B75', '#9A9AA5', '#C9C9D2', 'glasslight', 'light', 20, 60, 20, 45, 18),
+        feat: ['Frosted white glass cards on a soft backdrop', 'Black type with rounded pill navigation', 'Floating panels with blur'],
+        best: 'Productivity dashboards, studio and portfolio panels',
+        pros: 'Light, airy and premium',
+        cons: 'Glass over busy images can reduce legibility',
+        css: '.card{background:rgba(255,255,255,.62);backdrop-filter:blur(20px);\n  border:1px solid rgba(255,255,255,.75);border-radius:20px}' },
+
+      { id: 'grayscale-pro', name: 'Grayscale Pro', tag: 'Light', fam: 'mono', mode: 'light', btn: 8,
+        sw: ['#1A1A1A', '#8A8A8A', '#CFCFCF'],
+        p: tp('#CFCFCF', '#D9D9D9', '#FFFFFF', '#E0E0E0', '#DDDDDD', '#1A1A1A', '#6E6E6E'),
+        v: t20('#1A1A1A', '#8A8A8A', '#4A4A4A', '#B0B0B0', 'mono', 'light', 10, 100, 0, 18, 6),
+        feat: ['Grey canvas with crisp white cards', 'Charts and tables in pure grayscale', 'Flat, quiet surfaces'],
+        best: 'Analytics dashboards, admin panels, reporting',
+        pros: 'Neutral and professional; content stays in focus',
+        cons: 'Status colours need shapes or labels to stand out',
+        css: ':root{--bg:#cfcfcf;--card:#fff;--text:#1a1a1a}\n.card{border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.12)}' },
+
+      { id: 'studio-white', name: 'Studio White', tag: 'Light', fam: 'studio', mode: 'light', btn: 10,
+        sw: ['#111111', '#3F3F46', '#FFFFFF'],
+        p: tp('#FFFFFF', '#FAFAFA', '#FFFFFF', '#EDEDED', '#EDEDED', '#111111', '#6B7280'),
+        v: t20('#111111', '#3F3F46', '#8A8A93', '#D4D4D8', 'studio', 'light', 12, 100, 0, 22, 8),
+        feat: ['Crisp white layout with a light grey rail', 'Black primary buttons, thin borders', 'Generous spacing, quiet shadows'],
+        best: 'SaaS dashboards, CRM, client portals',
+        pros: 'Sharp, professional and easy to scan',
+        cons: 'Can feel stark without imagery',
+        css: '.card{background:#fff;border:1px solid #ededed;border-radius:14px}\n.btn-primary{background:#111;color:#fff}' },
+
+      { id: 'nakapin-soft', name: 'Nakapin Soft', tag: 'Soft', fam: 'softgrey', mode: 'light', btn: 12,
+        sw: ['#B9B9B9', '#6E6E6E', '#F4F4F4'],
+        p: tp('#F4F4F4', '#FAFAFA', '#FFFFFF', '#E6E6E6', '#E6E6E6', '#2B2B2B', '#8A8A8A'),
+        v: t20('#B9B9B9', '#6E6E6E', '#D4D4D4', '#EDEDED', 'softgrey', 'light', 12, 100, 0, 16, 10),
+        feat: ['Near-white canvas with soft grey blocks', 'Muted grey accents, minimal borders', 'Very low visual noise'],
+        best: 'POS and store dashboards, operations panels',
+        pros: 'Extremely calm and unobtrusive',
+        cons: 'Low contrast — avoid for dense data',
+        css: ':root{--bg:#f4f4f4;--card:#fff;--text:#2b2b2b}\n.card{border:1px solid #e6e6e6;box-shadow:none}' },
+
+      { id: 'pryme-contrast', name: 'Pryme Contrast', tag: 'Bold', fam: 'apple', mode: 'light', btn: 16,
+        sw: ['#0A0A0A', '#7A7A7A', '#EDEDED'],
+        p: tp('#EDEDED', '#F5F5F5', '#FFFFFF', '#DADADA', '#DADADA', '#0A0A0A', '#5A5A5A'),
+        v: t20('#0A0A0A', '#7A7A7A', '#2B2B2B', '#B5B5B5', 'apple', 'light', 18, 70, 12, 30, 14),
+        feat: ['Black cards against a light glass canvas', 'High-contrast monochrome system', 'Large rounded panels'],
+        best: 'Design studios, product dashboards, portfolios',
+        pros: 'Striking and confident',
+        cons: 'Heavy contrast can be tiring in long sessions',
+        css: ':root{--bg:#ededed;--card:#fff;--text:#0a0a0a}\n.card{border-radius:18px;box-shadow:0 14px 34px -20px rgba(0,0,0,.55)}' },
+
+      { id: 'luxe-dine', name: 'Luxe Dine', tag: 'Dark', fam: 'gold', mode: 'dark', btn: 12,
+        sw: ['#F0C040', '#E8A100', '#0D0D0D'],
+        p: tp('#0D0D0D', '#111111', '#1A1A1A', '#2E2E2E', 'rgba(240,192,64,.30)', '#F5F5F5', '#A9A9A9'),
+        v: t20('#F0C040', '#E8A100', '#B8860B', '#2E2E2E', 'gold', 'dark', 14, 100, 0, 60, 10),
+        feat: ['Near-black surfaces with bright gold', 'Gold stat icons and highlighted rows', 'Dark tables with subtle separators'],
+        best: 'Restaurant and hospitality admin, premium retail',
+        pros: 'Warm, premium and high-impact',
+        cons: 'Bright gold on black is strong — use sparingly',
+        css: ':root{--bg:#0d0d0d;--card:#1a1a1a;--text:#f5f5f5}\n.chip.active{background:#f0c040;color:#0d0d0d}' },
+
+      { id: 'nexus-gold', name: 'Nexus Analytics', tag: 'Dark', fam: 'gold', mode: 'dark', btn: 10,
+        sw: ['#E8B923', '#F5D06B', '#0A0D14'],
+        p: tp('#0A0D14', '#0D1119', '#12161F', '#1E2430', 'rgba(232,185,35,.28)', '#EDEFF3', '#8E97A8'),
+        v: t20('#E8B923', '#F5D06B', '#3B4A6B', '#1E2430', 'gold', 'dark', 14, 100, 0, 65, 25),
+        feat: ['Deep navy-black with amber gold data marks', 'Gold vertical bars and progress rails', 'Cool slate text hierarchy'],
+        best: 'Executive analytics, KPI walls, monitoring screens',
+        pros: 'Reads as serious and data-driven',
+        cons: 'Small grey labels need higher contrast',
+        css: ':root{--bg:#0a0d14;--card:#12161f;--text:#edeff3}\n.chip.active{background:#e8b923;color:#0a0d14}' }
+    ];
+
+    extra.forEach(function (t) {
+      var exists = false;
+      THEMES20.forEach(function (x) { if (x.id === t.id) exists = true; });
+      if (!exists) THEMES20.push(t);
+    });
+
+    t20Render();
+    var act = t20ById(settings.theme20);
+    function assertMode() {
+      if (!act) return;
+      document.documentElement.setAttribute('data-theme', act.mode);
+      t20Paint(act);
+    }
+    assertMode();
+    setTimeout(assertMode, 350);
+    setTimeout(assertMode, 1200);
+
+    var total = THEMES20.length;
+    document.querySelectorAll('.settings-section-title').forEach(function (h) {
+      if (h.textContent.indexOf('Modern Themes') > -1 && h.firstChild) {
+        h.firstChild.nodeValue = '🌈 ' + total + ' Modern Themes ';
+      }
+    });
+    var allBtn = document.querySelector('#t20Bar [data-f="all"]');
+    if (allBtn) allBtn.textContent = 'All ' + total;
+  })();
+  /* ============================================================
+     THEME CONTRAST & SURFACE FIXES (all 29 themes)
+     ============================================================ */
+  (function themeContrastFix() {
+    function hx(c) {
+      if (!c) return null;
+      c = String(c).trim();
+      if (c.charAt(0) !== '#') return null;
+      if (c.length === 4) c = '#' + c[1] + c[1] + c[2] + c[2] + c[3] + c[3];
+      if (c.length !== 7) return null;
+      return [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)];
+    }
+    function toHex(rgb) {
+      return '#' + rgb.map(function (v) {
+        var n = Math.max(0, Math.min(255, Math.round(v)));
+        return (n < 16 ? '0' : '') + n.toString(16);
+      }).join('');
+    }
+    function mix(a, b, t) {
+      var A = hx(a), B = hx(b);
+      if (!A || !B) return a;
+      return toHex(A.map(function (v, i) { return v + (B[i] - v) * t; }));
+    }
+    function lum(rgb) {
+      var s = rgb.map(function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+      return 0.2126 * s[0] + 0.7152 * s[1] + 0.0722 * s[2];
+    }
+    function cr(a, b) {
+      if (!a || !b) return 21;
+      var l1 = lum(a), l2 = lum(b);
+      var hi = Math.max(l1, l2), lo = Math.min(l1, l2);
+      return (hi + 0.05) / (lo + 0.05);
+    }
+
+    var basePaint = t20Paint;
+    t20Paint = function (t) {
+      basePaint(t);
+      if (!t || !t.p) return;
+      var r = document.documentElement;
+      var bg = hx(t.p.bg), text = hx(t.p.text), muted = hx(t.p.muted), panel = hx(t.p.panel);
+
+      /* 1. body text must reach 4.5:1 */
+      if (bg && text && cr(text, bg) < 4.5) {
+        var white = cr([255, 255, 255], bg), black = cr([0, 0, 0], bg);
+        r.style.setProperty('--text', white >= black ? '#ffffff' : '#000000');
+        text = hx(white >= black ? '#ffffff' : '#000000');
+      }
+
+      /* 2. muted text must reach 4.5:1 — blend toward the body text */
+      if (bg && muted && text) {
+        var m = t.p.muted, i = 0;
+        while (cr(hx(m), bg) < 4.5 && i < 12) { m = mix(m, toHex(text), 0.16); i++; }
+        r.style.setProperty('--muted', m);
+      }
+
+      /* 3. surfaces follow the theme so chips/inputs match the cards */
+      if (panel) {
+        r.style.setProperty('--card', t.p.panel);
+        r.style.setProperty('--card-hover', mix(t.p.panel, toHex(text || [255, 255, 255]), 0.08));
+      }
+
+      /* 4. button / chip text must be readable on the accent colour */
+      var c1 = hx(t.v.color1) || [99, 102, 241];
+      var c2 = hx(t.v.color2) || c1;
+      var needsDark = cr([255, 255, 255], c1) < 3 || cr([255, 255, 255], c2) < 3;
+      r.classList.toggle('light-accent', needsDark);
+      r.style.setProperty('--accent-3', settings.color3 || t.v.blob3 || t.v.color2);
+
+      /* 5. borders stay visible against the surface */
+      if (bg && panel && cr(panel, bg) < 1.15) {
+        r.style.setProperty('--panel-border', mix(toHex(panel), toHex(text || [255, 255, 255]), 0.18));
+      }
+    };
+
+    var current = t20ById(settings.theme20);
+    if (current) t20Paint(current);
+    else {
+      /* default look: keep muted readable on the default dark surface */
+      document.documentElement.classList.remove('light-accent');
+    }
+  })();
+  /* ============================================================
+     PROFESSIONAL POLISH — command palette, tool details,
+     recently viewed, structured data, setup checklist, a11y
+     ============================================================ */
+  (function proPolish() {
+
+    /* ---------- 1. skip link + aria-current ---------- */
+    if (!document.querySelector('.skip-link')) {
+      var skip = document.createElement('a');
+      skip.className = 'skip-link';
+      skip.href = '#directory';
+      skip.textContent = 'Skip to tools';
+      document.body.insertBefore(skip, document.body.firstChild);
+    }
+    var homeLink = document.querySelector('#topLinks a[href="#top"]');
+    if (homeLink) homeLink.setAttribute('aria-current', 'page');
+
+    /* ---------- 2. focus trap for open modals ---------- */
+    document.addEventListener('keydown', function (e) {
+      if (e.key !== 'Tab') return;
+      var open = document.querySelector('.modal-overlay.active');
+      if (!open) return;
+      var f = open.querySelectorAll('a[href],button:not([disabled]),input,select,textarea,[tabindex]:not([tabindex="-1"])');
+      if (!f.length) return;
+      var first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+
+    /* ---------- 3. structured data (SEO) ---------- */
+    function injectJsonLd() {
+      var old = document.getElementById('dasJsonLd');
+      if (old) old.remove();
+      var base = (settings.baseUrl || location.origin || '').replace(/\/$/, '');
+      var pub = tools.filter(function (t) { return toolStatusOf(t) === 'published'; });
+      var graph = [
+        { '@type': 'WebSite', name: settings.title || 'DAS Studio', url: base + '/',
+          description: settings.desc || '',
+          potentialAction: { '@type': 'SearchAction', target: base + '/?q={query}', 'query-input': 'required name=query' } },
+        { '@type': 'ItemList', name: 'Tools', numberOfItems: pub.length,
+          itemListElement: pub.slice(0, 40).map(function (t, i) {
+            return { '@type': 'ListItem', position: i + 1, name: (t.titleMain || '') + (t.titleAccent || ''),
+              url: t.link || base + '/' };
+          }) }
+      ];
+      var el = document.createElement('script');
+      el.type = 'application/ld+json';
+      el.id = 'dasJsonLd';
+      el.textContent = JSON.stringify({ '@context': 'https://schema.org', '@graph': graph });
+      document.head.appendChild(el);
+    }
+    injectJsonLd();
+
+    /* ---------- 4. tool detail modal ---------- */
+    function toolDetail(t) {
+      var old = document.getElementById('toolDetailModal');
+      if (old) old.remove();
+      var pub = tools.filter(function (x) { return toolStatusOf(x) === 'published' && x.category === t.category && x.id !== t.id; }).slice(0, 3);
+      var tags = toolTagsOf(t);
+      var box = document.createElement('div');
+      box.className = 'modal-overlay active';
+      box.id = 'toolDetailModal';
+      box.innerHTML =
+        '<div class="modal" style="max-width:600px">' +
+          '<div class="td-hero" style="background:linear-gradient(135deg,' + (t.accent || 'var(--accent-grad-1)') + ',var(--accent-grad-2))">' +
+            '<h2>' + escapeHtml((t.titleMain || '') + (t.titleAccent || '')) + '</h2>' +
+            '<button class="modal-close" data-x style="position:absolute;top:12px;right:12px">×</button>' +
+          '</div>' +
+          '<div class="td-body">' +
+            '<div class="td-meta">' +
+              (t.header ? '<span class="td-chip">' + escapeHtml(t.header) + '</span>' : '') +
+              (t.version ? '<span class="td-chip">' + escapeHtml(t.version) + '</span>' : '') +
+              (t.featured ? '<span class="td-chip">⭐ Featured</span>' : '') +
+              tags.slice(0, 4).map(function (g) { return '<span class="td-chip">' + escapeHtml(g) + '</span>'; }).join('') +
+            '</div>' +
+            '<p class="td-desc">' + escapeHtml(t.desc || 'No description yet.') + '</p>' +
+            (t.releaseNotes ? '<div class="td-notes"><b>Release notes</b><br>' + escapeHtml(t.releaseNotes) + '</div>' : '') +
+            (pub.length ? '<div class="recent-title">More in this category</div><div class="td-related">' +
+              pub.map(function (x) {
+                return '<button type="button" data-rel="' + x.id + '">' + escapeHtml((x.titleMain || '') + (x.titleAccent || '')) + '</button>';
+              }).join('') + '</div>' : '') +
+            '<div class="td-actions">' +
+              '<button type="button" class="btn-secondary" data-copy>🔗 Copy link</button>' +
+              '<button type="button" class="btn-secondary" data-x>Close</button>' +
+              '<a class="btn-primary" href="' + escapeHtml(t.link || '#') + '" target="_blank" rel="noopener" data-open>Open tool ↗</a>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+      document.body.appendChild(box);
+
+      /* match the modal surface to the page that is actually on screen */
+      (function adaptSurface() {
+        function rgb(str) {
+          var m = /rgba?\(([^)]+)\)/.exec(str || '');
+          if (!m) return null;
+          var p = m[1].split(',').map(parseFloat);
+          return [p[0], p[1], p[2]];
+        }
+        function fromHex(h) {
+          h = String(h || '').trim();
+          if (h.charAt(0) !== '#') return null;
+          if (h.length === 4) h = '#' + h[1] + h[1] + h[2] + h[2] + h[3] + h[3];
+          if (h.length !== 7) return null;
+          return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)];
+        }
+        var rootCs = getComputedStyle(document.documentElement);
+        var b = fromHex(rootCs.getPropertyValue('--bg')) ||
+                fromHex(rootCs.getPropertyValue('--bg2')) ||
+                rgb(getComputedStyle(document.body).backgroundColor) || [10, 14, 24];
+        var surface = 'rgba(14,18,30,.985)';
+        var ink = '#eef2ff';
+        var soft = 'rgba(255,255,255,.10)';
+        var dark = true;
+        var inner = box.querySelector('.modal');
+        var body = box.querySelector('.td-body');
+        function force(el, prop, val) { if (el) el.style.setProperty(prop, val, 'important'); }
+        force(inner, 'background', surface);
+        force(inner, 'background-color', surface);
+        force(inner, 'color', ink);
+        force(inner, 'border-color', soft);
+        force(body, 'background', surface);
+        force(body, 'background-color', surface);
+        force(body, 'color', ink);
+        box.querySelectorAll('.td-desc,.td-notes').forEach(function (el) { el.style.color = dark ? '#b9c2da' : '#4b5563'; });
+        box.querySelectorAll('.td-chip,.td-related button').forEach(function (el) {
+          el.style.setProperty('background', soft, 'important');
+          el.style.setProperty('color', ink, 'important');
+          el.style.setProperty('border-color', soft, 'important');
+        });
+        box.querySelectorAll('.td-notes').forEach(function (el) {
+          el.style.setProperty('background', soft, 'important');
+          el.style.setProperty('color', dark ? '#b9c2da' : '#4b5563', 'important');
+        });
+        box.querySelectorAll('.td-desc').forEach(function (el) {
+          el.style.setProperty('color', '#b9c2da', 'important');
+        });
+        box.querySelectorAll('.td-actions .btn-secondary').forEach(function (el) {
+          el.style.setProperty('background', 'rgba(255,255,255,.10)', 'important');
+          el.style.setProperty('color', '#eef2ff', 'important');
+          el.style.setProperty('border-color', 'rgba(255,255,255,.22)', 'important');
+        });
+        var cl = box.querySelector('.modal-close');
+        if (cl) { cl.style.setProperty('color', '#fff', 'important');
+                  cl.style.setProperty('background', 'rgba(0,0,0,.35)', 'important'); }
+      })();
+
+      box.querySelectorAll('[data-x]').forEach(function (b) { b.onclick = function () { box.remove(); }; });
+      box.addEventListener('click', function (e) { if (e.target === box) box.remove(); });
+      box.querySelector('[data-copy]').onclick = function () {
+        fbCopy(location.href.split('#')[0] + '#tool-' + t.id, 'Tool link copied.');
+      };
+      box.querySelector('[data-open]').addEventListener('click', function () { trackToolClick((t.titleMain || '') + (t.titleAccent || '')); });
+      box.querySelectorAll('[data-rel]').forEach(function (b) {
+        b.onclick = function () {
+          var id = Number(b.getAttribute('data-rel'));
+          var rel = tools.filter(function (x) { return Number(x.id) === id; })[0];
+          if (rel) { box.remove(); toolDetail(rel); }
+        };
+      });
+      document.addEventListener('keydown', function esc(e) {
+        if (e.key === 'Escape') { box.remove(); document.removeEventListener('keydown', esc); }
+      });
+    }
+
+    /* ---------- 5. recently viewed ---------- */
+    function recentIds() { try { return JSON.parse(localStorage.getItem('das_recent') || '[]'); } catch (e) { return []; } }
+    function pushRecent(id) {
+      var list = recentIds().filter(function (x) { return x !== id; });
+      list.unshift(id);
+      try { localStorage.setItem('das_recent', JSON.stringify(list.slice(0, 6))); } catch (e) {}
+    }
+    function renderRecent() {
+      var row = document.getElementById('recentRow');
+      if (!row) return;
+      var ids = recentIds();
+      var items = ids.map(function (id) { return tools.filter(function (t) { return Number(t.id) === Number(id); })[0]; })
+        .filter(function (t) { return t && toolStatusOf(t) === 'published'; });
+      if (!items.length) { row.classList.remove('show'); return; }
+      row.innerHTML = '<div class="recent-title">Recently viewed</div><div class="recent-list">' +
+        items.map(function (t) {
+          return '<button type="button" class="recent-item" data-recent="' + t.id + '">' +
+            '🕘 ' + escapeHtml((t.titleMain || '') + (t.titleAccent || '')) + '</button>';
+        }).join('') + '</div>';
+      row.classList.add('show');
+      row.querySelectorAll('[data-recent]').forEach(function (b) {
+        b.onclick = function () {
+          var id = Number(b.getAttribute('data-recent'));
+          var t = tools.filter(function (x) { return Number(x.id) === id; })[0];
+          if (t) toolDetail(t);
+        };
+      });
+    }
+
+    /* hook card rendering: add an info button + recent tracking */
+    var _render = renderGrid;
+    renderGrid = function () {
+      _render.apply(null, arguments);
+      Array.prototype.forEach.call(document.querySelectorAll('#grid .card'), function (card) {
+        if (card.querySelector('.card-info-btn')) return;
+        var id = Number(card.getAttribute('data-id'));
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'card-info-btn';
+        btn.title = 'Tool details';
+        btn.setAttribute('aria-label', 'Tool details');
+        btn.textContent = 'ⓘ';
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          var t = tools.filter(function (x) { return Number(x.id) === id; })[0];
+          if (t) { pushRecent(id); renderRecent(); toolDetail(t); }
+        });
+        card.appendChild(btn);
+        card.addEventListener('click', function () { pushRecent(id); });
+      });
+      renderRecent();
+    };
+
+    /* ---------- 6. command palette ---------- */
+    var cmdk = document.createElement('div');
+    cmdk.id = 'cmdk';
+    cmdk.innerHTML =
+      '<div class="cmdk-box" role="dialog" aria-label="Command palette">' +
+        '<input id="cmdkInput" placeholder="Search tools, sections or actions…" autocomplete="off" aria-label="Search">' +
+        '<div class="cmdk-list" id="cmdkList"></div>' +
+        '<div class="cmdk-foot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> open</span><span><kbd>esc</kbd> close</span></div>' +
+      '</div>';
+    document.body.appendChild(cmdk);
+
+    var cmdkItems = [], cmdkActive = 0;
+
+    function buildCommands() {
+      var out = [];
+      tools.filter(function (t) { return toolStatusOf(t) === 'published'; }).forEach(function (t) {
+        out.push({ ic: '🛠️', label: (t.titleMain || '') + (t.titleAccent || ''), hint: 'Tool',
+          run: function () { var x = t; pushRecent(x.id); renderRecent(); toolDetail(x); } });
+      });
+      if (typeof isAdmin !== 'undefined' && isAdmin) {
+        (typeof ADM_MENU !== 'undefined' ? ADM_MENU : []).forEach(function (g) {
+          g.items.forEach(function (i) {
+            if (!document.getElementById(i[0])) return;
+            out.push({ ic: i[1], label: i[2], hint: 'Admin', run: function () { admGo(i[0]); } });
+          });
+        });
+      }
+      out.push({ ic: '🌓', label: 'Toggle light / dark', hint: 'Action', run: function () { document.getElementById('themeBtn').click(); } });
+      out.push({ ic: '💬', label: 'Send feedback or report a bug', hint: 'Action', run: function () { document.getElementById('openFeedbackModalBtn').click(); } });
+      out.push({ ic: '⬆️', label: 'Back to top', hint: 'Action', run: function () { window.scrollTo({ top: 0, behavior: 'smooth' }); } });
+      return out;
+    }
+
+    function drawCmdk(q) {
+      var all = buildCommands();
+      q = String(q || '').trim().toLowerCase();
+      cmdkItems = q ? all.filter(function (c) { return (c.label + ' ' + c.hint).toLowerCase().indexOf(q) > -1; }) : all;
+      cmdkItems = cmdkItems.slice(0, 40);
+      cmdkActive = 0;
+      var list = document.getElementById('cmdkList');
+      list.innerHTML = cmdkItems.length ? cmdkItems.map(function (c, i) {
+        return '<button type="button" class="cmdk-item' + (i === 0 ? ' active' : '') + '" data-i="' + i + '">' +
+          '<span class="ic">' + c.ic + '</span><span>' + escapeHtml(c.label) + '</span>' +
+          '<span class="hint">' + c.hint + '</span></button>';
+      }).join('') : '<div class="cmdk-empty">No matches.</div>';
+      list.querySelectorAll('[data-i]').forEach(function (b) {
+        b.onclick = function () { runCmdk(Number(b.getAttribute('data-i'))); };
+        b.onmouseenter = function () {
+          cmdkActive = Number(b.getAttribute('data-i'));
+          list.querySelectorAll('.cmdk-item').forEach(function (x, i) { x.classList.toggle('active', i === cmdkActive); });
+        };
+      });
+    }
+
+    function runCmdk(i) {
+      var c = cmdkItems[i];
+      if (!c) return;
+      closeCmdk();
+      try { c.run(); } catch (e) {}
+    }
+    function openCmdk() {
+      cmdk.classList.add('open');
+      var inp = document.getElementById('cmdkInput');
+      inp.value = '';
+      drawCmdk('');
+      setTimeout(function () { inp.focus(); }, 30);
+    }
+    function closeCmdk() { cmdk.classList.remove('open'); }
+
+    document.getElementById('cmdkInput').addEventListener('input', function () { drawCmdk(this.value); });
+    cmdk.addEventListener('click', function (e) { if (e.target === cmdk) closeCmdk(); });
+    document.addEventListener('keydown', function (e) {
+      var isK = (e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k';
+      if (isK) { e.preventDefault(); cmdk.classList.contains('open') ? closeCmdk() : openCmdk(); return; }
+      if (!cmdk.classList.contains('open')) return;
+      if (e.key === 'Escape') { e.preventDefault(); closeCmdk(); }
+      else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+        e.preventDefault();
+        cmdkActive = Math.max(0, Math.min(cmdkItems.length - 1, cmdkActive + (e.key === 'ArrowDown' ? 1 : -1)));
+        document.querySelectorAll('#cmdkList .cmdk-item').forEach(function (x, i) { x.classList.toggle('active', i === cmdkActive); });
+        var el = document.querySelectorAll('#cmdkList .cmdk-item')[cmdkActive];
+        if (el) el.scrollIntoView({ block: 'nearest' });
+      } else if (e.key === 'Enter') { e.preventDefault(); runCmdk(cmdkActive); }
+    });
+    var badge = document.querySelector('.search-badge');
+    if (badge) { badge.style.cursor = 'pointer'; badge.addEventListener('click', openCmdk); }
+
+    /* ---------- 7. admin setup checklist ---------- */
+    function setupState() {
+      var items = [];
+      items.push({ ok: !usingDefaultPass(), label: 'Change the default admin password',
+        hint: 'The panel ships with a known default — change it first.', tab: 'tabSecBtn', action: 'Open Security' });
+      var s2 = (typeof secGet === 'function') ? secGet() : null;
+      items.push({ ok: !!(s2 && s2.twoFA && s2.twoFA.enabled), label: 'Turn on two-factor authentication',
+        hint: 'Adds a second step at sign-in.', tab: 'tabSecBtn', action: 'Set up 2FA' });
+      var em = (typeof fbEmailConfig === 'function') ? fbEmailConfig() : null;
+      items.push({ ok: !!(em && em.provider !== 'none'), label: 'Connect email delivery',
+        hint: 'Needed for reply emails and confirmations.', tab: 'tabMsgsBtn', action: 'Email setup' });
+      items.push({ ok: tools.length > 1, label: 'Add your tools',
+        hint: 'The library starts with sample tools.', tab: 'tabToolsBtn', action: 'Manage tools' });
+      var db = (typeof dbCfg === 'function') ? dbCfg() : null;
+      items.push({ ok: !!(db && db.lastBackup), label: 'Take a first backup',
+        hint: 'Download a full JSON backup of everything.', tab: 'tabDbBtn', action: 'Back up' });
+      items.push({ ok: !!settings.supportEmail, label: 'Add contact details',
+        hint: 'Shown in the footer and legal pages.', tab: 'tabSettingsBtn', action: 'Site settings' });
+      return items;
+    }
+
+    function renderSetup() {
+      var dash = document.getElementById('tabDash');
+      if (!dash) return;
+      var items = setupState();
+      var done = items.filter(function (i) { return i.ok; }).length;
+      var pct = Math.round(done / items.length * 100);
+      var existing = document.getElementById('setupCard');
+      var html =
+        '<div class="setup-card" id="setupCard">' +
+          '<div class="setup-head"><h4>🚀 Finish setting up' + (done === items.length ? ' — all done!' : '') + '</h4>' +
+            '<span class="fb-meta">' + done + '/' + items.length + '</span></div>' +
+          '<div class="setup-bar"><i style="width:' + pct + '%"></i></div>' +
+          items.map(function (i) {
+            return '<div class="setup-item' + (i.ok ? ' done' : '') + '">' +
+              '<span class="st">' + (i.ok ? '✅' : '⬜') + '</span>' +
+              '<span class="lbl">' + i.label + '<small>' + i.hint + '</small></span>' +
+              (i.ok ? '' : '<button type="button" data-setup="' + i.tab + '">' + i.action + '</button>') +
+            '</div>';
+          }).join('') +
+        '</div>';
+      if (existing) existing.outerHTML = html;
+      else dash.insertAdjacentHTML('afterbegin', html);
+      dash.querySelectorAll('[data-setup]').forEach(function (b) {
+        b.onclick = function () { admGo(b.getAttribute('data-setup')); };
+      });
+    }
+
+    var _dash = tabRenderers.tabDash;
+    tabRenderers.tabDash = function () {
+      _dash.apply(null, arguments);
+      try { renderSetup(); } catch (e) {}
+    };
+
+    /* refresh helpers when data changes */
+    var _commit = (typeof mmCommit === 'function') ? mmCommit : null;
+    window.addEventListener('load', function () { renderRecent(); });
+    setTimeout(renderRecent, 300);
+  })();
+  /* ============================================================
+     BACKEND & REAL AUTH — Firebase REST, security rules,
+     and removal of secrets from browser storage
+     ============================================================ */
+  (function backendAuth() {
+    var CFG_KEY = 'das_studio_backend';
+
+    function cfg() { var c = lsGet(CFG_KEY, null); return (c && typeof c === 'object') ? c : {}; }
+    function saveCfg(c) { lsSet(CFG_KEY, c); }
+    function enabled() { var c = cfg(); return !!(c.enabled && c.apiKey && c.projectId && c.email); }
+
+    /* ---- 1. never keep a database password in the browser ---- */
+    (function purgeSecrets() {
+      try {
+        var d = lsGet(DB_KEY, null);
+        if (d && (d.dbPass || d.dbUser)) {
+          delete d.dbPass; delete d.dbUser;
+          lsSet(DB_KEY, d);
+        }
+      } catch (e) {}
+    })();
+
+    var RULES = [
+      "rules_version = '2';",
+      'service cloud.firestore {',
+      '  match /databases/{database}/documents {',
+      '',
+      '    // Only the admin account may write. Everyone may read public data.',
+      "    function isAdmin() {",
+      "      return request.auth != null && request.auth.uid == 'PASTE_YOUR_ADMIN_UID';",
+      '    }',
+      '',
+      '    match /tools/{id}    { allow read: if true; allow write: if isAdmin(); }',
+      '    match /settings/{id} { allow read: if true; allow write: if isAdmin(); }',
+      '    match /media/{id}    { allow read: if true; allow write: if isAdmin(); }',
+      '',
+      '    // Anyone may submit feedback, only the admin may read or delete it.',
+      '    match /feedback/{id} {',
+      '      allow create: if request.resource.data.message is string',
+      '                    && request.resource.data.message.size() < 5000;',
+      '      allow read, update, delete: if isAdmin();',
+      '    }',
+      '',
+      '    // Admin-only collections',
+      '    match /users/{id}    { allow read, write: if isAdmin(); }',
+      '    match /security/{id} { allow read, write: if isAdmin(); }',
+      '    match /audit/{id}    { allow read, write: if isAdmin(); }',
+      '  }',
+      '}'
+    ].join('\n');
+
+    /* ---- 2. Firebase REST sign-in (no SDK needed) ---- */
+    function signIn(email, password) {
+      var c = cfg();
+      var url = 'https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=' + encodeURIComponent(c.apiKey);
+      return fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, password: password, returnSecureToken: true })
+      }).then(function (r) {
+        return r.json().then(function (j) {
+          if (!r.ok) {
+            var code = (j && j.error && j.error.message) || 'SIGN_IN_FAILED';
+            throw new Error(code.replace(/_/g, ' ').toLowerCase());
+          }
+          return j;
+        });
+      });
+    }
+
+    function fsUrl(path) {
+      var c = cfg();
+      return 'https://firestore.googleapis.com/v1/projects/' + encodeURIComponent(c.projectId) +
+        '/databases/(default)/documents/' + path;
+    }
+
+    /* ---- 3. route the admin login through Firebase when configured ---- */
+    var localCore = adminLoginCore;
+    adminLoginCore = function (pass) {
+      if (!enabled()) return localCore.apply(null, arguments);
+      var c = cfg();
+      admLoginError('Signing in with Firebase…');
+      signIn(c.email, pass).then(function (res) {
+        window.__dasToken = res.idToken;
+        window.__dasUid = res.localId;
+        if (c.uid && c.uid !== res.localId) {
+          admLoginError('This account is not the configured admin.');
+          return;
+        }
+        lsSet(LOCK_KEY, { fails: 0, until: 0 });
+        isAdmin = true; sessionStart = lastActivity = Date.now();
+        adminBtn.textContent = '🔓 Exit Admin';
+        pushLog(LOGIN_KEY, { t: Date.now(), ok: true, ua: 'Firebase auth' }, 100);
+        try { sessTouch(); } catch (e) {}
+        logAct('login', 'Firebase sign-in successful');
+        renderGrid();
+        try { admOpen('tabDashBtn'); } catch (e) {}
+      }).catch(function (err) {
+        var lock = lsGet(LOCK_KEY, { fails: 0, until: 0 });
+        lock.fails = (lock.fails || 0) + 1;
+        pushLog(LOGIN_KEY, { t: Date.now(), ok: false, ua: 'Firebase: ' + err.message }, 100);
+        secAlert('login', 'Firebase sign-in failed');
+        admLoginError('Firebase: ' + err.message);
+      });
+    };
+
+    /* ---- 4. push / pull collections ---- */
+    function collections() {
+      return {
+        tools: 'das_studio_tools',
+        settings: 'das_studio_settings',
+        feedback: 'das_studio_feedbacks',
+        media: 'das_studio_media'
+      };
+    }
+    function pushAll() {
+      var c = cfg();
+      if (!c.apiKey || !c.projectId) return Promise.reject(new Error('Firebase is not configured.'));
+      var token = window.__dasToken;
+      if (!token) return Promise.reject(new Error('Sign in with Firebase first.'));
+      var jobs = Object.keys(collections()).map(function (name) {
+        var raw = localStorage.getItem(collections()[name]) || '[]';
+        var body = { fields: { data: { stringValue: raw }, updatedAt: { integerValue: String(Date.now()) } } };
+        return fetch(fsUrl(name + '/main') + '?updateMask.fieldPaths=data&updateMask.fieldPaths=updatedAt', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+          body: JSON.stringify(body)
+        }).then(function (r) { if (!r.ok) throw new Error(name + ': HTTP ' + r.status); });
+      });
+      return Promise.all(jobs);
+    }
+    function pullAll() {
+      var token = window.__dasToken;
+      if (!token) return Promise.reject(new Error('Sign in with Firebase first.'));
+      var names = Object.keys(collections());
+      return Promise.all(names.map(function (name) {
+        return fetch(fsUrl(name + '/main'), { headers: { Authorization: 'Bearer ' + token } })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (j) {
+            var v = j && j.fields && j.fields.data && j.fields.data.stringValue;
+            if (v) localStorage.setItem(collections()[name], v);
+          });
+      })).then(function () { location.reload(); });
+    }
+
+    /* ---- 5. panel section ---- */
+    function backendPanelHtml() {
+      var c = cfg();
+      var on = enabled();
+      return '<div class="settings-section-title">☁️ Backend &amp; real authentication</div>' +
+        '<div class="xm-alert ' + (on ? 'ok' : 'warn') + '">' +
+          (on
+            ? '✅ <b>Firebase connected.</b> Sign-in is verified by Google’s servers, so bypassing the browser no longer grants admin access — as long as your Firestore rules are published.'
+            : '⚠️ <b>Browser-only mode.</b> The password is hashed and checked in this browser, which deters casual access but is not real security — anyone with DevTools can bypass it. Connect Firebase below to fix that.') +
+        '</div>' +
+        '<div class="xm-row">' +
+          '<input id="bkEmail" placeholder="Admin email" value="' + escapeHtml(c.email || '') + '" style="flex:1;min-width:150px">' +
+          '<input id="bkUid" placeholder="Admin UID (optional)" value="' + escapeHtml(c.uid || '') + '" style="flex:1;min-width:130px">' +
+        '</div>' +
+        '<div class="xm-row">' +
+          '<input id="bkKey" placeholder="apiKey" value="' + escapeHtml(c.apiKey || '') + '" style="flex:1;min-width:170px">' +
+          '<input id="bkProject" placeholder="projectId" value="' + escapeHtml(c.projectId || '') + '" style="flex:1;min-width:130px">' +
+        '</div>' +
+        '<div class="xm-row">' +
+          '<label style="display:flex;align-items:center;gap:8px;font-size:12px"><input type="checkbox" id="bkOn"' +
+            (c.enabled ? ' checked' : '') + ' style="width:auto"> Use Firebase for admin sign-in</label>' +
+          '<button class="btn-primary" id="bkSave" type="button">Save</button>' +
+          '<button class="btn-secondary" id="bkTest" type="button">Test sign-in</button>' +
+          '<button class="btn-secondary" id="bkPush" type="button">☁️ Push data</button>' +
+          '<button class="btn-secondary" id="bkPull" type="button">⬇️ Pull data</button>' +
+        '</div>' +
+        '<div class="xm-note" id="bkMsg">The apiKey and projectId are public by design in Firebase — your security comes from the rules below, not from hiding them.</div>' +
+        '<div class="settings-section-title" style="margin-top:14px">🛡️ Firestore security rules <button class="btn-secondary" id="bkCopy" type="button" style="margin-left:auto;padding:3px 9px;font-size:11px">Copy rules</button></div>' +
+        '<pre class="t20-css" id="bkRules" style="max-height:210px">' + escapeHtml(RULES) + '</pre>' +
+        '<div class="xm-note">Paste these into Firebase → Firestore → Rules and replace <code>PASTE_YOUR_ADMIN_UID</code> with your own UID (shown after your first sign-in). They are what actually stop a non-admin from writing.</div>' +
+        '<div class="settings-section-title" style="margin-top:14px">Three ways to secure this panel</div>' +
+        '<ul class="t20-feat">' +
+          '<li><b>Firebase / Supabase</b> — works on a static host, free tier is enough, rules decide access (recommended, built in above).</li>' +
+          '<li><b>Cloudflare Access</b> — put the panel behind Zero Trust email codes; no code changes, but data stays in the browser.</li>' +
+          '<li><b>Your own backend</b> — Node/PHP API with session cookies; most flexible, but you run and update the server.</li>' +
+        '</ul>' +
+        '<div class="xm-note">Even with a backend, keep the admin panel out of the public HTML when you can — a separate <code>admin.html</code> behind access control removes the whole surface from the public page.</div>';
+    }
+
+    var baseSecRender = secRender2;
+    var wrappedSec = function () {
+      baseSecRender.apply(null, arguments);
+      var tab = document.getElementById('tabSec');
+      if (!tab || document.getElementById('bkKey')) return;
+      var wrap = document.createElement('div');
+      wrap.innerHTML = backendPanelHtml();
+      tab.appendChild(wrap);
+
+      document.getElementById('bkSave').onclick = function () {
+        saveCfg({
+          email: document.getElementById('bkEmail').value.trim(),
+          uid: document.getElementById('bkUid').value.trim(),
+          apiKey: document.getElementById('bkKey').value.trim(),
+          projectId: document.getElementById('bkProject').value.trim(),
+          enabled: document.getElementById('bkOn').checked
+        });
+        secRender2();
+      };
+      document.getElementById('bkTest').onclick = function () {
+        var msg = document.getElementById('bkMsg');
+        var c = cfg();
+        if (!c.apiKey || !c.projectId || !c.email) { msg.textContent = 'Fill in email, apiKey and projectId first.'; return; }
+        var pass = prompt('Firebase password for ' + c.email + ':');
+        if (pass === null) return;
+        msg.textContent = 'Testing…';
+        signIn(c.email, pass).then(function (r) {
+          window.__dasToken = r.idToken; window.__dasUid = r.localId;
+          msg.innerHTML = '✅ Sign-in works. Your UID is <code>' + escapeHtml(r.localId) + '</code> — put it in the rules.';
+        }).catch(function (e) { msg.textContent = '❌ ' + e.message; });
+      };
+      document.getElementById('bkCopy').onclick = function () {
+        try { navigator.clipboard.writeText(RULES).then(function () { alert('Rules copied.'); }); }
+        catch (e) { alert('Select the rules text and copy it manually.'); }
+      };
+      document.getElementById('bkPush').onclick = function () {
+        pushAll().then(function () { alert('Pushed to Firestore.'); })
+          .catch(function (e) { alert('Push failed: ' + e.message); });
+      };
+      document.getElementById('bkPull').onclick = function () {
+        if (!confirm('Replace this browser’s data with what is in Firestore?')) return;
+        pullAll().catch(function (e) { alert('Pull failed: ' + e.message); });
+      };
+    };
+    secRender2 = wrappedSec;
+    try { tabRenderers.tabSec = wrappedSec; } catch (e) {}
+  })();
+  /* ============================================================
+     FIREBASE — SDK, real auth, Firestore sync
+     ============================================================ */
+  (function firebaseBackend() {
+    var FIREBASE_CONFIG = {
+      apiKey: 'AIzaSyCsldPssXQmCyWySmC5giR7GUCWjhdlBeQ',
+      authDomain: 'dasstudio-49f08.firebaseapp.com',
+      projectId: 'dasstudio-49f08',
+      storageBucket: 'dasstudio-49f08.firebasestorage.app',
+      messagingSenderId: '209248553216',
+      appId: '1:209248553216:web:efa6f9373f0629c405cbe5',
+      measurementId: 'G-L8H2T2D4VX',
+      adminEmail: 'mongald018@gmail.com'
+    };
+
+    var SDK = 'https://www.gstatic.com/firebasejs/10.8.0/';
+    var state = { ready: false, auth: null, db: null, user: null, error: '' };
+
+    function loadScript(src) {
+      return new Promise(function (resolve, reject) {
+        var s = document.createElement('script');
+        s.src = src;
+        s.async = true;
+        s.onload = resolve;
+        s.onerror = function () { reject(new Error('Could not load ' + src.split('/').pop())); };
+        document.head.appendChild(s);
+      });
+    }
+
+    function boot() {
+      loadScript(SDK + 'firebase-app-compat.js')
+        .then(function () { return loadScript(SDK + 'firebase-auth-compat.js'); })
+        .then(function () { return loadScript(SDK + 'firebase-firestore-compat.js'); })
+        .then(function () {
+          if (!window.firebase) throw new Error('Firebase SDK unavailable');
+          if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+          state.auth = firebase.auth();
+          state.db = firebase.firestore();
+          window.__dasAuth = state.auth; window.__dasDb = state.db;
+          state.ready = true;
+          wireAuth();
+          pullFromCloud();
+          renderStatus();
+        })
+        .catch(function (err) {
+          state.error = err.message;
+          renderStatus();
+        });
+      /* if the CDN is blocked or offline, stop saying "connecting" forever */
+      setTimeout(function () {
+        if (!state.ready && !state.error) {
+          state.error = 'Firebase SDK did not load (offline or blocked)';
+          renderStatus();
+        }
+      }, 8000);
+    }
+
+    /* ---------- auth ---------- */
+    function wireAuth() {
+      state.auth.onAuthStateChanged(function (user) {
+        state.user = user; window.__dasUser = user;
+        if (user) {
+          if (!isAdmin) {
+            isAdmin = true;
+            sessionStart = lastActivity = Date.now();
+            adminBtn.textContent = '🔓 Exit Admin';
+            try { sessTouch(); } catch (e) {}
+            renderGrid();
+            logAct('login', 'Firebase auth: ' + user.email);
+          }
+        } else if (isAdmin) {
+          isAdmin = false;
+          adminBtn.textContent = '🔒 Admin Panel';
+          try { modal.classList.remove('active'); } catch (e) {}
+          renderGrid();
+        }
+        renderStatus();
+      });
+    }
+
+    var prevLogin = adminLoginCore;
+    adminLoginCore = function (pass, emailArg) {
+      if (!state.ready) return prevLogin.apply(null, arguments);
+      var email = String(emailArg || '').trim();
+      var stored = {};
+      try { stored = JSON.parse(localStorage.getItem('das_studio_backend') || '{}'); } catch (e) {}
+      email = (stored.email || email || '').trim();
+      if (!email) email = (FIREBASE_CONFIG.adminEmail || (settings && settings.supportEmail) || '').trim();
+      if (!email) { admLoginError('Enter the admin email to sign in.'); return; }
+      admLoginError('Signing in…');
+      state.auth.signInWithEmailAndPassword(email, pass)
+        .then(function () { admLoginError(''); })
+        .catch(function (err) {
+          var m = String(err.code || err.message || '').replace('auth/', '').replace(/-/g, ' ');
+          admLoginError('Firebase: ' + m);
+          pushLog(LOGIN_KEY, { t: Date.now(), ok: false, ua: 'Firebase: ' + m }, 100);
+          secAlert('login', 'Failed Firebase sign-in');
+        });
+    };
+
+    var prevLogout = adminLogout;
+    adminLogout = function (reason) {
+      if (state.ready && state.auth.currentUser) {
+        state.auth.signOut().catch(function () {});
+      }
+      return prevLogout.apply(null, arguments);
+    };
+
+    /* ---------- firestore sync ---------- */
+    function dbSave(name, value) {
+      if (!state.ready) return;
+      try {
+        state.db.collection(name).doc('main').set({
+          data: JSON.stringify(value),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).catch(function () {});
+      } catch (e) {}
+    }
+
+    var prevSaveTools = saveToolsToStorage;
+    saveToolsToStorage = function () {
+      prevSaveTools.apply(null, arguments);
+      if (isAdmin) dbSave('tools', tools);
+    };
+
+    function pullFromCloud() {
+      if (!state.ready) return;
+      state.db.collection('tools').doc('main').get().then(function (doc) {
+        if (!doc.exists) return;
+        var raw = doc.data() && doc.data().data;
+        if (!raw) return;
+        var arr = JSON.parse(raw);
+        if (Array.isArray(arr) && arr.length) {
+          tools = arr;
+          try { localStorage.setItem('das_studio_tools', raw); } catch (e) {}
+          renderGrid();
+        }
+      }).catch(function () {});
+
+      state.db.collection('settings').doc('main').get().then(function (doc) {
+        if (!doc.exists) return;
+        var raw = doc.data() && doc.data().data;
+        if (!raw) return;
+        var obj = JSON.parse(raw);
+        if (obj && typeof obj === 'object') {
+          Object.keys(obj).forEach(function (k) { settings[k] = obj[k]; });
+          try { localStorage.setItem('das_studio_settings', JSON.stringify(settings)); } catch (e) {}
+          try { applySettingsToDOM(); } catch (e) {}
+        }
+      }).catch(function () {});
+    }
+
+    function pushAll() {
+      if (!state.ready) return Promise.reject(new Error('Firebase SDK is not loaded.'));
+      if (!state.user) return Promise.reject(new Error('Sign in as admin first.'));
+      dbSave('tools', tools);
+      dbSave('settings', settings);
+      var fb = [];
+      try { fb = JSON.parse(localStorage.getItem('das_studio_feedbacks') || '[]'); } catch (e) {}
+      dbSave('feedback', fb);
+      return Promise.resolve();
+    }
+
+    /* ---------- status block in the Security tab ---------- */
+    function renderStatus() {
+      var host = document.getElementById('fbLiveBlock');
+      if (!host) return;
+      var txt, cls;
+      if (state.error) { txt = '❌ ' + state.error + ' — the panel is running in local mode.'; cls = 'warn'; }
+      else if (!state.ready) { txt = '⏳ Connecting to Firebase…'; cls = ''; }
+      else if (state.user) { txt = '✅ Connected to <b>' + FIREBASE_CONFIG.projectId + '</b> as <b>' + escapeHtml(state.user.email || 'admin') + '</b>. Changes save to Firestore.'; cls = 'ok'; }
+      else { txt = '✅ SDK loaded for <b>' + FIREBASE_CONFIG.projectId + '</b>. Sign in as admin to enable cloud writes.'; cls = 'ok'; }
+      host.className = 'xm-alert ' + cls;
+      host.innerHTML = txt;
+    }
+
+    var prevSec = tabRenderers.tabSec;
+    tabRenderers.tabSec = function () {
+      prevSec.apply(null, arguments);
+      var tab = document.getElementById('tabSec');
+      if (!tab || document.getElementById('fbLiveBlock')) return;
+      var box = document.createElement('div');
+      box.innerHTML = '<div class="settings-section-title">🔥 Firebase live connection</div>' +
+        '<div class="xm-alert" id="fbLiveBlock">Connecting…</div>' +
+        '<div class="xm-row">' +
+          '<button class="btn-primary" type="button" id="fbPushAll">☁️ Push everything now</button>' +
+          '<button class="btn-secondary" type="button" id="fbPullAll">⬇️ Reload from Firestore</button>' +
+          '<button class="btn-secondary" type="button" id="fbSignOut">Sign out</button>' +
+        '</div>' +
+        '<div class="xm-note">Project <code>' + FIREBASE_CONFIG.projectId + '</code>. Tools, settings and feedback are mirrored to Firestore whenever you save as admin; visitors read them from the cloud instead of only your browser.</div>';
+      tab.appendChild(box);
+      renderStatus();
+      document.getElementById('fbPushAll').onclick = function () {
+        pushAll().then(function () { alert('Everything pushed to Firestore.'); })
+          .catch(function (e) { alert('Push failed: ' + e.message); });
+      };
+      document.getElementById('fbPullAll').onclick = function () {
+        if (!confirm('Reload tools and settings from Firestore?')) return;
+        pullFromCloud();
+        setTimeout(function () { location.reload(); }, 600);
+      };
+      document.getElementById('fbSignOut').onclick = function () {
+        if (state.ready && state.auth.currentUser) state.auth.signOut();
+        adminLogout('Signed out');
+      };
+    };
+
+    if (document.readyState === 'complete') boot();
+    else window.addEventListener('load', boot);
+  })();
+  /* ============================================================
+     FIREBASE + ANALYTICS FIX — real events, visible errors,
+     rule-compliant writes
+     ============================================================ */
+  (function fixFirebaseAnalytics() {
+    var OWNER_UID = 'Sub6GlCXjaecs0Po1E2RdvqJpye2';
+    var logLines = [];
+
+    function log(msg, bad) {
+      logLines.unshift({ t: new Date().toLocaleTimeString(), msg: msg, bad: !!bad });
+      logLines = logLines.slice(0, 8);
+      var el = document.getElementById('fbLog');
+      if (el) {
+        el.innerHTML = logLines.map(function (l) {
+          return '<div class="fb-log-line' + (l.bad ? ' bad' : '') + '"><span>' + l.t + '</span> ' + escapeHtml(l.msg) + '</div>';
+        }).join('');
+      }
+    }
+
+    function ready() { return window.__dasDb && window.__dasAuth; }
+
+    /* ---------- 1. rule-compliant analytics events ---------- */
+    function deviceKind() {
+      var w = window.innerWidth;
+      return w < 640 ? 'mobile' : (w < 1024 ? 'tablet' : 'desktop');
+    }
+    function vid() {
+      var v = localStorage.getItem('das_vid');
+      if (!v) { v = 'v' + Math.random().toString(36).slice(2, 12); localStorage.setItem('das_vid', v); }
+      return v;
+    }
+    function sid() {
+      var s = sessionStorage.getItem('das_sid');
+      if (!s) { s = 's' + Math.random().toString(36).slice(2, 12); sessionStorage.setItem('das_sid', s); }
+      return s;
+    }
+
+    function emitEvent(type, extra) {
+      if (!ready()) return;
+      var doc = {
+        t: Date.now(),
+        type: type,
+        vid: vid(),
+        sid: sid(),
+        dev: deviceKind(),
+        lang: (navigator.language || 'en').slice(0, 12)
+      };
+      if (extra && extra.tool) doc.tool = String(extra.tool).slice(0, 80);
+      if (extra && extra.path) doc.path = String(extra.path).slice(0, 100);
+      if (extra && extra.ref) doc.ref = String(extra.ref).slice(0, 100);
+      if (extra && extra.src) doc.src = String(extra.src).slice(0, 40);
+      window.__dasDb.collection('analytics_events').add(doc)
+        .catch(function (e) { log('analytics write: ' + (e.code || e.message), true); });
+    }
+    window.__dasEmit = emitEvent;
+
+    /* page view once per session */
+    try { emitEvent('view', { path: location.pathname.slice(0, 100), ref: (document.referrer || '').slice(0, 100) }); } catch (e) {}
+
+    /* tool clicks already flow through trackToolClick — mirror them to the cloud */
+    var baseClick = trackToolClick;
+    trackToolClick = function (name) {
+      baseClick.apply(null, arguments);
+      emitEvent('tool', { tool: name });
+    };
+
+    /* runtime errors become events, so System Health has real signal */
+    window.addEventListener('error', function (ev) {
+      emitEvent('error', { path: (ev.message || 'error').slice(0, 100) });
+    });
+
+    /* ---------- 2. pull cloud events and merge once ---------- */
+    function mergeCloudAnalytics() {
+      if (!ready() || !window.__dasUser) return Promise.resolve(false);
+      var since = Number(localStorage.getItem('das_an_merged') || 0);
+      return window.__dasDb.collection('analytics_events')
+        .orderBy('t', 'desc').limit(600).get()
+        .then(function (snap) {
+          var newest = since, merged = 0;
+          snap.forEach(function (doc) {
+            var e = doc.data();
+            if (!e || !e.t || e.t <= since) return;
+            if (e.t > newest) newest = e.t;
+            merged++;
+            if (e.type === 'tool' && e.tool) {
+              analyticsData.clicks[e.tool] = analyticsData.clicks[e.tool] || { count: 0, lastClicked: '' };
+              analyticsData.clicks[e.tool].count += 1;
+              analyticsData.clicks[e.tool].lastClicked = new Date(e.t).toLocaleString();
+              var dk = anDayKey(e.t);
+              analyticsData.daily[dk] = analyticsData.daily[dk] || { visits: 0, clicks: 0 };
+              analyticsData.daily[dk].clicks = (analyticsData.daily[dk].clicks || 0) + 1;
+            } else if (e.type === 'view') {
+              analyticsData.visits = (analyticsData.visits || 0) + 1;
+              var dk2 = anDayKey(e.t);
+              analyticsData.daily[dk2] = analyticsData.daily[dk2] || { visits: 0, clicks: 0 };
+              analyticsData.daily[dk2].visits = (analyticsData.daily[dk2].visits || 0) + 1;
+              if (e.dev) analyticsData.devices[e.dev] = (analyticsData.devices[e.dev] || 0) + 1;
+              if (e.path) analyticsData.pages[e.path] = (analyticsData.pages[e.path] || 0) + 1;
+            }
+          });
+          if (merged) {
+            localStorage.setItem('das_an_merged', String(newest));
+            anSave();
+            log('Merged ' + merged + ' cloud events into analytics.');
+          } else {
+            log('Cloud analytics up to date.');
+          }
+          return merged > 0;
+        })
+        .catch(function (e) {
+          var code = e.code || e.message;
+          log('analytics read: ' + code + (String(code).indexOf('permission') > -1 ? ' — sign in as staff/owner' : ''), true);
+          return false;
+        });
+    }
+    window.__dasMergeAnalytics = mergeCloudAnalytics;
+
+    /* ---------- 3. feedback writes that satisfy the rules ---------- */
+    function pushFeedback() {
+      if (!ready() || !window.__dasUser) return Promise.reject(new Error('Sign in first.'));
+      var list = [];
+      try { list = JSON.parse(localStorage.getItem('das_studio_feedbacks') || '[]'); } catch (e) {}
+      if (!list.length) return Promise.resolve(0);
+      var jobs = list.slice(0, 100).map(function (f) {
+        var doc = {
+          message: String(f.message || f.text || '(no message)').slice(0, 4900),
+          name: String(f.name || '').slice(0, 80),
+          email: String(f.email || '').slice(0, 120),
+          type: String(f.type || 'general').slice(0, 30),
+          priority: String(f.priority || 'normal').slice(0, 20),
+          ticket: String(f.ticket || '').slice(0, 24),
+          status: String(f.status || 'new').slice(0, 20),
+          createdAt: Number(f.createdAt || f.t || Date.now())
+        };
+        return window.__dasDb.collection('feedback').doc(doc.ticket || ('fb' + doc.createdAt)).set(doc)
+          .catch(function (e) { log('feedback write: ' + (e.code || e.message), true); });
+      });
+      return Promise.all(jobs).then(function () { return jobs.length; });
+    }
+
+    /* ---------- 4. panel: status, diagnostics, role check ---------- */
+    function uidCheck() {
+      var u = window.__dasUser;
+      if (!u) return 'Not signed in.';
+      if (u.uid === OWNER_UID) return 'Signed in as the owner account — full write access.';
+      return 'Signed in as ' + (u.email || u.uid) + ' — this account needs a document in /admins to write.';
+    }
+
+    var prevSec = tabRenderers.tabSec;
+    tabRenderers.tabSec = function () {
+      prevSec.apply(null, arguments);
+      var tab = document.getElementById('tabSec');
+      if (!tab || document.getElementById('fbDiag')) return;
+      var box = document.createElement('div');
+      box.id = 'fbDiag';
+      box.innerHTML =
+        '<div class="settings-section-title">🩺 Firebase &amp; analytics diagnostics</div>' +
+        '<div class="xm-alert" id="fbUidState">' + escapeHtml(uidCheck()) + '</div>' +
+        '<div class="xm-row">' +
+          '<button class="btn-secondary" type="button" id="fbTestEvent">Send test event</button>' +
+          '<button class="btn-secondary" type="button" id="fbPullAn">Merge cloud analytics</button>' +
+          '<button class="btn-secondary" type="button" id="fbPushFb">Push feedback</button>' +
+          '<button class="btn-secondary" type="button" id="fbSyncTk">Re-send tickets</button>' +
+        '</div>' +
+        '<div class="xm-note">Events go to <code>analytics_events</code> and must match your rules: ' +
+          '<code>t</code>, <code>type</code>, <code>vid</code>, <code>sid</code> plus optional fields only.</div>' +
+        '<div class="fb-log" id="fbLog"><div class="fb-log-line">No activity yet this session.</div></div>';
+      tab.appendChild(box);
+
+      document.getElementById('fbTestEvent').onclick = function () {
+        if (!ready()) { alert('Firebase SDK is not loaded yet.'); return; }
+        emitEvent('view', { path: '/test', ref: 'diagnostics' });
+        log('Test event sent — check Firestore → analytics_events.');
+      };
+      document.getElementById('fbPullAn').onclick = function () {
+        mergeCloudAnalytics().then(function (changed) {
+          alert(changed ? 'Cloud events merged. Open Analytics to see them.' : 'Nothing new to merge.');
+        });
+      };
+      document.getElementById('fbPushFb').onclick = function () {
+        pushFeedback().then(function (n) { alert('Pushed ' + n + ' feedback items.'); })
+          .catch(function (e) { alert('Push failed: ' + e.message); });
+      };
+      var tkBtn = document.getElementById('fbSyncTk');
+      if (tkBtn) tkBtn.onclick = function () {
+        syncAllTickets().then(function (n) { alert('Re-sent ' + n + ' ticket(s) with their attachments.'); });
+      };
+    };
+
+    /* analytics tab: merge first, then render with fresh numbers */
+    var prevAn = tabRenderers.tabAnalytics;
+    if (prevAn) {
+      /* the cloud aggregation below owns this now — avoid counting the same events twice */
+      tabRenderers.tabAnalytics = function () { prevAn.apply(null, arguments); };
+    }
+
+    /* expose user + db for the diagnostics above */
+    window.addEventListener('load', function () {
+      setTimeout(function () {
+        try {
+          if (window.firebase && firebase.apps.length) {
+            window.__dasDb = window.__dasDb || firebase.firestore();
+            window.__dasAuth = window.__dasAuth || firebase.auth();
+            firebase.auth().onAuthStateChanged(function (u) { window.__dasUser = u; });
+          }
+        } catch (e) {}
+      }, 1500);
+    });
+  })();
+  /* ============================================================
+     CROSS-BROWSER SYNC — settings, tools and feedback
+     ============================================================ */
+  (function crossBrowserSync() {
+    var pushing = false;
+
+    function db() { return window.__dasDb || null; }
+    function signedIn() { return !!(window.__dasUser); }
+
+    function note(msg, bad) {
+      try { console.log('[sync] ' + msg); } catch (e) {}
+      var el = document.getElementById('fbLog');
+      if (el && el.querySelector('.fb-log-line')) {
+        var line = document.createElement('div');
+        line.className = 'fb-log-line' + (bad ? ' bad' : '');
+        line.innerHTML = '<span>' + new Date().toLocaleTimeString() + '</span> ' + escapeHtml(msg);
+        el.insertBefore(line, el.firstChild);
+      }
+    }
+
+    /* ---------- 1. write-through: every local save reaches Firestore ---------- */
+    function pushDoc(name, value) {
+      if (!db() || !signedIn()) return;
+      try {
+        db().collection(name).doc('main').set({
+          data: JSON.stringify(value),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).then(function () { note('Saved ' + name + ' to the cloud.'); })
+          .catch(function (e) { note(name + ' save failed: ' + (e.code || e.message), true); });
+      } catch (e) {}
+    }
+
+    var pending = {};
+    function schedulePush(name, value) {
+      if (pushing) return;
+      clearTimeout(pending[name]);
+      pending[name] = setTimeout(function () { pushDoc(name, value); }, 1200);
+    }
+
+    var nativeSet = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, value) {
+      nativeSet.apply(this, arguments);
+      if (pushing) return;
+      try {
+        if (key === 'das_studio_settings') schedulePush('settings', JSON.parse(value));
+        else if (key === 'das_studio_tools') schedulePush('tools', JSON.parse(value));
+      } catch (e) {}
+    };
+
+    /* ---------- 2. feedback written by visitors lands in the cloud ---------- */
+    function cloudCreateFeedback(rec) {
+      if (!db() || !rec || !rec.message) return;
+      var doc = {
+        message: String(rec.message).slice(0, 4900),
+        name: String(rec.name || '').slice(0, 80),
+        email: String(rec.email || '').slice(0, 120),
+        type: String(rec.type || 'general').slice(0, 30),
+        priority: String(rec.priority || 'normal').slice(0, 20),
+        ticket: String(rec.ticket || '').slice(0, 24),
+        status: String(rec.status || 'pending').slice(0, 20),
+        createdAt: Number(rec.createdAt || Date.now())
+      };
+      /* attachments ride along as a data URL, inside Firestore's 1 MiB document limit */
+      var att = rec.attachment;
+      if (att && att.data && typeof att.data === 'string') {
+        if (att.data.length < 900000) {
+          doc.attachmentData = att.data;
+          doc.attachmentName = String(att.name || 'file').slice(0, 120);
+          doc.attachmentType = String(att.type || '').slice(0, 60);
+          doc.attachmentSize = Number(att.size || 0);
+        } else {
+          doc.attachmentName = String(att.name || 'file').slice(0, 100) + ' (too large to sync)';
+        }
+      }
+      /* the ticket number restarts at 001 in every browser, so key the document by its unique id */
+      db().collection('feedback').doc(String(rec.id || ('fb' + doc.createdAt))).set(doc)
+        .then(function () {
+          note('Ticket ' + doc.ticket + ' delivered to the cloud' +
+            (doc.attachmentData ? ' with attachment.' : (att ? ' (attachment not synced).' : '.')));
+        })
+        .catch(function (e) { note('Ticket upload failed: ' + (e.code || e.message), true); });
+    }
+
+    /* the form's own listener runs first, so read back what it just stored */
+    var form = document.getElementById('userFeedbackForm');
+    if (form) {
+      form.addEventListener('submit', function () {
+        setTimeout(function () {
+          try {
+            var list = JSON.parse(localStorage.getItem('das_studio_feedbacks') || '[]');
+            /* records are appended, so the newest is the one with the latest createdAt */
+            var newest = list.slice().sort(function (a, b) {
+              return (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
+            })[0];
+            if (newest) cloudCreateFeedback(newest);
+          } catch (e) {}
+        }, 400);
+      });
+    }
+
+    /* ---------- 3. admin pulls tickets raised anywhere ---------- */
+    function mergeCloudFeedback() {
+      if (!db() || !signedIn()) return Promise.resolve(0);
+      return db().collection('feedback').orderBy('createdAt', 'desc').limit(200).get()
+        .then(function (snap) {
+          var local = [];
+          try { local = JSON.parse(localStorage.getItem('das_studio_feedbacks') || '[]'); } catch (e) {}
+          var seen = {};
+          local.forEach(function (f) {
+            if (f.id) seen[f.id] = true;
+            if (f.ticket) seen['t:' + f.ticket] = true;
+          });
+          var added = 0;
+          snap.forEach(function (doc) {
+            var f = doc.data();
+            var recId = 'cloud_' + doc.id;
+            if (seen[recId]) return;
+            var key = f.ticket || doc.id;
+            /* ticket numbers restart in every browser — keep them apart on screen */
+            if (seen['t:' + key]) key = key + '·' + String(doc.id).slice(-3);
+            seen[recId] = true;
+            seen['t:' + key] = true;
+            local.unshift({
+              id: recId,
+              ticket: key,
+              name: f.name || 'Visitor',
+              email: f.email || '',
+              type: f.type || 'general',
+              priority: f.priority || 'normal',
+              message: f.message || '',
+              date: new Date(f.createdAt || Date.now()).toLocaleString(),
+              createdAt: f.createdAt || Date.now(),
+              status: f.status || 'pending',
+              attachment: f.attachmentData ? {
+                name: f.attachmentName || 'attachment',
+                type: f.attachmentType || '',
+                size: Number(f.attachmentSize || 0),
+                data: f.attachmentData
+              } : null,
+              replies: [], thread: [], unread: true, spam: false, spamScore: 0, spamReasons: [],
+              cloud: true
+            });
+            added++;
+          });
+          if (added) {
+            pushing = true;
+            try { localStorage.setItem('das_studio_feedbacks', JSON.stringify(local)); } catch (e) {}
+            pushing = false;
+            try { renderFeedbacks(); } catch (e) {}
+            note('Pulled ' + added + ' new ticket(s) from the cloud.');
+          }
+          return added;
+        })
+        .catch(function (e) {
+          note('Ticket pull failed: ' + (e.code || e.message) +
+            (String(e.code || '').indexOf('permission') > -1 ? ' — sign in as staff' : ''), true);
+          return 0;
+        });
+    }
+    window.__dasMergeFeedback = mergeCloudFeedback;
+
+    /* re-send every ticket held in this browser (fixes ones sent before the fix) */
+    function syncAllTickets() {
+      if (!db()) return Promise.resolve(0);
+      var list = [];
+      try { list = JSON.parse(localStorage.getItem('das_studio_feedbacks') || '[]'); } catch (e) {}
+      var jobs = list.map(function (rec) { return cloudCreateFeedback(rec); });
+      return Promise.all(jobs).then(function () {
+        note('Re-sent ' + list.length + ' ticket(s) with attachments.');
+        return list.length;
+      });
+    }
+    window.__dasSyncTickets = syncAllTickets;
+
+    /* ---------- 4. live updates in every open browser ---------- */
+    function watch() {
+      if (!db()) return;
+      ['tools', 'settings'].forEach(function (name) {
+        try {
+          db().collection(name).doc('main').onSnapshot(function (doc) {
+            if (!doc.exists) return;
+            var raw = doc.data() && doc.data().data;
+            if (!raw) return;
+            var parsed = JSON.parse(raw);
+            pushing = true;
+            try {
+              if (name === 'tools' && Array.isArray(parsed)) {
+                localStorage.setItem('das_studio_tools', raw);
+                tools = parsed;
+                try { renderGrid(); } catch (e) {}
+              } else if (name === 'settings' && parsed && typeof parsed === 'object') {
+                localStorage.setItem('das_studio_settings', raw);
+                Object.keys(parsed).forEach(function (k) { settings[k] = parsed[k]; });
+                try { applySettingsToDOM(); } catch (e) {}
+              }
+            } catch (e) {}
+            pushing = false;
+            note('Live update received: ' + name + '.');
+          }, function (e) { note('Live ' + name + ' listener: ' + (e.code || e.message), true); });
+        } catch (e) {}
+      });
+
+      try {
+        db().collection('feedback').orderBy('createdAt', 'desc').limit(50)
+          .onSnapshot(function () { mergeCloudFeedback(); },
+            function () { /* non-staff visitors have no read access — expected */ });
+      } catch (e) {}
+    }
+
+    /* refresh tickets whenever the Messages tab opens */
+    var prevMsgs = tabRenderers.tabMsgs;
+    if (prevMsgs) {
+      tabRenderers.tabMsgs = function () {
+        prevMsgs.apply(null, arguments);
+        mergeCloudFeedback();
+      };
+    }
+
+    /* start when Firebase is ready, and again when the admin signs in */
+    var tries = 0;
+    var timer = setInterval(function () {
+      tries++;
+      if (db() && window.firebase) {
+        clearInterval(timer);
+        watch();
+        if (signedIn()) mergeCloudFeedback();
+      } else if (tries > 40) { clearInterval(timer); }
+    }, 500);
+
+    window.addEventListener('load', function () {
+      setTimeout(function () {
+        if (db() && signedIn()) mergeCloudFeedback();
+      }, 3000);
+    });
+    /* analytics aggregation is handled by the cloudStats module below */
+  })();
+  /* ============================================================
+     REAL CLOUD ANALYTICS + ANNOUNCEMENT PERFORMANCE
+     ============================================================ */
+  (function cloudStats() {
+    function db() { return window.__dasDb || null; }
+    function ready() { return !!(db() && window.firebase); }
+
+    function tz() {
+      try { return (Intl.DateTimeFormat().resolvedOptions().timeZone || '').slice(0, 40); } catch (e) { return ''; }
+    }
+    function placeOf(tzName) {
+      var map = {
+        'Asia/Kolkata': ['India', 'Kolkata'], 'Asia/Calcutta': ['India', 'Kolkata'],
+        'Asia/Dhaka': ['Bangladesh', 'Dhaka'], 'Asia/Karachi': ['Pakistan', 'Karachi'],
+        'Asia/Dubai': ['UAE', 'Dubai'], 'Asia/Singapore': ['Singapore', 'Singapore'],
+        'Asia/Tokyo': ['Japan', 'Tokyo'], 'Europe/London': ['UK', 'London'],
+        'Europe/Berlin': ['Germany', 'Berlin'], 'America/New_York': ['USA', 'New York'],
+        'America/Los_Angeles': ['USA', 'Los Angeles'], 'Australia/Sydney': ['Australia', 'Sydney']
+      };
+      return map[tzName] || [tzName.split('/')[1] || 'Unknown', tzName.split('/')[1] || 'Unknown'];
+    }
+    function hostOf(url) {
+      try { return new URL(url).hostname.replace(/^www\./, '') || 'Direct / None'; }
+      catch (e) { return 'Direct / None'; }
+    }
+
+    /* ---------- 1. send events, queued until Firebase is ready ---------- */
+    function send(type, extra) {
+      var doc = {
+        t: Date.now(), type: type,
+        vid: (function () {
+          var v = localStorage.getItem('das_vid');
+          if (!v) { v = 'v' + Math.random().toString(36).slice(2, 12); localStorage.setItem('das_vid', v); }
+          return v;
+        })(),
+        sid: (function () {
+          var s = sessionStorage.getItem('das_sid');
+          if (!s) { s = 's' + Math.random().toString(36).slice(2, 12); sessionStorage.setItem('das_sid', s); }
+          return s;
+        })(),
+        dev: window.innerWidth < 640 ? 'mobile' : (window.innerWidth < 1024 ? 'tablet' : 'desktop'),
+        lang: (navigator.language || 'en').slice(0, 12),
+        src: (extra && extra.src) || tz()
+      };
+      if (extra && extra.tool) doc.tool = String(extra.tool).slice(0, 80);
+      if (extra && extra.path) doc.path = String(extra.path).slice(0, 100);
+      if (extra && extra.ref) doc.ref = String(extra.ref).slice(0, 100);
+      if (!ready()) { (window.__dasQ = window.__dasQ || []).push([type, extra]); return; }
+      db().collection('analytics_events').add(doc).catch(function () {});
+    }
+    window.__dasEmitCloud = send;
+
+    /* the page view fires before the SDK loads, so queue it and flush later */
+    send('view', { path: (location.pathname || '/').slice(0, 100), ref: document.referrer || '' });
+    var flush = setInterval(function () {
+      if (!ready()) return;
+      clearInterval(flush);
+      var q = window.__dasQ || [];
+      window.__dasQ = [];
+      q.forEach(function (item) { send(item[0], item[1]); });
+    }, 600);
+
+    /* ---------- 2. announcement views and clicks ---------- */
+    var baseBump = annBump;
+    annBump = function (id, kind) {
+      baseBump.apply(null, arguments);
+      if (kind === 'views') send('view', { path: '/ann/' + String(id).slice(0, 60), ref: '' });
+      else send('tool', { tool: 'ann:' + String(id).slice(0, 60) });
+    };
+
+    /* ---------- 3. pull and aggregate ---------- */
+    function pull() {
+      if (!ready()) return Promise.resolve(0);
+      var since = Number(localStorage.getItem('das_an_cloud_t') || 0);
+      return db().collection('analytics_events').orderBy('t', 'desc').limit(1000).get()
+        .then(function (snap) {
+          var events = [];
+          snap.forEach(function (d) { var e = d.data(); if (e && e.t && e.t > since) events.push(e); });
+          if (!events.length) return 0;
+
+          var newest = since, seenVid = {}, annAll = annStats(), touched = 0;
+
+          events.forEach(function (e) {
+            if (e.t > newest) newest = e.t;
+            var dk = anDayKey(e.t);
+            analyticsData.daily[dk] = analyticsData.daily[dk] || { visits: 0, uniques: 0, clicks: 0, seconds: 0, conversions: 0 };
+
+            if (e.type === 'view') {
+              analyticsData.visits = (analyticsData.visits || 0) + 1;
+              analyticsData.daily[dk].visits = (analyticsData.daily[dk].visits || 0) + 1;
+              if (e.vid && !seenVid[e.vid]) { seenVid[e.vid] = 1; analyticsData.uniques = (analyticsData.uniques || 0) + 1; }
+              if (e.dev) analyticsData.devices[e.dev] = (analyticsData.devices[e.dev] || 0) + 1;
+              if (e.ref) { var h = hostOf(e.ref); analyticsData.referrers[h] = (analyticsData.referrers[h] || 0) + 1; }
+              if (e.src) { var p = placeOf(e.src); analyticsData.geo[p[0]] = (analyticsData.geo[p[0]] || 0) + 1; }
+              if (e.path && e.path.indexOf('/ann/') !== 0) {
+                analyticsData.pages[e.path] = (analyticsData.pages[e.path] || 0) + 1;
+              } else if (e.path && e.path.indexOf('/ann/') === 0) {
+                var aid = e.path.slice(5);
+                annAll[aid] = annAll[aid] || { views: 0, clicks: 0 };
+                annAll[aid].views += 1; annAll[aid].lastView = e.t; touched++;
+              }
+            } else if (e.type === 'tool') {
+              var name = e.tool || 'unknown';
+              if (name.indexOf('ann:') === 0) {
+                var a2 = name.slice(4);
+                annAll[a2] = annAll[a2] || { views: 0, clicks: 0 };
+                annAll[a2].clicks += 1; annAll[a2].lastClick = e.t; touched++;
+              } else {
+                analyticsData.clicks[name] = analyticsData.clicks[name] || { count: 0, lastClicked: '' };
+                analyticsData.clicks[name].count += 1;
+                analyticsData.clicks[name].lastClicked = new Date(e.t).toLocaleString();
+                analyticsData.daily[dk].clicks = (analyticsData.daily[dk].clicks || 0) + 1;
+              }
+            }
+          });
+
+          /* sessions from the cloud, merged by sid */
+          var bySid = {};
+          analyticsData.sessions.forEach(function (s) { if (s && s.id) bySid[s.id] = s; });
+          events.forEach(function (e) {
+            if (!e.sid) return;
+            var s = bySid[e.sid] || { id: e.sid, start: e.t, lastSeen: e.t, pages: [], clicks: 0,
+              device: e.dev || '', source: e.ref ? hostOf(e.ref) : 'Direct / None' };
+            s.start = Math.min(s.start, e.t);
+            s.lastSeen = Math.max(s.lastSeen, e.t);
+            if (e.path && s.pages.indexOf(e.path) === -1) s.pages.push(e.path);
+            if (e.type === 'tool') s.clicks = (s.clicks || 0) + 1;
+            bySid[e.sid] = s;
+          });
+          analyticsData.sessions = Object.keys(bySid).map(function (k) { return bySid[k]; })
+            .sort(function (a, b) { return b.lastSeen - a.lastSeen; }).slice(0, 100);
+
+          localStorage.setItem('das_an_cloud_t', String(newest));
+          localStorage.setItem(ANN_STATS_KEY, JSON.stringify(annAll));
+          anSave();
+          return events.length;
+        })
+        .catch(function (e) {
+          var msg = 'analytics read: ' + (e.code || e.message);
+          var el = document.getElementById('fbLog');
+          if (el) { var l = document.createElement('div'); l.className = 'fb-log-line bad'; l.textContent = msg; el.insertBefore(l, el.firstChild); }
+          return 0;
+        });
+    }
+    window.__dasMergeAnalytics = pull;
+
+    /* ---------- 4. refresh the two panels ---------- */
+    function refreshPanels() {
+      try { if (document.getElementById('tabAnalytics').classList.contains('active')) tabRenderers.tabAnalytics(); } catch (e) {}
+      try { if (typeof annRenderReport === 'function') annRenderReport(); } catch (e) {}
+    }
+
+    var prevAn = tabRenderers.tabAnalytics;
+    tabRenderers.tabAnalytics = function () {
+      prevAn.apply(null, arguments);
+      pull().then(function (n) { if (n) { try { prevAn.apply(null, arguments); } catch (e) {} } });
+    };
+
+    var prevNotice = tabRenderers.tabNotice;
+    if (prevNotice) {
+      tabRenderers.tabNotice = function () {
+        prevNotice.apply(null, arguments);
+        pull().then(function (n) { if (n) { try { if (typeof annRenderReport === 'function') annRenderReport(); } catch (e) {} } });
+      };
+    }
+
+    var tries = 0;
+    var t = setInterval(function () {
+      tries++;
+      if (ready()) { clearInterval(t); setTimeout(function () { pull().then(refreshPanels); }, 800); }
+      else if (tries > 40) clearInterval(t);
+    }, 500);
+  })();
+  /* ============================================================
+     INIT
+     ============================================================ */
+  renderGrid();
+  renderFeedbacks();
+  updateSafetyBackupInfo();
+  // Populate version labels immediately (in case the tab is already open)
+  var aVL = document.getElementById('appVersionLabel');
+  var sVL = document.getElementById('schemaVersionLabel');
+  if (aVL) aVL.textContent = APP_VERSION;
+  if (sVL) sVL.textContent = 'v' + SCHEMA_VERSION;
+
+})();
+
+/* ==================================================================
+   footer/layout patch script
+   ================================================================== */
+window.admQa=function(k){var b=document.querySelector('.adm-top [data-qa="'+k+'"]');if(b)b.click();};
+(function(){
+  function tidy(){
+    var g=document.getElementById('footerGrid'); if(!g) return;
+    g.querySelectorAll('.footer-col').forEach(function(c){
+      var k=c.cloneNode(true);
+      k.querySelectorAll('h4,.footer-brand-h').forEach(function(h){h.remove()});
+      var has=k.textContent.replace(/\s+/g,'').length||k.querySelector('a,button,input,img,svg,iframe,form');
+      var brand=c.querySelector('.footer-brand-h');
+      if(brand && !has && !c.querySelector('.footer-tag')){
+        var p=document.createElement('p'); p.className='footer-tag';
+        p.textContent='Free, browser-based creative tools for photos, design, video, audio, PDF and 3D. No installation needed.';
+        c.appendChild(p); has=true;
+      }
+      c.hidden=!has;
+    });
+  }
+  tidy();
+  var g=document.getElementById('footerGrid');
+  if(g && window.MutationObserver) new MutationObserver(function(){tidy()}).observe(g,{childList:true,subtree:true,characterData:true});
+  document.querySelectorAll('a[target="_blank"]').forEach(function(a){ if(!/noopener/.test(a.rel)) a.rel=(a.rel+' noopener noreferrer').trim(); });
+})();
+
+/* ==================================================================
+   pro patch script
+   ================================================================== */
+(function(){
+  'use strict';
+  var MODALS='.modal-overlay';
+  var lastFocus=null;
+
+  /* 1. Dialog semantics + Esc to close + focus trap + scroll lock for every modal */
+  function isOpen(m){return m.classList.contains('active')||m.classList.contains('show')||m.classList.contains('open');}
+  function prep(m){
+    if(m.dataset.a11y) return; m.dataset.a11y='1';
+    m.setAttribute('role','dialog'); m.setAttribute('aria-modal','true');
+    var h=m.querySelector('h2,h3'); if(h){ if(!h.id) h.id=(m.id||'modal')+'Title'; m.setAttribute('aria-labelledby',h.id); }
+    m.querySelectorAll('.modal-close').forEach(function(b){ if(!b.getAttribute('aria-label')) b.setAttribute('aria-label','Close'); b.type='button'; });
+  }
+  function sync(){
+    var any=false;
+    document.querySelectorAll(MODALS).forEach(function(m){ prep(m); if(isOpen(m)) any=true; });
+    document.body.classList.toggle('modal-open',any);
+  }
+  function watch(m){
+    prep(m);
+    new MutationObserver(function(){
+      var open=isOpen(m);
+      if(open && !m._wasOpen){ lastFocus=document.activeElement; setTimeout(function(){var f=m.querySelector('input:not([type=hidden]),button,select,textarea,a[href]'); if(f&&!m.contains(document.activeElement)) f.focus({preventScroll:true});},60); }
+      if(!open && m._wasOpen && lastFocus && lastFocus.focus){ try{lastFocus.focus({preventScroll:true});}catch(e){} }
+      m._wasOpen=open; sync();
+    }).observe(m,{attributes:true,attributeFilter:['class','style']});
+  }
+  document.querySelectorAll(MODALS).forEach(watch); sync();
+
+  document.addEventListener('keydown',function(e){
+    var open=[].filter.call(document.querySelectorAll(MODALS),isOpen); if(!open.length) return;
+    var top=open[open.length-1];
+    if(e.key==='Escape'){
+      var x=top.querySelector('.modal-close,[data-close],.btn-close'); if(x){ x.click(); }
+      else { top.classList.remove('active','show','open'); }
+      return;
+    }
+    if(e.key==='Tab'){
+      var f=[].filter.call(top.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]):not([type=hidden]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])'),function(n){return n.offsetParent!==null;});
+      if(!f.length) return;
+      var first=f[0],last=f[f.length-1];
+      if(e.shiftKey && document.activeElement===first){e.preventDefault();last.focus();}
+      else if(!e.shiftKey && document.activeElement===last){e.preventDefault();first.focus();}
+    }
+  });
+
+  /* 2. Images: lazy-load, async decode, never leave alt missing */
+  function fixImg(i){
+    if(!i.hasAttribute('loading') && !i.closest('header,.hero')) i.loading='lazy';
+    if(!i.hasAttribute('decoding')) i.decoding='async';
+    if(!i.hasAttribute('alt')) i.alt='';
+  }
+  function scanImgs(r){(r||document).querySelectorAll('img').forEach(fixImg);}
+  scanImgs();
+  var grid=document.getElementById('grid');
+  if(grid) new MutationObserver(function(){scanImgs(grid);}).observe(grid,{childList:true,subtree:true});
+
+  /* 3. SEO: canonical + og:url when the admin has not set one */
+  function setMeta(sel,make,val){var el=document.head.querySelector(sel); if(!el){el=make(); document.head.appendChild(el);} if(!el.getAttribute('data-set')) {}
+    return el;}
+  try{
+    var url=location.protocol.indexOf('http')===0 ? location.href.split('#')[0].split('?')[0] : '';
+    if(url){
+      if(!document.head.querySelector('link[rel="canonical"]')){var l=document.createElement('link');l.rel='canonical';l.href=url;document.head.appendChild(l);}
+      if(!document.head.querySelector('meta[property="og:url"]')){var m=document.createElement('meta');m.setAttribute('property','og:url');m.content=url;document.head.appendChild(m);}
+    }
+  }catch(e){}
+
+  /* 4. Browser theme-color follows the light/dark theme */
+  function themeColor(){
+    var t=document.documentElement.getAttribute('data-theme')==='light'?'#f4f6fd':'#070b16';
+    var m=document.getElementById('themeColorMeta'); if(m) m.setAttribute('content',t);
+  }
+  themeColor();
+  new MutationObserver(themeColor).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme']});
+
+  /* 5. Offline / back-online notice (tools open in new tabs and need a connection) */
+  var toast=document.createElement('div'); toast.className='net-toast'; toast.setAttribute('role','status'); toast.setAttribute('aria-live','polite'); document.body.appendChild(toast);
+  var tm;
+  function note(msg,ok){toast.textContent=msg;toast.className='net-toast show'+(ok?' ok':'');clearTimeout(tm);tm=setTimeout(function(){toast.classList.remove('show');},ok?2500:6000);}
+  window.addEventListener('offline',function(){note('You are offline. Tools and saved changes may not load until you reconnect.',false);});
+  window.addEventListener('online',function(){note('Back online.',true);});
+
+  /* 6. Keep <html lang> in sync with the chosen site language */
+  try{ var sl=(JSON.parse(localStorage.getItem('das_studio_settings')||'{}')||{}).siteLang; if(sl==='bn') document.documentElement.lang='bn'; }catch(e){}
+})();
+
+/* ==================================================================
+   pro patch 2 script
+   ================================================================== */
+(function(){
+  'use strict';
+  var toast=document.getElementById('proToast');
+  if(!toast){toast=document.createElement('div');toast.id='proToast';toast.className='net-toast';toast.setAttribute('role','status');toast.setAttribute('aria-live','polite');document.body.appendChild(toast);}
+  var tt; function say(m,ok,ms){toast.textContent=m;toast.className='net-toast show'+(ok?' ok':'');clearTimeout(tt);tt=setTimeout(function(){toast.classList.remove('show');},ms||6000);}
+
+  /* 1. Global error capture: log (reuses das_studio_errors) and tell the admin instead of failing silently */
+  function logErr(msg,src){
+    try{var k='das_studio_errors',a=JSON.parse(localStorage.getItem(k)||'[]');a.push({t:Date.now(),msg:String(msg).slice(0,300),src:src||''});localStorage.setItem(k,JSON.stringify(a.slice(-50)));}catch(e){}
+  }
+  var lastErr=0;
+  function onErr(msg,src){logErr(msg,src);if(Date.now()-lastErr>8000){lastErr=Date.now();say('Something went wrong and was logged. Reload if a tab looks empty.',false);}}
+  window.addEventListener('error',function(e){if(e.message&&e.message!=='Script error.')onErr(e.message,(e.filename||'')+':'+(e.lineno||''));});
+  window.addEventListener('unhandledrejection',function(e){onErr((e.reason&&e.reason.message)||e.reason||'Unhandled promise rejection','promise');});
+
+  /* 2. Tell the user when a save fails (storage full or blocked) */
+  try{
+    var orig=Storage.prototype.setItem;
+    Storage.prototype.setItem=function(k,v){
+      try{return orig.call(this,k,v);}
+      catch(e){say('Could not save changes: browser storage is full or blocked. Export a backup and free some space.',false,9000);logErr('Storage write failed for '+k,'storage');throw e;}
+    };
+  }catch(e){}
+
+  /* 3. Idle sign-out warning (admin session is 30 minutes) */
+  var last=Date.now(),WARN=29*60*1000,warned=false;
+  ['click','keydown','mousemove','touchstart','scroll'].forEach(function(ev){document.addEventListener(ev,function(){last=Date.now();warned=false;},{passive:true});});
+  setInterval(function(){
+    var adm=document.getElementById('admNav');
+    if(adm&&adm.offsetParent!==null&&!warned&&Date.now()-last>WARN){warned=true;say('You will be signed out in about 60 seconds. Click anywhere to stay signed in.',false,15000);}
+  },10000);
+
+  /* 4. Keyboard shortcut reference: press ? outside inputs */
+  document.addEventListener('keydown',function(e){
+    var t=e.target,typing=t&&/^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)||(t&&t.isContentEditable);
+    var open=document.getElementById('kbdBox');
+    if(open&&e.key==='Escape'){open.remove();return;}
+    if(e.key==='?'&&!typing&&!open){
+      var b=document.createElement('div');b.className='kbd-box';b.id='kbdBox';b.setAttribute('role','dialog');b.setAttribute('aria-modal','true');b.setAttribute('aria-label','Keyboard shortcuts');
+      b.innerHTML='<div><h3>Keyboard shortcuts</h3><dl><dt><kbd>Ctrl</kbd> + <kbd>K</kbd></dt><dd>Search tools / command palette</dd><dt><kbd>Esc</kbd></dt><dd>Close the open window</dd><dt><kbd>Tab</kbd></dt><dd>Move between controls</dd><dt><kbd>?</kbd></dt><dd>Show this list</dd></dl><button type="button" class="btn-secondary" style="margin-top:14px">Close</button></div>';
+      b.addEventListener('click',function(ev){if(ev.target===b||ev.target.tagName==='BUTTON')b.remove();});
+      document.body.appendChild(b);b.querySelector('button').focus();
+    }
+  });
+
+  /* 5. Admin tabs: empty states, dashboard freshness stamp, honest System Health label */
+  function stamp(){return new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});}
+  function decorate(pane){
+    if(!pane||pane._pro)return; var id=pane.id||'';
+    if(/dash/i.test(id)&&!pane.querySelector('.pro-note.stamp')){
+      var n=document.createElement('div');n.className='pro-note stamp';n.textContent='Numbers come from this browser and the last sync. Updated at '+stamp()+'.';pane.insertBefore(n,pane.firstChild);
+    }
+    if(/health|sys/i.test(id)&&!pane.querySelector('.pro-note.demo')){
+      var h=document.createElement('div');h.className='pro-note warn demo';h.textContent='These readings are estimates measured in this browser. Connect a real monitoring source to track server uptime and errors.';pane.insertBefore(h,pane.firstChild);
+    }
+    if(!pane.textContent.replace(/\s+/g,'').length&&!pane.querySelector('img,svg,input,canvas,iframe')){
+      var e=document.createElement('div');e.className='empty-state';e.innerHTML='<b>Nothing here yet</b>Add your first item, or check back after visitors start using the site.';pane.appendChild(e);
+    }
+  }
+  function scan(){document.querySelectorAll('#adminModal [id^="tab"]:not([id$="Btn"]),#adminModal .tab-content,#adminModal .adm-pane').forEach(decorate);}
+  var am=document.getElementById('adminModal');
+  if(am&&window.MutationObserver){var pend;new MutationObserver(function(){clearTimeout(pend);pend=setTimeout(scan,250);}).observe(am,{childList:true,subtree:true});}
+  scan();
+})();
+
+/* ============================================================
+   MOBILE FIX PACK — admin dashboard drawer behaviour on phones
+   ============================================================ */
+(function () {
+  'use strict';
+  var shell = document.getElementById('adminModal');
+  if (!shell) return;
+
+  function closeDrawer() { shell.classList.remove('adm-open'); }
+  function isDrawerOpen() { return shell.classList.contains('adm-open'); }
+
+  /* tap the dimmed backdrop (the ::after layer) to close the drawer */
+  shell.addEventListener('click', function (e) {
+    if (!isDrawerOpen()) return;
+    if (e.target.closest('.adm-sidebar')) return;   /* inside the drawer: leave it */
+    if (e.target.closest('#admBurger')) return;     /* the toggle handles itself */
+    closeDrawer();
+  });
+
+  /* Escape closes the drawer first, then the panel */
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape' || !isDrawerOpen()) return;
+    e.stopPropagation();
+    closeDrawer();
+  }, true);
+
+  /* switching tabs or closing the panel always drops the drawer */
+  new MutationObserver(function () {
+    if (!shell.classList.contains('active')) closeDrawer();
+  }).observe(shell, { attributes: true, attributeFilter: ['class'] });
+
+  /* rotating to a wide screen must not leave a stale "open" state */
+  window.addEventListener('resize', function () {
+    if (window.innerWidth > 980) closeDrawer();
+  });
+
+  /* the burger should report its state to assistive tech */
+  var burger = document.getElementById('admBurger');
+  if (burger) {
+    burger.setAttribute('aria-expanded', 'false');
+    burger.addEventListener('click', function () {
+      burger.setAttribute('aria-expanded', isDrawerOpen() ? 'true' : 'false');
+    });
+  }
+})();
