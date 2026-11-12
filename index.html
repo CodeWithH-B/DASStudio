@@ -1085,33 +1085,241 @@
       </div>
     </div>
 
-<!-- ================= TICKET THREAD MODAL ================= -->
+  </div>  <!-- /.modal (admin shell) -->
+</div>  <!-- /#adminModal -->
 
+<!-- ================= TICKET THREAD MODAL ================= -->
+<div class="modal-overlay" id="fbThreadModal">
+  <div class="modal" style="max-width:660px;">
+    <h2><span id="thTitle">Ticket</span> <button type="button" class="modal-close" id="thClose">×</button></h2>
+    <div class="th-head">
+      <div style="flex:1;min-width:180px;">
+        <div class="who" id="thWho">—</div>
+        <div class="sub" id="thSub">—</div>
+      </div>
+      <span class="fb-ticket" id="thTicket">#TK</span>
+    </div>
+    <div class="th-meta">
+      <select id="thStatus" title="Status"></select>
+      <select id="thPriority" title="Priority"></select>
+      <select id="thAssign" title="Assign to"></select>
+      <button type="button" class="fb-mini" id="thCopyLink">🔗 Copy reply link</button>
+      <button type="button" class="fb-mini" id="thMarkUnread">🔴 Mark unread</button>
+    </div>
+    <div class="th-log" id="thLog"></div>
+    <div class="th-composer">
+      <div class="th-tabs">
+        <button type="button" class="active" data-thmode="email">✉️ Email reply</button>
+        <button type="button" data-thmode="note">📝 Internal note</button>
+      </div>
+      <textarea id="thInput" rows="4" placeholder="Write your reply to the user…"></textarea>
+      <div class="th-actions">
+        <span class="fb-meta" id="thSendState" style="margin-right:auto;"></span>
+        <button type="button" class="btn-secondary" id="thSaveOnly">💾 Save without sending</button>
+        <button type="button" class="btn-primary" id="thSend">📨 Send</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <!-- ================= EMAIL SETTINGS MODAL ================= -->
-
+<div class="modal-overlay" id="fbEmailModal">
+  <div class="modal" style="max-width:620px;">
+    <h2><span>⚙️ Email Delivery Setup</span> <button type="button" class="modal-close" id="emClose">×</button></h2>
+    <div class="em-status" id="emStatus">Checking configuration…</div>
+    <div class="form-group"><label>Delivery method</label>
+      <select id="emProvider">
+        <option value="none">None — copy / mail-app only (no automatic sending)</option>
+        <option value="emailjs">EmailJS (api.emailjs.com)</option>
+        <option value="webhook">Custom webhook / server endpoint</option>
+      </select>
+    </div>
+    <div id="emEmailJsBox">
+      <div class="em-grid2">
+        <div class="form-group"><label>Service ID</label><input type="text" id="emService" placeholder="service_xxxxxxx"></div>
+        <div class="form-group"><label>Template ID</label><input type="text" id="emTemplate" placeholder="template_xxxxxxx"></div>
+      </div>
+      <div class="form-group"><label>Public key (user ID)</label><input type="text" id="emPublicKey" placeholder="public_xxxxxxxxxxxx"></div>
+      <p class="em-note">Your EmailJS template should use <code>{{to_email}}</code>, <code>{{subject}}</code> and <code>{{message}}</code>.</p>
+    </div>
+    <div id="emWebhookBox">
+      <div class="form-group"><label>Endpoint URL</label><input type="url" id="emEndpoint" placeholder="https://your-server.com/api/send"></div>
+      <div class="form-group"><label>Auth token (optional, sent as Bearer)</label><input type="text" id="emToken" placeholder="secret"></div>
+      <p class="em-note">The endpoint receives a JSON POST: <code>{to, subject, text, ticket, from}</code> and should return 2xx on success.</p>
+    </div>
+    <div class="em-grid2">
+      <div class="form-group"><label>From name</label><input type="text" id="emFromName" placeholder="DAS Studio Support"></div>
+      <div class="form-group"><label>From / reply-to email</label><input type="email" id="emFromEmail" placeholder="support@example.com"></div>
+    </div>
+    <div class="form-group"><label>Your name (shown in ticket threads)</label><input type="text" id="emAdminName" placeholder="Admin"></div>
+    <div class="form-group"><label>Team members (comma separated, for assignment)</label><input type="text" id="emTeam" placeholder="Admin, Developer A, Designer B"></div>
+    <hr class="settings-divider">
+    <div class="form-group" style="display:flex;align-items:center;gap:10px;">
+      <input type="checkbox" id="emAutoConfirm" style="width:auto;">
+      <label for="emAutoConfirm" style="margin-bottom:0;">Send an automatic confirmation email when someone submits</label>
+    </div>
+    <div class="form-group" style="display:flex;align-items:center;gap:10px;">
+      <input type="checkbox" id="emStatusNotify" style="width:auto;">
+      <label for="emStatusNotify" style="margin-bottom:0;">Email the user when the status becomes In Progress or Resolved</label>
+    </div>
+    <div class="form-group"><label>Confirmation email subject</label><input type="text" id="emConfirmSubject" placeholder="We received your message"></div>
+    <div class="form-group"><label>Confirmation email body</label>
+      <textarea id="emConfirmBody" rows="4"></textarea>
+      <p class="em-note">Placeholders: <code>{name}</code>, <code>{ticket}</code>, <code>{type}</code>, <code>{site}</code></p>
+    </div>
+    <div class="settings-section-title" style="margin-top:6px;">📤 Recent send attempts</div>
+    <div class="em-log" id="emLog">No emails sent yet.</div>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" id="emTest">✉️ Send test email</button>
+      <button type="button" class="btn-primary" id="emSave">💾 Save setup</button>
+    </div>
+  </div>
+</div>
 
 <!-- ================= PUBLIC TICKET REPLY MODAL ================= -->
-
+<div class="modal-overlay" id="fbPublicReplyModal">
+  <div class="modal" style="max-width:480px;">
+    <h2><span>Reply to your ticket</span> <button type="button" class="modal-close" id="prClose">×</button></h2>
+    <p class="fb-sub" style="margin-bottom:12px;">Ticket <span class="pr-ticket" id="prTicket">#TK</span> — add more details or answer our last message.</p>
+    <div class="form-group"><label>Your message</label><textarea id="prMessage" rows="5" placeholder="Type your reply…"></textarea></div>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" id="prCancel">Cancel</button>
+      <button type="button" class="btn-primary" id="prSend">Send reply</button>
+    </div>
+  </div>
+</div>
 <!-- ================= USER FEEDBACK MODAL ================= -->
-
+<div class="modal-overlay" id="userFeedbackModal">
+  <div class="modal" style="max-width:520px;">
+    <h2><span>Send Feedback or Report Bug</span> <button class="modal-close" id="feedbackModalClose">×</button></h2>
+    <form id="userFeedbackForm">
+      <input type="text" id="fbHp" class="fb-hp" tabindex="-1" autocomplete="off" aria-hidden="true" name="website">
+      <div class="form-group"><label>Your Name</label><input type="text" id="fbName" placeholder="e.g. Ananya Roy"></div>
+      <div class="form-group"><label>Email Address <span style="font-weight:400;text-transform:none;">(so we can reply to you)</span></label>
+        <input type="email" id="fbEmail" placeholder="you@example.com"></div>
+      <div class="form-group" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div><label>Type</label>
+          <select id="fbType">
+            <option value="bug">🐞 Bug Report</option>
+            <option value="feedback" selected>💬 Feedback</option>
+            <option value="feature">✨ Feature Request</option>
+          </select>
+        </div>
+        <div><label>How urgent is it?</label>
+          <select id="fbPriority">
+            <option value="low">🟢 Low</option>
+            <option value="medium" selected>🟡 Medium</option>
+            <option value="high">🟠 High</option>
+            <option value="critical">🔴 Critical</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group"><label>Message / Issue Description</label>
+        <textarea id="fbMessage" rows="4" required placeholder="What happened? Steps to reproduce, page name, browser…"></textarea></div>
+      <div class="form-group"><label>Screenshot / Attachment <span style="font-weight:400;text-transform:none;">(optional, max 3 MB)</span></label>
+        <input type="file" id="fbAttachment" accept="image/*,.pdf,.txt,.log,.json" style="padding:8px;cursor:pointer;">
+        <div class="fb-attach-preview" id="fbAttachPreview"></div>
+        <p class="fb-hint">Images are compressed automatically so they fit in browser storage. PDF / TXT / LOG files can also be attached.</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn-secondary" id="feedbackCancel">Cancel</button>
+        <button type="submit" class="btn-primary">Submit Feedback</button>
+      </div>
+    </form>
+  </div>
+</div>
 
 <!-- ================= FEEDBACK REPLY MODAL ================= -->
-
+<div class="modal-overlay" id="fbReplyModal">
+  <div class="modal" style="max-width:560px;">
+    <h2><span>✉️ Reply to User</span> <button class="modal-close" id="fbReplyClose">×</button></h2>
+    <div class="fb-warn" id="fbReplyWarn" style="display:none;">This user did not leave an email address. You can still write and save the reply as an internal note.</div>
+    <div class="form-group"><label>To</label><input type="text" id="fbReplyTo" readonly></div>
+    <div class="form-group"><label>Subject</label><input type="text" id="fbReplySubject"></div>
+    <div class="form-group"><label>Message</label><textarea id="fbReplyBody" rows="9"></textarea></div>
+    <div class="modal-actions" style="flex-wrap:wrap;">
+      <button type="button" class="btn-secondary" id="fbReplyCancel">Cancel</button>
+      <button type="button" class="btn-secondary" id="fbReplyCopy">📋 Copy</button>
+      <button type="button" class="btn-secondary" id="fbReplySave">💾 Save Reply</button>
+      <button type="button" class="btn-primary" id="fbReplySend">📨 Open in Mail App</button>
+    </div>
+  </div>
+</div>
 
 <!-- ================= ATTACHMENT LIGHTBOX ================= -->
-
+<div id="fbLightbox">
+  <div class="fb-lb-box">
+    <div class="fb-lb-head"><b id="fbLbTitle">Attachment</b><button type="button" class="modal-close" id="fbLbClose">×</button></div>
+    <div class="fb-lb-body" id="fbLbBody"></div>
+    <div class="fb-lb-actions">
+      <a class="btn-secondary" id="fbLbDownload" href="#" download>⬇️ Download</a>
+      <button type="button" class="btn-primary" id="fbLbCloseBtn">Close</button>
+    </div>
+  </div>
+</div>
 <!-- ================= LIVE TOOL PREVIEW MODAL ================= -->
-
+<div class="modal-overlay" id="toolPreviewModal">
+  <div class="modal" style="max-width:520px;">
+    <h2><span>👁️ Live Card Preview</span> <button type="button" class="modal-close" id="toolPreviewClose">×</button></h2>
+    <p class="mm-note" style="margin-top:0;">This is how the card will look on the site. Nothing is saved until you press <b>Save Tool</b>.</p>
+    <div class="preview-stage" id="toolPreviewStage"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn-secondary" id="toolPreviewBack">← Back to editor</button>
+    </div>
+  </div>
+</div>
 <!-- ================= ANNOUNCEMENT POPUP ================= -->
-
+<div id="annPopup" role="dialog" aria-modal="true" aria-labelledby="annPopTitle">
+  <div class="ann-pop-card">
+    <button type="button" class="ann-pop-close" id="annPopClose" aria-label="Close">×</button>
+    <div class="ann-pop-icon" id="annPopIcon">📢</div>
+    <div class="ann-pop-pri low" id="annPopPri" style="display:none;">Low</div>
+    <h3 id="annPopTitle">Announcement</h3>
+    <div class="ann-pop-body" id="annPopBody"></div>
+    <div class="ann-pop-actions" id="annPopActions"></div>
+  </div>
+</div>
 <!-- ================= DEVICE PREVIEW MODAL ================= -->
-
+<div class="modal-overlay" id="devicePreviewModal">
+  <div class="modal" style="max-width:1180px;">
+    <h2><span>📱 Device Preview</span> <button type="button" class="modal-close" id="deviceClose">×</button></h2>
+    <div class="device-bar">
+      <button type="button" data-device="mobile">📱 Mobile · 390px</button>
+      <button type="button" data-device="tablet">📲 Tablet · 768px</button>
+      <button type="button" data-device="desktop" class="active">🖥️ Desktop · 1180px</button>
+      <span style="flex:1"></span>
+      <button type="button" id="deviceReload">🔄 Reload preview</button>
+    </div>
+    <div class="device-stage">
+      <div class="device-frame" id="deviceFrame" style="width:1180px;">
+        <iframe id="deviceIframe" title="Live site preview" style="width:1180px;"></iframe>
+      </div>
+    </div>
+    <p class="device-meta" id="deviceMeta">The preview is the real site with your current settings. Save your changes first to see them here.</p>
+  </div>
+</div>
 <!-- ================= COOKIE CONSENT BANNER ================= -->
-
+<div id="cookieBanner" role="dialog" aria-live="polite" aria-label="Cookie consent">
+  <div class="cb-inner">
+    <div class="cb-text" id="cbText"></div>
+    <div class="cb-actions">
+      <button type="button" class="cb-btn" id="cbReject">Reject</button>
+      <button type="button" class="cb-btn accept" id="cbAccept">Accept</button>
+    </div>
+  </div>
+</div>
 
 <!-- ================= LEGAL PAGE MODAL ================= -->
-
+<div class="modal-overlay" id="legalModal">
+  <div class="modal" style="max-width:720px;">
+    <h2><span id="legalTitle">Privacy Policy</span> <button type="button" class="modal-close" id="legalClose">×</button></h2>
+    <div class="legal-meta" id="legalMeta"></div>
+    <div class="legal-body" id="legalBody"></div>
+    <div class="modal-actions">
+      <button type="button" class="btn-primary" id="legalOk">Close</button>
+    </div>
+  </div>
+</div>
 <!-- ================= RESTORE PREVIEW MODAL (NEW) ================= -->
 <div class="modal-overlay" id="restorePreviewModal">
   <div class="modal" style="max-width:620px;">
@@ -1124,223 +1332,7 @@
   </div>
 </div>
 
-  <div class="modal-overlay" id="fbThreadModal">
-<div class="modal" style="max-width:660px;">
-  <h2><span id="thTitle">Ticket</span> <button type="button" class="modal-close" id="thClose">×</button></h2>
-  <div class="th-head">
-    <div style="flex:1;min-width:180px;">
-      <div class="who" id="thWho">—</div>
-      <div class="sub" id="thSub">—</div>
-    </div>
-    <span class="fb-ticket" id="thTicket">#TK</span>
-  </div>
-  <div class="th-meta">
-    <select id="thStatus" title="Status"></select>
-    <select id="thPriority" title="Priority"></select>
-    <select id="thAssign" title="Assign to"></select>
-    <button type="button" class="fb-mini" id="thCopyLink">🔗 Copy reply link</button>
-    <button type="button" class="fb-mini" id="thMarkUnread">🔴 Mark unread</button>
-  </div>
-  <div class="th-log" id="thLog"></div>
-  <div class="th-composer">
-    <div class="th-tabs">
-      <button type="button" class="active" data-thmode="email">✉️ Email reply</button>
-      <button type="button" data-thmode="note">📝 Internal note</button>
-    </div>
-    <textarea id="thInput" rows="4" placeholder="Write your reply to the user…"></textarea>
-    <div class="th-actions">
-      <span class="fb-meta" id="thSendState" style="margin-right:auto;"></span>
-      <button type="button" class="btn-secondary" id="thSaveOnly">💾 Save without sending</button>
-      <button type="button" class="btn-primary" id="thSend">📨 Send</button>
-    </div>
-  </div>
-</div>
-</div>
-<div class="modal-overlay" id="fbEmailModal">
-<div class="modal" style="max-width:620px;">
-  <h2><span>⚙️ Email Delivery Setup</span> <button type="button" class="modal-close" id="emClose">×</button></h2>
-  <div class="em-status" id="emStatus">Checking configuration…</div>
-  <div class="form-group"><label>Delivery method</label>
-    <select id="emProvider">
-      <option value="none">None — copy / mail-app only (no automatic sending)</option>
-      <option value="emailjs">EmailJS (api.emailjs.com)</option>
-      <option value="webhook">Custom webhook / server endpoint</option>
-    </select>
-  </div>
-  <div id="emEmailJsBox">
-    <div class="em-grid2">
-      <div class="form-group"><label>Service ID</label><input type="text" id="emService" placeholder="service_xxxxxxx"></div>
-      <div class="form-group"><label>Template ID</label><input type="text" id="emTemplate" placeholder="template_xxxxxxx"></div>
-    </div>
-    <div class="form-group"><label>Public key (user ID)</label><input type="text" id="emPublicKey" placeholder="public_xxxxxxxxxxxx"></div>
-    <p class="em-note">Your EmailJS template should use <code>{{to_email}}</code>, <code>{{subject}}</code> and <code>{{message}}</code>.</p>
-  </div>
-  <div id="emWebhookBox">
-    <div class="form-group"><label>Endpoint URL</label><input type="url" id="emEndpoint" placeholder="https://your-server.com/api/send"></div>
-    <div class="form-group"><label>Auth token (optional, sent as Bearer)</label><input type="text" id="emToken" placeholder="secret"></div>
-    <p class="em-note">The endpoint receives a JSON POST: <code>{to, subject, text, ticket, from}</code> and should return 2xx on success.</p>
-  </div>
-  <div class="em-grid2">
-    <div class="form-group"><label>From name</label><input type="text" id="emFromName" placeholder="DAS Studio Support"></div>
-    <div class="form-group"><label>From / reply-to email</label><input type="email" id="emFromEmail" placeholder="support@example.com"></div>
-  </div>
-  <div class="form-group"><label>Your name (shown in ticket threads)</label><input type="text" id="emAdminName" placeholder="Admin"></div>
-  <div class="form-group"><label>Team members (comma separated, for assignment)</label><input type="text" id="emTeam" placeholder="Admin, Developer A, Designer B"></div>
-  <hr class="settings-divider">
-  <div class="form-group" style="display:flex;align-items:center;gap:10px;">
-    <input type="checkbox" id="emAutoConfirm" style="width:auto;">
-    <label for="emAutoConfirm" style="margin-bottom:0;">Send an automatic confirmation email when someone submits</label>
-  </div>
-  <div class="form-group" style="display:flex;align-items:center;gap:10px;">
-    <input type="checkbox" id="emStatusNotify" style="width:auto;">
-    <label for="emStatusNotify" style="margin-bottom:0;">Email the user when the status becomes In Progress or Resolved</label>
-  </div>
-  <div class="form-group"><label>Confirmation email subject</label><input type="text" id="emConfirmSubject" placeholder="We received your message"></div>
-  <div class="form-group"><label>Confirmation email body</label>
-    <textarea id="emConfirmBody" rows="4"></textarea>
-    <p class="em-note">Placeholders: <code>{name}</code>, <code>{ticket}</code>, <code>{type}</code>, <code>{site}</code></p>
-  </div>
-  <div class="settings-section-title" style="margin-top:6px;">📤 Recent send attempts</div>
-  <div class="em-log" id="emLog">No emails sent yet.</div>
-  <div class="modal-actions">
-    <button type="button" class="btn-secondary" id="emTest">✉️ Send test email</button>
-    <button type="button" class="btn-primary" id="emSave">💾 Save setup</button>
-  </div>
-</div>
-</div>
-<div class="modal-overlay" id="fbPublicReplyModal">
-<div class="modal" style="max-width:480px;">
-  <h2><span>Reply to your ticket</span> <button type="button" class="modal-close" id="prClose">×</button></h2>
-  <p class="fb-sub" style="margin-bottom:12px;">Ticket <span class="pr-ticket" id="prTicket">#TK</span> — add more details or answer our last message.</p>
-  <div class="form-group"><label>Your message</label><textarea id="prMessage" rows="5" placeholder="Type your reply…"></textarea></div>
-  <div class="modal-actions">
-    <button type="button" class="btn-secondary" id="prCancel">Cancel</button>
-    <button type="button" class="btn-primary" id="prSend">Send reply</button>
-  </div>
-</div>
-</div>
-<div class="modal-overlay" id="userFeedbackModal">
-<div class="modal" style="max-width:520px;">
-  <h2><span>Send Feedback or Report Bug</span> <button class="modal-close" id="feedbackModalClose">×</button></h2>
-  <form id="userFeedbackForm">
-    <input type="text" id="fbHp" class="fb-hp" tabindex="-1" autocomplete="off" aria-hidden="true" name="website">
-    <div class="form-group"><label>Your Name</label><input type="text" id="fbName" placeholder="e.g. Ananya Roy"></div>
-    <div class="form-group"><label>Email Address <span style="font-weight:400;text-transform:none;">(so we can reply to you)</span></label>
-      <input type="email" id="fbEmail" placeholder="you@example.com"></div>
-    <div class="form-group" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-      <div><label>Type</label>
-        <select id="fbType">
-          <option value="bug">🐞 Bug Report</option>
-          <option value="feedback" selected>💬 Feedback</option>
-          <option value="feature">✨ Feature Request</option>
-        </select>
-      </div>
-      <div><label>How urgent is it?</label>
-        <select id="fbPriority">
-          <option value="low">🟢 Low</option>
-          <option value="medium" selected>🟡 Medium</option>
-          <option value="high">🟠 High</option>
-          <option value="critical">🔴 Critical</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-group"><label>Message / Issue Description</label>
-      <textarea id="fbMessage" rows="4" required placeholder="What happened? Steps to reproduce, page name, browser…"></textarea></div>
-    <div class="form-group"><label>Screenshot / Attachment <span style="font-weight:400;text-transform:none;">(optional, max 3 MB)</span></label>
-      <input type="file" id="fbAttachment" accept="image/*,.pdf,.txt,.log,.json" style="padding:8px;cursor:pointer;">
-      <div class="fb-attach-preview" id="fbAttachPreview"></div>
-      <p class="fb-hint">Images are compressed automatically so they fit in browser storage. PDF / TXT / LOG files can also be attached.</p>
-    </div>
-    <div class="modal-actions">
-      <button type="button" class="btn-secondary" id="feedbackCancel">Cancel</button>
-      <button type="submit" class="btn-primary">Submit Feedback</button>
-    </div>
-  </form>
-</div>
-</div>
-<div class="modal-overlay" id="fbReplyModal">
-<div class="modal" style="max-width:560px;">
-  <h2><span>✉️ Reply to User</span> <button class="modal-close" id="fbReplyClose">×</button></h2>
-  <div class="fb-warn" id="fbReplyWarn" style="display:none;">This user did not leave an email address. You can still write and save the reply as an internal note.</div>
-  <div class="form-group"><label>To</label><input type="text" id="fbReplyTo" readonly></div>
-  <div class="form-group"><label>Subject</label><input type="text" id="fbReplySubject"></div>
-  <div class="form-group"><label>Message</label><textarea id="fbReplyBody" rows="9"></textarea></div>
-  <div class="modal-actions" style="flex-wrap:wrap;">
-    <button type="button" class="btn-secondary" id="fbReplyCancel">Cancel</button>
-    <button type="button" class="btn-secondary" id="fbReplyCopy">📋 Copy</button>
-    <button type="button" class="btn-secondary" id="fbReplySave">💾 Save Reply</button>
-    <button type="button" class="btn-primary" id="fbReplySend">📨 Open in Mail App</button>
-  </div>
-</div>
-</div>
-<div id="fbLightbox">
-<div class="fb-lb-box">
-  <div class="fb-lb-head"><b id="fbLbTitle">Attachment</b><button type="button" class="modal-close" id="fbLbClose">×</button></div>
-  <div class="fb-lb-body" id="fbLbBody"></div>
-  <div class="fb-lb-actions">
-    <a class="btn-secondary" id="fbLbDownload" href="#" download>⬇️ Download</a>
-    <button type="button" class="btn-primary" id="fbLbCloseBtn">Close</button>
-  </div>
-</div>
-</div>
-<div class="modal-overlay" id="toolPreviewModal">
-<div class="modal" style="max-width:520px;">
-  <h2><span>👁️ Live Card Preview</span> <button type="button" class="modal-close" id="toolPreviewClose">×</button></h2>
-  <p class="mm-note" style="margin-top:0;">This is how the card will look on the site. Nothing is saved until you press <b>Save Tool</b>.</p>
-  <div class="preview-stage" id="toolPreviewStage"></div>
-  <div class="modal-actions">
-    <button type="button" class="btn-secondary" id="toolPreviewBack">← Back to editor</button>
-  </div>
-</div>
-</div>
-<div class="modal-overlay" id="devicePreviewModal">
-<div class="modal" style="max-width:1180px;">
-  <h2><span>📱 Device Preview</span> <button type="button" class="modal-close" id="deviceClose">×</button></h2>
-  <div class="device-bar">
-    <button type="button" data-device="mobile">📱 Mobile · 390px</button>
-    <button type="button" data-device="tablet">📲 Tablet · 768px</button>
-    <button type="button" data-device="desktop" class="active">🖥️ Desktop · 1180px</button>
-    <span style="flex:1"></span>
-    <button type="button" id="deviceReload">🔄 Reload preview</button>
-  </div>
-  <div class="device-stage">
-    <div class="device-frame" id="deviceFrame" style="width:1180px;">
-      <iframe id="deviceIframe" title="Live site preview" style="width:1180px;"></iframe>
-    </div>
-  </div>
-  <p class="device-meta" id="deviceMeta">The preview is the real site with your current settings. Save your changes first to see them here.</p>
-</div>
-</div>
-<div id="annPopup" role="dialog" aria-modal="true" aria-labelledby="annPopTitle">
-<div class="ann-pop-card">
-  <button type="button" class="ann-pop-close" id="annPopClose" aria-label="Close">×</button>
-  <div class="ann-pop-icon" id="annPopIcon">📢</div>
-  <div class="ann-pop-pri low" id="annPopPri" style="display:none;">Low</div>
-  <h3 id="annPopTitle">Announcement</h3>
-  <div class="ann-pop-body" id="annPopBody"></div>
-  <div class="ann-pop-actions" id="annPopActions"></div>
-</div>
-</div>
-<div id="cookieBanner" role="dialog" aria-live="polite" aria-label="Cookie consent">
-<div class="cb-inner">
-  <div class="cb-text" id="cbText"></div>
-  <div class="cb-actions">
-    <button type="button" class="cb-btn" id="cbReject">Reject</button>
-    <button type="button" class="cb-btn accept" id="cbAccept">Accept</button>
-  </div>
-</div>
-</div>
-<div class="modal-overlay" id="legalModal">
-<div class="modal" style="max-width:720px;">
-  <h2><span id="legalTitle">Privacy Policy</span> <button type="button" class="modal-close" id="legalClose">×</button></h2>
-  <div class="legal-meta" id="legalMeta"></div>
-  <div class="legal-body" id="legalBody"></div>
-  <div class="modal-actions">
-    <button type="button" class="btn-primary" id="legalOk">Close</button>
-  </div>
-</div>
-</div>
-<script src="config.js"></script>
-<script src="script.js"></script>
+  <script src="config.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>

@@ -1,0 +1,119 @@
+rules_version = '2';
+
+/* ==========================================================================
+   DAS Studio — Firestore security rules
+   ==========================================================================
+   Replace the rules in Firebase console > Firestore > Rules with this file
+   (or deploy with:  firebase deploy --only firestore:rules).
+
+   Why this shape:
+
+   * Admin rights are decided by a CUSTOM CLAIM, not by a uid written in the
+     source. The old template shipped
+         request.auth.uid == 'PASTE_YOUR_ADMIN_UID'
+     which, left unreplaced, matched nobody and was usually "fixed" by pasting
+     the real uid into a file every visitor downloads. Instead:
+
+         admin.auth().setCustomUserClaims('<YOUR_UID>', { admin: true });
+
+     run once from a trusted machine / Cloud Function. The uid stays in the
+     Firebase console and in that one command — never in client code.
+
+   * A /admins/{uid} document is accepted as a second, revocable route to the
+     same rights (delete the document to revoke).
+
+   * Public collections are read-only for visitors, writable by admins.
+
+   * feedback and analytics_events accept creates from anyone (that is the
+     point) but validate shape and size, so the collection cannot be used as
+     free storage or as a script injection vector.
+   ========================================================================== */
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /* ---------- helpers ---------- */
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn() && (
+        request.auth.token.admin == true ||
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+      );
+    }
+
+    /* only the fields we expect, and nothing oversized */
+    function onlyFields(allowed) {
+      return request.resource.data.keys().hasOnly(allowed);
+    }
+
+    function smallString(field, max) {
+      return request.resource.data[field] is string
+             && request.resource.data[field].size() <= max;
+    }
+
+    /* ---------- admin roster ---------- */
+    /* Readable by a signed-in user (so the app can show its own role) and
+       writable by admins only. Bootstrap the first admin from the console. */
+    match /admins/{uid} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
+    /* ---------- public site data ---------- */
+    match /tools/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /settings/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    match /media/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    /* ---------- visitor submissions ---------- */
+    match /feedback/{id} {
+      allow create: if isAdmin() || (onlyFields([
+                        'ticket', 'type', 'name', 'email', 'message',
+                        'status', 'createdAt', 'priority', 'attachment',
+                        'assignedTo', 'page', 'ua'
+                      ])
+                    && smallString('message', 5000)
+                    && smallString('name', 120)
+                    && smallString('email', 200)
+                    && smallString('ticket', 40));
+      allow read, update, delete: if isAdmin();
+    }
+
+    match /analytics_events/{id} {
+      /* a visitor may only append an event, never read the stream back */
+      allow create: if isAdmin() || (onlyFields([
+                        't', 'type', 'vid', 'sid', 'path', 'ref', 'dev',
+                        'src', 'tool', 'dur'
+                      ])
+                    && request.resource.data.t is int
+                    && smallString('type', 20)
+                    && smallString('path', 200)
+                    && smallString('tool', 120));
+      allow read: if isAdmin();
+      allow update, delete: if isAdmin();
+    }
+
+    /* ---------- admin-only collections ---------- */
+    match /users/{id}    { allow read, write: if isAdmin(); }
+    match /security/{id} { allow read, write: if isAdmin(); }
+    match /audit/{id}    { allow read, write: if isAdmin(); }
+
+    /* ---------- everything else is closed ---------- */
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
