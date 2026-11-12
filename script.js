@@ -119,14 +119,36 @@
     el.setAttribute('content', content);
   }
 
+  /* SECURITY: custom head/body code is admin-authored HTML, but the same
+     settings object also lives in localStorage, where any visitor can edit it.
+     Scripts are therefore injected only when the deployer opts in with
+     window.DAS_CONFIG.trustedCode === true (i.e. the value comes from Firestore
+     or a build step, not from a browser-writable key). Otherwise <script>,
+     <iframe>, <object>, <embed> and inline on* handlers are stripped. */
+  var CUSTOM_CODE_TRUSTED = !!(window.DAS_CONFIG && window.DAS_CONFIG.trustedCode === true);
+  function stripActiveContent(node) {
+    var all = [node].concat(Array.prototype.slice.call(node.querySelectorAll('*')));
+    all.forEach(function (n) {
+      Array.prototype.slice.call(n.attributes || []).forEach(function (a) {
+        if (/^on/i.test(a.name)) { n.removeAttribute(a.name); return; }
+        if (/^(href|src|xlink:href|formaction)$/i.test(a.name) && /^\s*(javascript|data:text\/html)/i.test(a.value)) n.removeAttribute(a.name);
+      });
+    });
+    Array.prototype.slice.call(node.querySelectorAll('script, iframe, object, embed')).forEach(function (n) { n.remove(); });
+    return node;
+  }
   function injectCustomCode(code, target) {
     var prev = target.querySelectorAll('[data-custom-injected]');
     for (var i = 0; i < prev.length; i++) prev[i].remove();
     if (!code || !code.trim()) return;
+    if (!CUSTOM_CODE_TRUSTED && /<\s*script/i.test(code)) {
+      try { console.warn('[DAS Studio] blocked <script> in custom head/body code. Set window.DAS_CONFIG.trustedCode = true for admin-authored snippets.'); } catch (e) {}
+    }
     var temp = document.createElement('div');
     temp.innerHTML = code;
     Array.prototype.slice.call(temp.childNodes).forEach(function(node) {
       if (node.nodeType === 1 && node.tagName === 'SCRIPT') {
+        if (!CUSTOM_CODE_TRUSTED) return;
         var s = document.createElement('script');
         Array.from(node.attributes).forEach(function(a){ s.setAttribute(a.name, a.value); });
         s.textContent = node.textContent;
@@ -134,6 +156,7 @@
         target.appendChild(s);
       } else if (node.nodeType === 1) {
         var clone = node.cloneNode(true);
+        if (!CUSTOM_CODE_TRUSTED) stripActiveContent(clone);
         clone.setAttribute('data-custom-injected', 'true');
         target.appendChild(clone);
       }
@@ -545,7 +568,15 @@
     }
     if (!/^https?:\/\//i.test(b)) b = 'https://' + b.replace(/^\/+/, '');
     if (!/\/$/.test(b)) b += '/';
-    return b;
+    /* BUGFIX: a malformed baseUrl ("http:///", a typo'd host) used to survive
+       this function and only throw later inside ssBuildSitemap's try/catch,
+       which silently emitted a sitemap whose first <loc> was unusable.
+       Validate the absolute URL here and fall back to the real origin. */
+    try { return new URL(b).href; }
+    catch (e) {
+      try { return new URL(location.origin + '/').href; }
+      catch (e2) { return 'https://example.com/'; }
+    }
   }
 
   /* ---- maintenance overlay ---- */
@@ -1433,6 +1464,8 @@
 
   var anLastBeat = Date.now();
   setInterval(function () {
+    /* PERF: a hidden tab must not keep writing the heartbeat */
+    if (document.hidden) return;
     var s = anSession();
     s.lastSeen = Date.now();
     var secs = Math.floor((Date.now() - anSessionStart) / 1000);
@@ -3480,6 +3513,12 @@
   var SESSION_MS = 30 * 60 * 1000, MAX_FAILS = 5, LOCK_MS = 5 * 60 * 1000;
   var lastActivity = Date.now(), sessionStart = 0;
 
+  /* SECURITY NOTE: these keys (auth hash, users, security config, feedback) are
+     stored in localStorage as plain JSON. Any script on this origin — or anyone
+     with DevTools — can read them. That is acceptable only for a single-admin,
+     browser-only tool. For a public deployment move this state to Firestore
+     with rules, or encrypt it with a key that never touches localStorage
+     (AES-GCM + a per-session key), otherwise treat it as public data. */
   function lsGet(k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }
   function lsSet(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   function nowStr() { return new Date().toLocaleString(); }
@@ -3541,7 +3580,9 @@
         function finishLogin() {
           lsSet(LOCK_KEY, { fails: 0, until: 0 });
           isAdmin = true; sessionStart = lastActivity = Date.now(); adminBtn.textContent = '🔓 Exit Admin';
-          pushLog(LOGIN_KEY, { t: Date.now(), ok: true, ua: getDeviceInfo ? JSON.stringify(getDeviceInfo()).slice(0, 80) : navigator.userAgent.slice(0, 80) }, 100);
+          pushLog(LOGIN_KEY, { t: Date.now(), ok: true, /* BUGFIX: getDeviceInfo() already returns a string, so JSON.stringify()
+                 wrapped it in extra quotes in the login log. */
+                 ua: typeof getDeviceInfo === 'function' ? String(getDeviceInfo()).slice(0, 80) : navigator.userAgent.slice(0, 80) }, 100);
           try { sessTouch(); } catch (e) {}
           logAct('login', 'Successful login'); renderGrid();
           if (usingDefaultPass()) alert('⚠️ You are still using the default password. Open Admin Panel → 🔐 Security and change it now.');
@@ -3606,7 +3647,7 @@
     if (el) return el;
     el = document.createElement('div'); el.id = 'admLogin'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'alTitle');
     el.innerHTML = '<form class="al-box" id="alForm" autocomplete="on"><h2 id="alTitle">🔐 Admin sign in</h2><p>Enter the admin password to manage tools, settings and messages.</p>' +
-      '<div class="al-field"><input type="email" id="alEmail" autocomplete="username" placeholder="Admin email" aria-label="Admin email" style="width:100%"></div><div class="al-field"><input type="password" id="alPass" autocomplete="current-password" placeholder="Password" aria-label="Admin password" required>' +
+      '<div class="al-field" id="alEmailWrap"><input type="email" id="alEmail" autocomplete="username" placeholder="Admin email" aria-label="Admin email" style="width:100%"></div><div class="al-field"><input type="password" id="alPass" autocomplete="current-password" placeholder="Password" aria-label="Admin password" required>' +
       '<button type="button" class="al-eye" id="alEye" aria-label="Show password">👁️</button></div><div class="al-err" id="alErr" role="alert"></div>' +
       '<div class="al-row"><button type="button" id="alCancel">Cancel</button><button type="submit" class="go" id="alGo">Sign in</button></div></form>';
     document.body.appendChild(el);
@@ -3614,6 +3655,10 @@
     var mailInp = el.querySelector('#alEmail');
     try { var bcfg = JSON.parse(localStorage.getItem('das_studio_backend') || '{}'); mailInp.value = bcfg.email || ''; }
     catch (e2) { mailInp.value = ''; }
+    /* BUGFIX: the email field is only meaningful for Firebase auth; in local
+       password-hash mode adminLoginCore() ignored the second argument, so the
+       field asked for something that was never used. Hide it when auth is off. */
+    syncLoginEmailField(el);
     el.querySelector('#alEye').onclick = function () { var show = inp.type === 'password'; inp.type = show ? 'text' : 'password'; this.setAttribute('aria-label', show ? 'Hide password' : 'Show password'); inp.focus(); };
     el.querySelector('#alCancel').onclick = function () { el.classList.remove('show'); };
     el.addEventListener('mousedown', function (e) { if (e.target === el) el.classList.remove('show'); });
@@ -3624,6 +3669,15 @@
     };
     return el;
   }
+  function syncLoginEmailField(el) {
+    if (!el) return;
+    var wrap = el.querySelector('#alEmailWrap');
+    if (!wrap) return;
+    var authOn = false;
+    try { authOn = !!(window.__dasAuthMode && window.__dasAuthMode()); } catch (e) { authOn = false; }
+    wrap.style.display = authOn ? '' : 'none';
+    if (authOn) wrap.removeAttribute('aria-hidden'); else wrap.setAttribute('aria-hidden', 'true');
+  }
   function admLoginError(msg) {
     var el = admLoginBox(); el.classList.add('show');
     el.querySelector('#alErr').textContent = msg || '';
@@ -3631,7 +3685,11 @@
   }
   function adminLogin() { admLoginError(''); }
   ['click', 'keydown', 'mousemove'].forEach(function (ev) { document.addEventListener(ev, function () { lastActivity = Date.now(); }, { passive: true }); });
-  setInterval(function () { if (isAdmin && Date.now() - lastActivity > SESSION_MS) { alert('Session expired due to inactivity.'); adminLogout('Session timeout'); } }, 15000);
+  setInterval(function () {
+    /* PERF: nothing to do while the tab is in the background */
+    if (document.hidden) return;
+    if (isAdmin && Date.now() - lastActivity > SESSION_MS) { alert('Session expired due to inactivity.'); adminLogout('Session timeout'); }
+  }, 15000);
 
   /* runtime error capture for System Health */
   window.addEventListener('error', function (e) { pushLog(ERR_KEY, { t: Date.now(), m: String(e.message || 'Error').slice(0, 200), s: (e.filename || '').split('/').pop() + ':' + (e.lineno || '') }, 50); });
@@ -3640,7 +3698,9 @@
   /* audit hooks */
   var _saveTools = saveToolsToStorage;
   saveToolsToStorage = function () { _saveTools(); logAct('tools', 'Tools saved (' + tools.length + ' total)'); };
-  document.getElementById('settingsForm').addEventListener('submit', function () { logAct('settings', 'Site settings saved'); });
+  /* BUGFIX: a missing element used to throw here and kill the rest of the IIFE. */
+  var _settingsFormEl = document.getElementById('settingsForm');
+  if (_settingsFormEl) _settingsFormEl.addEventListener('submit', function () { logAct('settings', 'Site settings saved'); });
 
   /* ---- UI shell: inject styles, tab buttons, containers ---- */
   var st = document.createElement('style');
@@ -3655,7 +3715,9 @@
     ['tabSecBtn', 'tabSec', '🔐 Security'], ['tabLogBtn', 'tabLog', '🧾 Activity Logs'], ['tabSysBtn', 'tabSys', '🩺 System Health']
   ];
   var tabNav = document.querySelector('#adminModal .tab-nav'), modalBox = document.querySelector('#adminModal .modal');
-  NEW_TABS.forEach(function (t) {
+  /* BUGFIX: guard the shell; without it a markup change threw on every load. */
+  if (!tabNav || !modalBox) { try { console.warn('[DAS Studio] admin shell not found — admin tabs skipped.'); } catch (e) {} }
+  (tabNav && modalBox ? NEW_TABS : []).forEach(function (t) {
     var b = document.createElement('button'); b.className = 'tab-btn'; b.id = t[0]; b.type = 'button'; b.textContent = t[2]; tabNav.appendChild(b);
     var c = document.createElement('div'); c.className = 'tab-content'; c.id = t[1]; modalBox.appendChild(c);
     tabBtns.push(t[0]); tabContents.push(t[1]);
@@ -3976,6 +4038,7 @@
     card.style.setProperty('--accent', data.accent || '#6366f1');
     card.href = data.link || '#';
     card.target = '_blank';
+    card.rel = 'noopener noreferrer';
     card.rel = 'noopener';
     card.innerHTML = mmCardInner(data, '01', true, false);
     stage.innerHTML = '';
@@ -9743,6 +9806,7 @@
         card.addEventListener('click', function () { pushRecent(id); });
       });
       renderRecent();
+      if (window.__dasHardenLinks) { try { window.__dasHardenLinks(); } catch (e) {} }
     };
 
     /* ---------- 6. command palette ---------- */
@@ -9901,6 +9965,9 @@
     function cfg() { var c = lsGet(CFG_KEY, null); return (c && typeof c === 'object') ? c : {}; }
     function saveCfg(c) { lsSet(CFG_KEY, c); }
     function enabled() { var c = cfg(); return !!(c.enabled && c.apiKey && c.projectId && c.email); }
+    /* the REST auth path counts as "auth on" too */
+    var _prevAuthMode = window.__dasAuthMode;
+    window.__dasAuthMode = function () { try { return !!(_prevAuthMode && _prevAuthMode()) || enabled(); } catch (e) { return false; } };
 
     /* ---- 1. never keep a database password in the browser ---- */
     (function purgeSecrets() {
@@ -9919,8 +9986,12 @@
       '  match /databases/{database}/documents {',
       '',
       '    // Only the admin account may write. Everyone may read public data.',
+      '    // SECURITY: never paste a uid here - this string ships to the browser.',
+      '    // Admin rights come from the custom claim admin:true or a /admins doc.',
       "    function isAdmin() {",
-      "      return request.auth != null && request.auth.uid == 'PASTE_YOUR_ADMIN_UID';",
+      "      return request.auth != null && (",
+      "        request.auth.token.admin == true ||",
+      "        exists(/databases/$(database)/documents/admins/$(request.auth.uid)));",
       '    }',
       '',
       '    match /tools/{id}    { allow read: if true; allow write: if isAdmin(); }',
@@ -10065,7 +10136,7 @@
         '<div class="xm-note" id="bkMsg">The apiKey and projectId are public by design in Firebase — your security comes from the rules below, not from hiding them.</div>' +
         '<div class="settings-section-title" style="margin-top:14px">🛡️ Firestore security rules <button class="btn-secondary" id="bkCopy" type="button" style="margin-left:auto;padding:3px 9px;font-size:11px">Copy rules</button></div>' +
         '<pre class="t20-css" id="bkRules" style="max-height:210px">' + escapeHtml(RULES) + '</pre>' +
-        '<div class="xm-note">Paste these into Firebase → Firestore → Rules and replace <code>PASTE_YOUR_ADMIN_UID</code> with your own UID (shown after your first sign-in). They are what actually stop a non-admin from writing.</div>' +
+        '<div class="xm-note">Paste these into Firebase → Firestore → Rules. Do not put a uid in them: grant yourself admin once with <code>setCustomUserClaims(uid, {admin:true})</code> or by creating an <code>/admins/&lt;uid&gt;</code> document. These rules are what actually stop a non-admin from writing.</div>' +
         '<div class="settings-section-title" style="margin-top:14px">Three ways to secure this panel</div>' +
         '<ul class="t20-feat">' +
           '<li><b>Firebase / Supabase</b> — works on a static host, free tier is enough, rules decide access (recommended, built in above).</li>' +
@@ -10126,15 +10197,24 @@
      FIREBASE — SDK, real auth, Firestore sync
      ============================================================ */
   (function firebaseBackend() {
-    var FIREBASE_CONFIG = {
-      apiKey: 'AIzaSyCsldPssXQmCyWySmC5giR7GUCWjhdlBeQ',
-      authDomain: 'dasstudio-49f08.firebaseapp.com',
-      projectId: 'dasstudio-49f08',
-      storageBucket: 'dasstudio-49f08.firebasestorage.app',
-      messagingSenderId: '209248553216',
-      appId: '1:209248553216:web:efa6f9373f0629c405cbe5',
-      measurementId: 'G-L8H2T2D4VX',
-      adminEmail: 'mongald018@gmail.com'
+    /* SECURITY: no Firebase project values are hardcoded here any more.
+       The public web values (apiKey, projectId, ...) come from
+       window.DAS_CONFIG, which config.js provides at deploy time.
+       adminEmail and the admin uid are NOT part of the client config —
+       they live in Firestore rules and custom claims, server side. */
+    var FIREBASE_CONFIG = Object.assign({
+      apiKey: '', authDomain: '', projectId: '', storageBucket: '',
+      messagingSenderId: '', appId: '', measurementId: ''
+    }, (window.DAS_CONFIG && window.DAS_CONFIG.firebase) || {});
+
+    /* the login box asks this to decide whether to show the email field.
+       NOTE: the REST auth layer (backendAuth) installs its own probe earlier in
+       the file, so chain to it instead of overwriting it — otherwise a REST-
+       only setup reported "no auth" and hid the email field it needs. */
+    var _prevAuthProbe = window.__dasAuthMode;
+    window.__dasAuthMode = function () {
+      try { return !!state.ready || !!(_prevAuthProbe && _prevAuthProbe()); }
+      catch (e) { return !!state.ready; }
     };
 
     var SDK = 'https://www.gstatic.com/firebasejs/10.8.0/';
@@ -10181,24 +10261,50 @@
 
     /* ---------- auth ---------- */
     function wireAuth() {
+      function grantUi(user) {
+        if (isAdmin) return;
+        isAdmin = true;
+        sessionStart = lastActivity = Date.now();
+        adminBtn.textContent = '🔓 Exit Admin';
+        try { sessTouch(); } catch (e) {}
+        renderGrid();
+        logAct('login', 'Firebase auth: ' + user.email);
+        renderStatus();
+      }
+      function revokeUi() {
+        if (!isAdmin) return;
+        isAdmin = false;
+        adminBtn.textContent = '🔒 Admin Panel';
+        try { modal.classList.remove('active'); } catch (e) {}
+        renderGrid();
+      }
       state.auth.onAuthStateChanged(function (user) {
         state.user = user; window.__dasUser = user;
-        if (user) {
-          if (!isAdmin) {
-            isAdmin = true;
-            sessionStart = lastActivity = Date.now();
-            adminBtn.textContent = '🔓 Exit Admin';
-            try { sessTouch(); } catch (e) {}
-            renderGrid();
-            logAct('login', 'Firebase auth: ' + user.email);
-          }
-        } else if (isAdmin) {
-          isAdmin = false;
-          adminBtn.textContent = '🔒 Admin Panel';
-          try { modal.classList.remove('active'); } catch (e) {}
-          renderGrid();
+        if (!user) {
+          window.__dasAdminClaim = false;
+          revokeUi();
+          renderStatus();
+          return;
         }
-        renderStatus();
+        /* SECURITY: being signed in is not being admin. Require the custom
+           claim, or a /admins/<uid> document (the same two routes the
+           Firestore rules accept). Anyone else is signed straight back out
+           so the admin UI never opens for a non-admin account. */
+        user.getIdTokenResult(true).then(function (res) {
+          var claim = !!(res && res.claims && res.claims.admin === true);
+          window.__dasAdminClaim = claim;
+          if (claim) return true;
+          return state.db.collection('admins').doc(user.uid).get()
+            .then(function (d) { return !!d.exists; })
+            .catch(function () { return false; });
+        }).then(function (ok) {
+          if (ok) { grantUi(user); return; }
+          try { admLoginError('This account is not an admin.'); } catch (e) {}
+          secAlert('login', 'Non-admin Firebase sign-in rejected: ' + (user.email || user.uid));
+          state.auth.signOut().catch(function () {});
+        }).catch(function () {
+          state.auth.signOut().catch(function () {});
+        }).then(renderStatus);
       });
     }
 
@@ -10209,7 +10315,9 @@
       var stored = {};
       try { stored = JSON.parse(localStorage.getItem('das_studio_backend') || '{}'); } catch (e) {}
       email = (stored.email || email || '').trim();
-      if (!email) email = (FIREBASE_CONFIG.adminEmail || (settings && settings.supportEmail) || '').trim();
+      /* SECURITY: the admin email is no longer published in this file; use the
+         support email the admin configured, or the deploy-time hint. */
+      if (!email) email = ((settings && settings.supportEmail) || (window.DAS_CONFIG && window.DAS_CONFIG.adminEmailHint) || '').trim();
       if (!email) { admLoginError('Enter the admin email to sign in.'); return; }
       admLoginError('Signing in…');
       state.auth.signInWithEmailAndPassword(email, pass)
@@ -10337,7 +10445,6 @@
      rule-compliant writes
      ============================================================ */
   (function fixFirebaseAnalytics() {
-    var OWNER_UID = 'Sub6GlCXjaecs0Po1E2RdvqJpye2';
     var logLines = [];
 
     function log(msg, bad) {
@@ -10405,6 +10512,13 @@
 
     /* ---------- 2. pull cloud events and merge once ---------- */
     function mergeCloudAnalytics() {
+      /* BUGFIX: two merge paths existed — this one (watermark das_an_merged)
+         and cloudStats.pull() (watermark das_an_cloud_t) — and both added the
+         same Firestore events to analyticsData, so every event was counted
+         twice. cloudStats owns the merge now; this is a thin delegate. */
+      if (typeof window.__dasCloudPull === 'function') {
+        return window.__dasCloudPull().then(function (n) { return n > 0; });
+      }
       if (!ready() || !window.__dasUser) return Promise.resolve(false);
       var since = Number(localStorage.getItem('das_an_merged') || 0);
       return window.__dasDb.collection('analytics_events')
@@ -10473,11 +10587,16 @@
     }
 
     /* ---------- 4. panel: status, diagnostics, role check ---------- */
+    /* SECURITY: the owner uid used to be a literal in this file, so it was
+       published to every visitor. Authorisation is now decided by the ID
+       token's custom claim (admin: true), set server-side with the Admin SDK,
+       or by a document in /admins. The client only reports what the token says. */
     function uidCheck() {
       var u = window.__dasUser;
       if (!u) return 'Not signed in.';
-      if (u.uid === OWNER_UID) return 'Signed in as the owner account — full write access.';
-      return 'Signed in as ' + (u.email || u.uid) + ' — this account needs a document in /admins to write.';
+      if (window.__dasAdminClaim === true) return 'Signed in with the admin custom claim — full write access.';
+      if (window.__dasAdminClaim === false) return 'Signed in as ' + (u.email || u.uid) + ' — this account has no admin claim, so writes will be refused by the rules.';
+      return 'Signed in as ' + (u.email || u.uid) + ' — claim not read yet.';
     }
 
     var prevSec = tabRenderers.tabSec;
@@ -10535,7 +10654,15 @@
           if (window.firebase && firebase.apps.length) {
             window.__dasDb = window.__dasDb || firebase.firestore();
             window.__dasAuth = window.__dasAuth || firebase.auth();
-            firebase.auth().onAuthStateChanged(function (u) { window.__dasUser = u; });
+            firebase.auth().onAuthStateChanged(function (u) {
+              window.__dasUser = u;
+              window.__dasAdminClaim = null;
+              if (!u || typeof u.getIdTokenResult !== 'function') return;
+              /* the claim is the only thing the client trusts for admin rights */
+              u.getIdTokenResult(true).then(function (res) {
+                window.__dasAdminClaim = !!(res && res.claims && res.claims.admin === true);
+              }).catch(function () { window.__dasAdminClaim = false; });
+            });
           }
         } catch (e) {}
       }, 1500);
@@ -10848,6 +10975,7 @@
     };
 
     /* ---------- 3. pull and aggregate ---------- */
+    window.__dasCloudPull = pull;
     function pull() {
       if (!ready()) return Promise.resolve(0);
       var since = Number(localStorage.getItem('das_an_cloud_t') || 0);
@@ -10858,8 +10986,13 @@
           if (!events.length) return 0;
 
           var newest = since, seenVid = {}, annAll = annStats(), touched = 0;
+          /* BUGFIX: this browser already counted its own events locally when
+             they were emitted; merging them back from the cloud doubled them. */
+          var myVid = '';
+          try { myVid = localStorage.getItem('das_vid') || ''; } catch (e) {}
 
           events.forEach(function (e) {
+            if (myVid && e.vid === myVid) return;
             if (e.t > newest) newest = e.t;
             var dk = anDayKey(e.t);
             analyticsData.daily[dk] = analyticsData.daily[dk] || { visits: 0, uniques: 0, clicks: 0, seconds: 0, conversions: 0 };
@@ -10987,7 +11120,22 @@ window.admQa=function(k){var b=document.querySelector('.adm-top [data-qa="'+k+'"
   tidy();
   var g=document.getElementById('footerGrid');
   if(g && window.MutationObserver) new MutationObserver(function(){tidy()}).observe(g,{childList:true,subtree:true,characterData:true});
-  document.querySelectorAll('a[target="_blank"]').forEach(function(a){ if(!/noopener/.test(a.rel)) a.rel=(a.rel+' noopener noreferrer').trim(); });
+  /* SECURITY/PERF: keep rel hardening on links that appear after load, and give
+     the first cards' previews a high fetch priority so the fold fills sooner. */
+  function hardenRendered(){
+    document.querySelectorAll('a[target="_blank"]').forEach(function(a){
+      var r=a.rel||'';
+      if(!/noopener/.test(r)) r=(r+' noopener').trim();
+      if(!/noreferrer/.test(r)) r=(r+' noreferrer').trim();
+      a.rel=r;
+    });
+    Array.prototype.slice.call(document.querySelectorAll('#grid .card-image img'),0,4).forEach(function(img){
+      if(!img.getAttribute('fetchpriority')) img.setAttribute('fetchpriority','high');
+    });
+  }
+  hardenRendered();
+  window.__dasHardenLinks = hardenRendered;
+  window.addEventListener('load', function(){ setTimeout(hardenRendered, 1200); });
 })();
 
 /* ==================================================================
@@ -11111,6 +11259,7 @@ window.admQa=function(k){var b=document.querySelector('.adm-top [data-qa="'+k+'"
   var last=Date.now(),WARN=29*60*1000,warned=false;
   ['click','keydown','mousemove','touchstart','scroll'].forEach(function(ev){document.addEventListener(ev,function(){last=Date.now();warned=false;},{passive:true});});
   setInterval(function(){
+    if(document.hidden) return;
     var adm=document.getElementById('admNav');
     if(adm&&adm.offsetParent!==null&&!warned&&Date.now()-last>WARN){warned=true;say('You will be signed out in about 60 seconds. Click anywhere to stay signed in.',false,15000);}
   },10000);
