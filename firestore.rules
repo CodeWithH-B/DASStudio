@@ -54,28 +54,55 @@ service cloud.firestore {
              && request.resource.data[field].size() <= max;
     }
 
+    /* ---------- A5: fresh sign-in for sensitive writes ----------
+       A stolen ID token (or an injected script holding the live session) can
+       write as the admin until the token expires — one hour by default.
+       auth_time is stamped by Firebase at sign-in and is NOT refreshed by
+       getIdToken(true), so this is a real re-authentication window rather than
+       a token-age check.
+
+       window: 5 minutes, as requested. Consequence: an admin who has been
+       sitting in the panel for longer than that must sign out and back in
+       before tools/settings/code will save. Relax it by changing the argument
+       in the matches below (e.g. freshAuth(60)); the helper takes minutes. */
+    function freshAuth(minutes) {
+      return signedIn()
+             && request.auth.token.auth_time is int
+             && request.time.toMillis() < (request.auth.token.auth_time * 1000 + minutes * 60000);
+    }
+
     /* ---------- admin roster ---------- */
     /* Readable by a signed-in user (so the app can show its own role) and
        writable by admins only. Bootstrap the first admin from the console. */
     match /admins/{uid} {
       allow read: if signedIn();
-      allow write: if isAdmin();
+      allow write: if isAdmin() && freshAuth(5);
     }
 
     /* ---------- public site data ---------- */
     match /tools/{id} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() && freshAuth(5);
     }
 
     match /settings/{id} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() && freshAuth(5);
     }
 
     match /media/{id} {
       allow read: if true;
-      allow write: if isAdmin();
+      allow write: if isAdmin() && freshAuth(5);
+    }
+
+    /* ---------- custom head/body code ----------
+       Readable by everyone: visitors must receive the admin's snippet.
+       Writable only by an admin with a recent sign-in. This is why the client
+       no longer keeps the snippet in localStorage — here it cannot be edited by
+       a visitor, and here the rules can check who is writing. */
+    match /code/{id} {
+      allow read: if true;
+      allow write: if isAdmin() && freshAuth(5);
     }
 
     /* ---------- visitor submissions ---------- */
@@ -88,7 +115,8 @@ service cloud.firestore {
                     && smallString('message', 5000)
                     && smallString('name', 120)
                     && smallString('email', 200)
-                    && smallString('ticket', 40));
+                    && smallString('ticket', 40)
+                    && request.resource.data.createdAt is int);
       allow read, update, delete: if isAdmin();
     }
 
@@ -99,6 +127,10 @@ service cloud.firestore {
                         'src', 'tool', 'dur'
                       ])
                     && request.resource.data.t is int
+                    /* A5: an event is only valid if it claims "now". A script
+                       replaying a captured payload hours later is refused. */
+                    && request.resource.data.t > request.time.toMillis() - 600000
+                    && request.resource.data.t < request.time.toMillis() + 120000
                     && smallString('type', 20)
                     && smallString('path', 200)
                     && smallString('tool', 120));
@@ -107,9 +139,9 @@ service cloud.firestore {
     }
 
     /* ---------- admin-only collections ---------- */
-    match /users/{id}    { allow read, write: if isAdmin(); }
-    match /security/{id} { allow read, write: if isAdmin(); }
-    match /audit/{id}    { allow read, write: if isAdmin(); }
+    match /users/{id}    { allow read, write: if isAdmin() && freshAuth(5); }
+    match /security/{id} { allow read, write: if isAdmin() && freshAuth(5); }
+    match /audit/{id}    { allow read, write: if isAdmin() && freshAuth(5); }
 
     /* ---------- everything else is closed ---------- */
     match /{document=**} {

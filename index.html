@@ -1132,7 +1132,7 @@
       <button type="button" class="fb-mini" id="thCopyLink">🔗 Copy reply link</button>
       <button type="button" class="fb-mini" id="thMarkUnread">🔴 Mark unread</button>
     </div>
-    <div class="th-log" id="thLog"></div>
+    <div class="th-log" id="thLog" role="log" aria-live="polite" aria-relevant="additions text"></div>
     <div class="th-composer">
       <div class="th-tabs">
         <button type="button" class="active" data-thmode="email">✉️ Email reply</button>
@@ -1364,7 +1364,13 @@
   /* ITEM 45: cache the app shell so the admin panel opens offline. Registered
      after load so it never competes with the first paint, and skipped on
      file:// where service workers are not allowed. */
-  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  /* B3: a service worker needs a secure context, and http://localhost IS one.
+     The old check demanded https://, so offline testing on a dev server never
+     registered anything. isSecureContext is the browser's own answer; the
+     hostname test covers older engines. */
+  var swSecure = window.isSecureContext === true ||
+    /^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname);
+  if ('serviceWorker' in navigator && swSecure) {
     window.addEventListener('load', function () {
       navigator.serviceWorker.register('sw.js').catch(function () { /* private mode or blocked */ });
     });

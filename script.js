@@ -29,6 +29,9 @@
     uploadMaxDocBytes: 6 * 1024 * 1024,   /* documents kept in browser storage */
     firestoreAttachmentMax: 900000,       /* 1 MiB Firestore doc minus overhead */
 
+    /* analytics */
+    visitWindowMs: 30 * 60 * 1000,        /* C5: two tabs inside this = one visit */
+
     /* performance */
     tickMs: 1000,                         /* master ticker resolution */
     observerDebounceMs: 200,              /* DOM observer debounce */
@@ -187,6 +190,63 @@
   } catch(e){}
 
   /* ============================================================
+     CUSTOM HEAD/BODY CODE — Firestore only, never localStorage
+     ============================================================
+     The two fields used to live in the same `das_studio_settings` JSON blob as
+     the theme settings. Any visitor can edit that blob from DevTools, so
+     "custom code" was really "anyone can inject markup into their own page" —
+     and because the blob is also merged from Firestore into every browser, a
+     compromised admin session could push markup to everyone. Sanitising it is
+     a denylist that can never be complete (<animate>, <svg> and future
+     elements keep appearing), so the value is no longer kept where a visitor
+     can write it:
+
+       source of truth : Firestore  /code/main   { head, body, updatedAt }
+                         rules: read for everyone, write only for a verified
+                         admin with a recent sign-in (see firestore.rules)
+       runtime         : this in-memory object, cleared on reload
+
+     An HMAC "signature" was considered and rejected: the key would have to sit
+     in config.js, which ships to every browser, so anyone could read it and
+     sign their own payload. A client-side signature is theatre; the only real
+     options are a server-held secret or "do not store it client-side".
+
+     A legacy local copy is DELETED, not trusted: we cannot tell an admin's
+     paste from an attacker's. Re-enter it in Admin > Settings if it was yours.
+     ============================================================ */
+  var CUSTOM_CODE = { head: '', body: '' };
+  (function migrateCustomCode() {
+    try {
+      var raw = localStorage.getItem('das_studio_settings');
+      if (!raw) return;
+      var obj = JSON.parse(raw);
+      if (!obj || (obj.headCode == null && obj.bodyCode == null)) return;
+      delete obj.headCode; delete obj.bodyCode;
+      localStorage.setItem('das_studio_settings', JSON.stringify(obj));
+      /* and from the live object, or the next settings save would put them back */
+      try { delete settings.headCode; delete settings.bodyCode; } catch (e) {}
+      try {
+        console.warn('[DAS Studio] headCode/bodyCode were removed from localStorage and NOT applied. ' +
+          'Custom code now lives in Firestore (/code/main); re-enter it in Admin > Settings.');
+      } catch (e) {}
+    } catch (e) {}
+  })();
+  function setCustomCode(head, body) {
+    CUSTOM_CODE.head = String(head || '');
+    CUSTOM_CODE.body = String(body || '');
+    try {
+      var h = document.getElementById('settingHeadCode');
+      if (h) h.value = CUSTOM_CODE.head;
+      var b = document.getElementById('settingBodyCode');
+      if (b) b.value = CUSTOM_CODE.body;
+    } catch (e) {}
+    injectCustomCode(CUSTOM_CODE.head, document.head);
+    injectCustomCode(CUSTOM_CODE.body, document.body);
+  }
+  window.__dasSetCustomCode = setCustomCode;
+  window.__dasGetCustomCode = function () { return { head: CUSTOM_CODE.head, body: CUSTOM_CODE.body }; };
+
+  /* ============================================================
      META / CUSTOM CODE HELPERS
      ============================================================ */
   function updateMetaTag(attrName, attrValue, content) {
@@ -204,17 +264,51 @@
      <iframe>, <object>, <embed> and inline on* handlers are stripped. */
   var CUSTOM_CODE_TRUSTED = !!(window.DAS_CONFIG && window.DAS_CONFIG.trustedCode === true);
   var customCodeBlocked = false;
-  function stripActiveContent(node) {
-    var all = [node].concat(Array.prototype.slice.call(node.querySelectorAll('*')));
-    all.forEach(function (n) {
+  /* A3: custom head/body code is NOT trusted markup. It lives in localStorage
+     (any visitor can edit it) and is merged from Firestore into every browser,
+     so the sanitiser is the only thing between it and stored XSS.
+
+     The previous version was a denylist that missed three real bypasses:
+       1. the ROOT node was never checked — a top-level <iframe>, <object> or
+          <embed> survived untouched because querySelectorAll() only looks at
+          descendants;
+       2. <base href="https://evil"> was allowed, which re-points every relative
+          URL on the page (including future script src values);
+       3. <meta http-equiv="refresh"> and <link rel=stylesheet> were allowed
+          (open redirect / CSS injection).
+     The list below is still a denylist, but it now covers the root node, the
+     dangerous element families, and the attributes that carry a URL. */
+  var CUSTOM_CODE_MAX = 20000;
+  var CUSTOM_CODE_DENY = /^(script|iframe|frame|frameset|object|embed|applet|base|meta|link|form|input|button|select|textarea|option|template|portal|noscript)$/i;
+  var CUSTOM_CODE_DENY_ATTR = /^(srcdoc|srcset|http-equiv|action|formaction|ping|target|contenteditable|autofocus)$/i;
+
+  function sanitizeNode(node) {
+    if (!node || node.nodeType !== 1) return node;              /* text / comment: inert */
+    if (CUSTOM_CODE_DENY.test(node.tagName)) return null;       /* the root itself is refused */
+    Array.prototype.slice.call(node.attributes || []).forEach(function (a) {
+      if (/^on/i.test(a.name)) { node.removeAttribute(a.name); return; }
+      if (CUSTOM_CODE_DENY_ATTR.test(a.name)) { node.removeAttribute(a.name); return; }
+      if (/^(href|src|xlink:href|poster)$/i.test(a.name) && /^\s*(javascript|vbscript|data:text\/html)/i.test(a.value)) {
+        node.removeAttribute(a.name);
+      }
+    });
+    var kids = Array.prototype.slice.call(node.querySelectorAll('*'));
+    kids.forEach(function (n) {
       Array.prototype.slice.call(n.attributes || []).forEach(function (a) {
         if (/^on/i.test(a.name)) { n.removeAttribute(a.name); return; }
-        if (/^(href|src|xlink:href|formaction)$/i.test(a.name) && /^\s*(javascript|data:text\/html)/i.test(a.value)) n.removeAttribute(a.name);
+        if (CUSTOM_CODE_DENY_ATTR.test(a.name)) { n.removeAttribute(a.name); return; }
+        if (/^(href|src|xlink:href|poster)$/i.test(a.name) && /^\s*(javascript|vbscript|data:text\/html)/i.test(a.value)) {
+          n.removeAttribute(a.name);
+        }
       });
     });
-    Array.prototype.slice.call(node.querySelectorAll('script, iframe, object, embed')).forEach(function (n) { n.remove(); });
+    /* remove denied descendants after the walk, never while iterating */
+    kids.forEach(function (n) { if (CUSTOM_CODE_DENY.test(n.tagName)) n.remove(); });
     return node;
   }
+
+  /* kept for callers that expect the old name */
+  function stripActiveContent(node) { return sanitizeNode(node); }
   function injectCustomCode(code, target) {
     var prev = target.querySelectorAll('[data-custom-injected]');
     for (var i = 0; i < prev.length; i++) prev[i].remove();
@@ -237,6 +331,17 @@
         );
       } catch (e) {}
     }
+    /* A3: a runaway snippet is a storage-abuse vector, and anything larger is
+       not a legitimate snippet */
+    if (!CUSTOM_CODE_TRUSTED && code.length > CUSTOM_CODE_MAX) {
+      customCodeBlocked = true;
+      window.__dasCustomCodeBlocked = true;
+      try {
+        console.warn('[DAS Studio] Custom head/body code is ' + code.length + ' characters; the untrusted ' +
+          'limit is ' + CUSTOM_CODE_MAX + '. Nothing was injected. Split it or set trustedCode: true.');
+      } catch (e) {}
+      return;
+    }
     var temp = document.createElement('div');
     temp.innerHTML = code;
     Array.prototype.slice.call(temp.childNodes).forEach(function(node) {
@@ -249,7 +354,15 @@
         target.appendChild(s);
       } else if (node.nodeType === 1) {
         var clone = node.cloneNode(true);
-        if (!CUSTOM_CODE_TRUSTED) stripActiveContent(clone);
+        if (!CUSTOM_CODE_TRUSTED) {
+          /* the root node is checked here too — that was bypass #1 */
+          clone = sanitizeNode(clone);
+          if (!clone) {
+            customCodeBlocked = true;
+            window.__dasCustomCodeBlocked = true;
+            return;
+          }
+        }
         clone.setAttribute('data-custom-injected', 'true');
         target.appendChild(clone);
       }
@@ -511,7 +624,11 @@
 
     ANN_SEEN['popup_' + pick.id] = true;
     annBump(pick.id, 'views');
-    setTimeout(function () { pop.classList.add('show'); }, pick.priority === 'emergency' ? 600 : 1400);
+    /* H5: a 1.4s entrance is decoration — skip it when the OS asks for less motion */
+    var reduceMotion = false;
+    try { reduceMotion = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches); } catch (e) {}
+    setTimeout(function () { pop.classList.add('show'); },
+      reduceMotion ? 0 : (pick.priority === 'emergency' ? 600 : 1400));
   }
 
   /* ---- main entry point ---- */
@@ -596,6 +713,21 @@
     catch (e) { return 0; }
   }
   window.__dasToolCount = publishedToolCount;
+
+  /* B4: the counter that sits next to the grid describes what the grid is
+     showing right now — filter, search and "load more" included — while the
+     hero stat and the section label keep the catalogue size
+     (publishedToolCount). One of them answering both questions was the bug:
+     with a filter active the number stayed at the catalogue total. */
+  function updateDirCount() {
+    var dc = document.getElementById('dirCount');
+    if (!dc) return;
+    var all = document.querySelectorAll('#grid .card').length;
+    var vis = document.querySelectorAll('#grid .card:not(.hidden):not(.lm-hide)').length;
+    var label = all === 1 ? 'tool' : 'tools';
+    dc.textContent = (vis === all) ? (all + ' ' + label) : (vis + ' of ' + all + ' ' + label);
+  }
+  window.__dasUpdateDirCount = updateDirCount;
 
   /* ITEM 31/32: "when was this measured" belongs next to every number. */
   function agoText(t) {
@@ -822,8 +954,68 @@
     document.getElementById('cbReject').textContent = settings.cookieRejectText || 'Reject';
     var pol = document.getElementById('cbPolicy');
     if (pol) pol.onclick = function () { openLegalPage('privacy'); };
+    /* D7: a banner with only Accept/Reject gives no way to review or withdraw a
+       choice that lasts 180 days. */
+    var manage = document.getElementById('cbManage');
+    if (!manage) {
+      manage = document.createElement('button');
+      manage.type = 'button';
+      manage.id = 'cbManage';
+      manage.className = 'cb-link';
+      manage.textContent = 'Manage preferences';
+      (banner.querySelector('.cb-actions') || banner).appendChild(manage);
+    }
+    manage.onclick = function () { ssOpenCookiePrefs(); };
     banner.classList.add('show');
   }
+
+  /* D7: the preference editor. It shows what is stored, lets the visitor change
+     it, and offers a withdraw action that clears the record entirely. */
+  function ssOpenCookiePrefs() {
+    var old = document.getElementById('cbPrefs');
+    if (old) old.remove();
+    var c = ssCookieState();
+    var box = document.createElement('div');
+    box.id = 'cbPrefs';
+    box.className = 'modal-overlay active cb-prefs';
+    box.setAttribute('role', 'dialog');
+    box.setAttribute('aria-modal', 'true');
+    box.setAttribute('aria-labelledby', 'cbPrefsTitle');
+    box.innerHTML =
+      '<div class="modal cb-prefs-box">' +
+        '<h2 id="cbPrefsTitle">Cookie preferences</h2>' +
+        '<p class="cb-prefs-state">' + (c
+          ? 'This browser answered “' + escapeHtml(c.choice) + '” on ' + escapeHtml(ssFmtDateTime(c.t)) +
+            (ssConsentValid() ? '.' : ' — that answer has expired.')
+          : 'No choice recorded in this browser yet.') + '</p>' +
+        '<p class="cb-prefs-note">Necessary storage (your theme, language and admin session) is always kept. ' +
+          'Analytics is only enabled when you accept.</p>' +
+        '<div class="cb-prefs-actions">' +
+          '<button type="button" class="btn-primary" data-cb-choice="accept">Accept analytics</button>' +
+          '<button type="button" class="btn-secondary" data-cb-choice="reject">Reject analytics</button>' +
+          '<button type="button" class="btn-secondary" data-cb-choice="withdraw">Withdraw choice</button>' +
+          '<button type="button" class="btn-secondary" data-cb-close="1">Close</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(box);
+    box.addEventListener('click', function (e) {
+      if (e.target === box || e.target.closest('[data-cb-close]')) { box.remove(); return; }
+      var b = e.target.closest('[data-cb-choice]');
+      if (!b) return;
+      var choice = b.getAttribute('data-cb-choice');
+      if (choice === 'withdraw') {
+        try { localStorage.removeItem(COOKIE_KEY); } catch (e2) {}
+        ssApplyAnalyticsConsent();
+        ssUpdateCookieState();
+        box.remove();
+        ssRenderCookieBanner(true);
+        return;
+      }
+      ssSetConsent(choice);
+      box.remove();
+    });
+  }
+  window.__dasCookiePrefs = ssOpenCookiePrefs;
   function ssApplyAnalyticsConsent() {
     var c = ssCookieState();
     var allowed = !settings.cookieEnabled || (ssConsentValid() && c && c.choice === 'accept');
@@ -1225,6 +1417,15 @@
      the gate completely so they can repair the site they have just closed.
      ============================================================ */
   var MAINT_BYPASS_KEY = 'das_maint_bypass';
+  /* D6: a developer testing their own maintenance page could not see the site
+     at all. `?preview=1` keeps the site reachable for a signed-in admin, and
+     only for them: the bypass flag is set by a successful login. */
+  function maintPreviewMode() {
+    try {
+      if (sessionStorage.getItem(MAINT_BYPASS_KEY) !== '1') return false;
+      return /[?&]preview=1(?:&|$)/.test(location.search);
+    } catch (e) { return false; }
+  }
   function maintBypassActive() {
     if (isAdmin) return true;
     try { if (sessionStorage.getItem(MAINT_BYPASS_KEY) === '1') return true; } catch (e) {}
@@ -1237,6 +1438,19 @@
     ov.style.display = show ? 'flex' : 'none';
     if (show) ov.classList.remove('adm-bypass'); else ov.classList.add('adm-bypass');
     ov.setAttribute('aria-hidden', show ? 'false' : 'true');
+    /* D6: say out loud that the visitor-facing page is still closed */
+    var badge = document.getElementById('maintPreviewBadge');
+    var preview = !show && !!settings.maintenance && maintPreviewMode();
+    if (preview && !badge) {
+      badge = document.createElement('div');
+      badge.id = 'maintPreviewBadge';
+      badge.className = 'maint-preview';
+      badge.setAttribute('role', 'status');
+      badge.textContent = '🛠 Preview — maintenance mode is ON for visitors';
+      document.body.appendChild(badge);
+    } else if (!preview && badge) {
+      badge.remove();
+    }
   }
   window.__dasApplyMaintenance = applyMaintenanceGate;
   /* ?admin=1 opens the sign-in box on a closed site. It does not open the site:
@@ -1248,6 +1462,13 @@
   } catch (e) {}
 
   function applySettingsToDOM() {
+    /* A3-follow-up: custom code must never ride along in `settings`, which is
+       written to the visitor-writable localStorage blob. Drop it and rewrite
+       the blob if a legacy copy is still around. */
+    if (settings.headCode != null || settings.bodyCode != null) {
+      delete settings.headCode; delete settings.bodyCode;
+      try { localStorage.setItem('das_studio_settings', JSON.stringify(settings)); } catch (e) {}
+    }
     document.getElementById('siteMetaTitle').textContent = settings.title;
     document.getElementById('siteMetaDesc').setAttribute('content', settings.desc);
     document.getElementById('heroHeading').innerHTML = settings.heroHeading;
@@ -1292,8 +1513,9 @@
     applyAppearance();
     if (typeof apApplyDesign === 'function' && typeof DESIGN_DEFAULTS !== 'undefined') apApplyDesign();
 
-    injectCustomCode(settings.headCode || '', document.head);
-    injectCustomCode(settings.bodyCode || '', document.body);
+    /* A3-follow-up: never from `settings` — that object is visitor-writable */
+    injectCustomCode(CUSTOM_CODE.head, document.head);
+    injectCustomCode(CUSTOM_CODE.body, document.body);
   }
   /* ============================================================
      APPEARANCE CORE — fonts, cards, glow, custom CSS, presets
@@ -1428,7 +1650,41 @@
   if (!Array.isArray(analyticsData.sessions)) analyticsData.sessions = [];
   if (!analyticsData.firstSeen) analyticsData.firstSeen = Date.now();
 
+  /* G4: analytics is the biggest localStorage consumer, and every save
+     stringifies the whole object. Three caps keep it bounded:
+       daily   365 keys  (drop the oldest days)
+       clicks  500 keys  (drop the least-clicked tools)
+       sessions 100      (already enforced in anSession) */
+  function anPrune() {
+    try {
+      var daily = analyticsData.daily || {};
+      var keys = Object.keys(daily).sort();
+      if (keys.length > 365) {
+        keys.slice(0, keys.length - 365).forEach(function (k) { delete daily[k]; });
+      }
+      var clicks = analyticsData.clicks || {};
+      var ck = Object.keys(clicks);
+      if (ck.length > 500) {
+        ck.sort(function (a, b) { return (clicks[a].count || 0) - (clicks[b].count || 0); });
+        ck.slice(0, ck.length - 500).forEach(function (k) { delete clicks[k]; });
+      }
+      if (Array.isArray(analyticsData.sessions) && analyticsData.sessions.length > 100) {
+        analyticsData.sessions = analyticsData.sessions.slice(0, 100);
+      }
+      ['pages', 'referrers', 'searches', 'filterClicks'].forEach(function (k) {
+        var m = analyticsData[k];
+        if (!m || typeof m !== 'object') return;
+        var ks = Object.keys(m);
+        if (ks.length <= 500) return;
+        ks.sort(function (a, b) { return (Number(m[a]) || 0) - (Number(m[b]) || 0); });
+        ks.slice(0, ks.length - 500).forEach(function (x) { delete m[x]; });
+      });
+    } catch (e) {}
+  }
+  window.__dasAnPrune = anPrune;
+
   function anSave() {
+    anPrune();
     try { localStorage.setItem(AN_KEY, JSON.stringify(analyticsData)); } catch(e){}
   }
   function anPad(n) { return (n < 10 ? '0' : '') + n; }
@@ -1573,25 +1829,43 @@
     if (typeof gtag === 'function') { try { gtag('event', 'conversion_' + kind); } catch(e){} }
   }
 
-  /* ---- first paint: count the visit ---- */
-  analyticsData.visits = (analyticsData.visits || 0) + 1;
-  var anDev = getDeviceInfo();
-  anInc(analyticsData.devices, anDev);
-  anInc(analyticsData.browsers, getBrowser());
-  anInc(analyticsData.referrers, getReferrerSource());
-  var anGeoInfo = anGeo();
-  anInc(analyticsData.geo, anGeoInfo.country + '||' + anGeoInfo.city);
+  /* C5: this block ran on every load of every tab, so one person with two tabs
+     (or a refresh) produced two visits, two device entries and two referrers.
+     Count once per session: the same AN_SESSION_ID a second time is the same
+     visit, and a second tab inside CONFIG.visitWindowMs belongs to the same
+     visit too. The heartbeat and the page-view log still run per tab. */
+  function anCountVisitOnce() {
+    var mark = {};
+    try { mark = JSON.parse(localStorage.getItem('das_visit_mark') || '{}') || {}; } catch (e) { mark = {}; }
+    var now = Date.now();
+    var span = (window.DAS_RUNTIME_CONFIG || {}).visitWindowMs || 30 * 60 * 1000;
+    if (mark.sid && mark.sid === AN_SESSION_ID) return false;      /* this tab already counted */
+    if (mark.t && (now - mark.t) < span) return false;             /* another tab, same session */
+    try { localStorage.setItem('das_visit_mark', JSON.stringify({ sid: AN_SESSION_ID, t: now })); } catch (e) {}
+    return true;
+  }
 
-  var anToday = anDay();
-  anToday.visits += 1;
-  try {
-    var countedDay = localStorage.getItem('das_counted_day');
-    if (countedDay !== anDayKey()) {
-      anToday.uniques += 1;
-      localStorage.setItem('das_counted_day', anDayKey());
-    }
-    if (AN_IS_NEW_VISITOR) analyticsData.uniques = (analyticsData.uniques || 0) + 1;
-  } catch(e) { anToday.uniques += 1; }
+  /* ---- first paint: count the visit (once per session) ---- */
+  if (anCountVisitOnce()) {
+    analyticsData.visits = (analyticsData.visits || 0) + 1;
+    var anDev = getDeviceInfo();
+    anInc(analyticsData.devices, anDev);
+    anInc(analyticsData.browsers, getBrowser());
+    anInc(analyticsData.referrers, getReferrerSource());
+    var anGeoInfo = anGeo();
+    anInc(analyticsData.geo, anGeoInfo.country + '||' + anGeoInfo.city);
+
+    var anToday = anDay();
+    anToday.visits += 1;
+    try {
+      var countedDay = localStorage.getItem('das_counted_day');
+      if (countedDay !== anDayKey()) {
+        anToday.uniques += 1;
+        localStorage.setItem('das_counted_day', anDayKey());
+      }
+      if (AN_IS_NEW_VISITOR) analyticsData.uniques = (analyticsData.uniques || 0) + 1;
+    } catch(e) { anToday.uniques += 1; }
+  }
 
   anSession();
   anPageView('Home');
@@ -1737,6 +2011,15 @@
     api.onTabAnalytics = slot('tabAnalytics').hooks;
     api.onTabDash = slot('tabDash').hooks;
     api.onTabDb = slot('tabDb').hooks;
+    api.onTabSys = slot('tabSys').hooks;
+    api.onTabUsers = slot('tabUsers').hooks;
+    api.onTabMedia = slot('tabMedia').hooks;
+    api.onTabLog = slot('tabLog').hooks;
+    api.onTabMsgs = slot('tabMsgs').hooks;
+    api.onTabNotice = slot('tabNotice').hooks;
+    api.onAnnBump = slot('annBump').hooks;
+    api.onAnnDismiss = slot('annDismiss').hooks;
+    api.onFeedbackSaved = slot('feedbackSaved').hooks;
     return api;
   })();
   window.AppHooks = AppHooks;
@@ -1760,6 +2043,17 @@
     var depth = 0;
     Storage.prototype.setItem = function (key, value) {
       if (depth > 0) return nativeSet.apply(this, arguments);  /* nested write: no hooks, no recursion */
+      /* A3-follow-up: whatever the caller, custom code must never be persisted
+         in the visitor-writable settings blob. */
+      if (key === 'das_studio_settings' && typeof value === 'string' &&
+          (value.indexOf('"headCode"') > -1 || value.indexOf('"bodyCode"') > -1)) {
+        try {
+          var stripped = JSON.parse(value);
+          delete stripped.headCode; delete stripped.bodyCode;
+          value = JSON.stringify(stripped);
+          arguments[1] = value;
+        } catch (e) {}
+      }
       depth = 1;
       try {
         var out = nativeSet.apply(this, arguments);
@@ -1783,6 +2077,13 @@
   AppHooks.base('trackToolClick', trackToolClick);
   AppHooks.base('adminLogin', adminLoginCore);
   AppHooks.base('tabSec', secRender2);
+  /* F2: announcements. annBump() used to be re-assigned by the cloud mirror and
+     annDismiss() was a plain function nobody could observe. Both are bases now;
+     modules subscribe with Hooks.onAnnBump.push / Hooks.onAnnDismiss.push. */
+  AppHooks.base('annBump', annBump);
+  annBump = function () { return AppHooks.run('annBump', arguments); };
+  AppHooks.base('annDismiss', annDismiss);
+  annDismiss = function () { return AppHooks.run('annDismiss', arguments); };
   renderGrid = function () { return AppHooks.run('renderGrid', arguments); };
   saveToolsToStorage = function () { return AppHooks.run('saveTools', arguments); };
   trackToolClick = function () { return AppHooks.run('trackToolClick', arguments); };
@@ -1980,8 +2281,8 @@
     document.getElementById('settingTelegram').value = settings.telegram || '';
     document.getElementById('settingSupportEmail').value = settings.supportEmail || '';
     document.getElementById('settingFooterText').value = settings.footerText || '';
-    document.getElementById('settingHeadCode').value = settings.headCode || '';
-    document.getElementById('settingBodyCode').value = settings.bodyCode || '';
+    document.getElementById('settingHeadCode').value = CUSTOM_CODE.head;
+    document.getElementById('settingBodyCode').value = CUSTOM_CODE.body;
 
     // language, timezone, SEO files, cookies, legal pages, contact, maintenance
     ssPopulate();
@@ -2591,6 +2892,39 @@
     return { score: score, reasons: reasons, spam: score >= 3 };
   }
 
+  /* C4: fbSpamScore() only ran on submit, so editing the keyword list (or a
+     rule fix) never touched the tickets already in the inbox. Bump
+     SPAM_RULE_VERSION when the rules change: the first load after that
+     re-scans everything once, and the admin can force it from the Messages
+     toolbar. */
+  var SPAM_RULE_VERSION = 2;
+  function fbRescanSpam(verbose) {
+    var raw = [];
+    try { raw = JSON.parse(localStorage.getItem(FB_KEY) || '[]'); } catch (e) { raw = []; }
+    if (!Array.isArray(raw)) raw = [];
+    var changed = 0;
+    raw.forEach(function (rec) {
+      var scan = fbSpamScore(rec, raw);
+      if (!!rec.spam !== !!scan.spam) changed++;
+      rec.spam = scan.spam;
+      rec.spamScore = scan.score;
+      rec.spamReasons = scan.reasons;
+    });
+    try { localStorage.setItem(FB_KEY, JSON.stringify(raw)); } catch (e) {}
+    try { localStorage.setItem('das_spam_rules_v', String(SPAM_RULE_VERSION)); } catch (e) {}
+    try { renderFeedbacks(); } catch (e) {}
+    try { if (typeof fbUnreadCount === 'function') fbUnreadCount(); } catch (e) {}
+    if (verbose) {
+      alert('Rescanned ' + raw.length + ' ticket(s) with the current rules — ' +
+        changed + ' changed classification.');
+    }
+    return changed;
+  }
+  window.__dasRescanSpam = fbRescanSpam;
+  try {
+    if (Number(localStorage.getItem('das_spam_rules_v') || 0) !== SPAM_RULE_VERSION) fbRescanSpam(false);
+  } catch (e) {}
+
   function loadFeedbacks() {
     var arr = [];
     try { arr = JSON.parse(localStorage.getItem(FB_KEY) || '[]'); } catch (e) { arr = []; }
@@ -2668,6 +3002,15 @@
   }
 
   function fbMatches(it) {
+    /* E5: "which are oldest?" — 24h+ without an answer */
+    if (fbFilter.view === 'overdue') {
+      if (it.spam) return false;
+      var wh = (typeof fbWaitingHours === 'function') ? fbWaitingHours(it) : null;
+      if (wh == null || wh < 24) return false;
+      if (fbFilter.status !== 'all' && it.status !== fbFilter.status) return false;
+      if (fbFilter.priority !== 'all' && it.priority !== fbFilter.priority) return false;
+      return true;
+    }
     if (fbFilter.view === 'unread' && !it.unread) return false;
     if (fbFilter.view === 'spam') { if (!it.spam) return false; }
     else if (it.spam) return false;
@@ -2803,12 +3146,13 @@
     if (!container) return;
     var all = loadFeedbacks();
 
-    var counts = { total: 0, unread: 0, pending: 0, inprogress: 0, resolved: 0, closed: 0, spam: 0 };
+    var counts = { total: 0, unread: 0, pending: 0, inprogress: 0, resolved: 0, closed: 0, spam: 0, overdue: 0 };
     all.forEach(function (it) {
       if (it.spam) { counts.spam++; return; }
       counts.total++;
       if (it.unread) counts.unread++;
       if (counts[it.status] != null) counts[it.status]++;
+      if (typeof fbWaitingHours === 'function') { var w = fbWaitingHours(it); if (w != null && w >= 24) counts.overdue++; }
     });
 
     var statsEl = document.getElementById('fbStats');
@@ -2819,12 +3163,14 @@
         ['pending', 'Pending', counts.pending, '#f59e0b'],
         ['inprogress', 'In Progress', counts.inprogress, '#3b82f6'],
         ['resolved', 'Resolved', counts.resolved, '#10b981'],
+        ['overdue', 'Overdue 24h+', counts.overdue, '#ef4444'],
         ['spam', 'Spam', counts.spam, '#94a3b8']
       ].map(function (s) {
         var active = (s[0] === 'spam') ? fbFilter.view === 'spam'
+          : (s[0] === 'overdue' ? fbFilter.view === 'overdue'
           : (s[0] === 'unread' ? fbFilter.view === 'unread'
           : (s[0] === 'all' ? (fbFilter.view === 'all' && fbFilter.status === 'all')
-          : (fbFilter.view === 'all' && fbFilter.status === s[0])));
+          : (fbFilter.view === 'all' && fbFilter.status === s[0]))));
         return '<button type="button" class="fb-stat' + (active ? ' active' : '') + '" data-stat="' + s[0] + '">' +
           '<b style="color:' + s[3] + '">' + s[2] + '</b><span>' + s[1] + '</span></button>';
       }).join('');
@@ -2849,6 +3195,18 @@
     var shown = fbSortList(all.filter(fbMatches));
     var meta = document.getElementById('fbResultMeta');
     if (meta) meta.textContent = shown.length + ' of ' + all.length + ' ticket' + (all.length === 1 ? '' : 's') + ' shown';
+    /* C4: manual re-scan next to the result count */
+    if (meta && meta.parentNode && !document.getElementById('fbRescanSpam')) {
+      var rsBtn = document.createElement('button');
+      rsBtn.type = 'button';
+      rsBtn.id = 'fbRescanSpam';
+      rsBtn.className = 'fb-mini';
+      rsBtn.style.marginLeft = '8px';
+      rsBtn.title = 'Re-run the spam rules over every ticket in the inbox';
+      rsBtn.textContent = '🧹 Rescan spam';
+      rsBtn.onclick = function () { fbRescanSpam(true); };
+      meta.parentNode.appendChild(rsBtn);
+    }
 
     if (!all.length) {
       container.innerHTML = '<div class="fb-empty">📭 No tickets yet.<br><span style="font-size:12px;">' +
@@ -3055,7 +3413,7 @@
 
       if (el.hasAttribute('data-stat')) {
         var stv = el.getAttribute('data-stat');
-        if (stv === 'unread' || stv === 'spam') { fbFilter.view = stv; fbFilter.status = 'all'; }
+        if (stv === 'unread' || stv === 'spam' || stv === 'overdue') { fbFilter.view = stv; fbFilter.status = 'all'; }
         else if (stv === 'all') { fbFilter.view = 'all'; fbFilter.status = 'all'; }
         else { fbFilter.view = 'all'; fbFilter.status = stv; }
         if (fStatus) fStatus.value = fbFilter.status;
@@ -3208,8 +3566,10 @@
     settings.telegram = document.getElementById('settingTelegram').value;
     settings.supportEmail = document.getElementById('settingSupportEmail').value;
     settings.footerText = document.getElementById('settingFooterText').value;
-    settings.headCode = document.getElementById('settingHeadCode').value;
-    settings.bodyCode = document.getElementById('settingBodyCode').value;
+    /* A3-follow-up: read into locals; `settings` never carries custom code */
+    var headCodeVal = document.getElementById('settingHeadCode').value;
+    var bodyCodeVal = document.getElementById('settingBodyCode').value;
+    delete settings.headCode; delete settings.bodyCode;
 
     var prevLang = settings.siteLang;
     ssReadForm();
@@ -3234,6 +3594,14 @@
     ssRenderCookieBanner();
     ssRefreshSitemap();
     ssPopulate();
+    /* custom code goes to Firestore, not to localStorage */
+    setCustomCode(headCodeVal, bodyCodeVal);
+    if (typeof window.__dasPushCustomCode === 'function') {
+      window.__dasPushCustomCode(headCodeVal, bodyCodeVal);
+    } else if (headCodeVal || bodyCodeVal) {
+      alert('Custom head/body code needs Firebase: connect it in Admin → Security and save again.\n\n' +
+        'It is no longer stored in this browser, because anything stored there can be edited by a visitor.');
+    }
     try { logAct('settings', 'Site settings saved'); } catch (err) {}
     alert('Site settings updated successfully!');
   });
@@ -3723,6 +4091,14 @@
       document.getElementById('fbEmail').focus();
       return;
     }
+    /* D3: an empty email means the admin literally cannot answer. Say so before
+       the ticket is filed, not after. */
+    if (!email) {
+      if (!confirm('You have not entered an email address.\n\nWithout one the admin cannot reply to you, and you will not be notified when this is answered.\n\nSend the report anyway?')) {
+        document.getElementById('fbEmail').focus();
+        return;
+      }
+    }
     var feedbacks = loadFeedbacks();
     var ticket = fbTicketNext();
     var record = {
@@ -3762,6 +4138,9 @@
       alert('Sorry — the browser storage is full, so your message could not be saved. Please email us directly.');
       return;
     }
+    /* the cloud module subscribes to this; it used to guess "the newest ticket"
+       400 ms after ANY submit event, so a rejected submit re-uploaded an old one */
+    AppHooks.emit('feedbackSaved', [record]);
 
     var cfg = fbEmailConfig();
     if (cfg.autoConfirm && email && !record.spam) {
@@ -3825,27 +4204,52 @@
       if (show) visible++;
     });
     empty.style.display = visible ? 'none' : 'block';
+    /* B4: the count must follow the filter, not the catalogue */
+    if (typeof updateDirCount === 'function') updateDirCount();
   }
 
   /* ITEM 13: a recently-viewed click used to open a tool whose card was hidden
      by the active filter or search, which looked like a broken grid. Reset both
      before opening, and keep the reset reachable from other modules. */
-  function resetFilters() {
-    activeFilter = 'all';
-    chips.forEach(function (c) { c.classList.toggle('active', c.getAttribute('data-filter') === 'all'); });
-    if (search && search.value) search.value = '';
+  /* D0: ONE path for "the filter changed". A chip click and resetFilters() used
+     to run different code, so activeFilter, the chip highlight, the counter and
+     the empty state could disagree. Everything goes through setFilter() now. */
+  function setFilter(id, opts) {
+    activeFilter = id || 'all';
+    chips.forEach(function (c) {
+      var on = c.getAttribute('data-filter') === activeFilter;
+      c.classList.toggle('active', on);
+      c.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    if (opts && opts.clearSearch && search) search.value = '';
     if (typeof applyFilters === 'function') applyFilters();
+    if (typeof updateDirCount === 'function') updateDirCount();
+    return activeFilter;
+  }
+  window.__dasSetFilter = setFilter;
+
+  function resetFilters() {
+    /* C6: "reset" also has to put back the sort order and the load-more page,
+       otherwise the grid still shows the user's old arrangement and only the
+       first N cards after a recent-view click. */
+    var sortSel = document.getElementById('sortTools');
+    if (sortSel && sortSel.value !== 'default') {
+      sortSel.value = 'default';
+      try { sortSel.dispatchEvent(new Event('change', { bubbles: true })); } catch (e) {}
+    }
+    setFilter('all', { clearSearch: true });
     if (typeof lmApply === 'function') lmApply(true);
+    if (typeof updateDirCount === 'function') updateDirCount();
+    var emptyEl = document.getElementById('empty');
+    if (emptyEl) emptyEl.style.display = 'none';
   }
   window.__dasResetFilters = resetFilters;
 
   chips.forEach(function(chip) {
     chip.addEventListener('click', function() {
-      chips.forEach(function(c) { c.classList.remove('active'); });
-      chip.classList.add('active');
-      activeFilter = chip.getAttribute('data-filter');
+      /* D0: same entry point as resetFilters(), so the two can never drift */
+      setFilter(chip.getAttribute('data-filter'));
       trackFilterClick(chip.textContent.trim());
-      applyFilters();
     });
   });
 
@@ -3945,10 +4349,10 @@
           if (usingDefaultPass()) alert('⚠️ You are still using the default password. Open Admin Panel → 🔐 Security and change it now.');
         }
         if (secCfg.ipEnforce && secCfg.ipAllow.length) {
-          if (!secCfg.lastIp) { alert('IP restriction is enabled but your IP has not been detected yet.\n\nOpen Security → “Check my IP” once, then try again.'); return; }
-          if (secCfg.ipAllow.indexOf(secCfg.lastIp) === -1) {
-            secAlert('login', 'Blocked login from IP ' + secCfg.lastIp);
-            alert('Access denied for IP ' + secCfg.lastIp + '.');
+          if (!secLastIp()) { alert('IP restriction is enabled but your IP has not been detected in this tab yet.\n\nOpen Security → “Check my IP” once (it is no longer remembered across reloads, on purpose), then try again.'); return; }
+          if (secCfg.ipAllow.indexOf(secLastIp()) === -1) {
+            secAlert('login', 'Blocked login from IP ' + secLastIp());
+            alert('Access denied for IP ' + secLastIp() + '.');
             return;
           }
         }
@@ -4004,10 +4408,12 @@
     if (el) return el;
     el = document.createElement('div'); el.id = 'admLogin'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'alTitle');
     el.innerHTML = '<form class="al-box" id="alForm" autocomplete="on"><h2 id="alTitle">🔐 Admin sign in</h2><p>Enter the admin password to manage tools, settings and messages.</p>' +
+      '<p class="al-hint" id="alHint">The email must be the one registered for this project in the Firebase console (Authentication → Users).</p>' +
       '<div class="al-status" id="alStatus" role="status" aria-live="polite"></div>' +
       '<div class="al-field" id="alEmailWrap"><input type="email" id="alEmail" autocomplete="username" placeholder="Admin email" aria-label="Admin email" style="width:100%"></div><div class="al-field"><input type="password" id="alPass" autocomplete="current-password" placeholder="Password" aria-label="Admin password" required>' +
       '<button type="button" class="al-eye" id="alEye" aria-label="Show password">👁️</button></div>' +
       '<label class="al-remember"><input type="checkbox" id="alRemember"> Remember me on this device</label>' +
+      '<div class="al-forgot" id="alForgot"></div>' +
       '<div class="al-err" id="alErr" role="alert"></div>' +
       '<div class="al-row"><button type="button" id="alCancel">Cancel</button><button type="submit" class="go" id="alGo">Sign in</button></div></form>';
     document.body.appendChild(el);
@@ -4019,6 +4425,20 @@
        password-hash mode adminLoginCore() ignored the second argument, so the
        field asked for something that was never used. Hide it when auth is off. */
     syncLoginEmailField(el);
+    /* D1: the admin cannot look the address up from this page — point them at
+       whoever can (the support address they configured) instead of leaving them
+       stuck on a form that needs an email they have forgotten. */
+    var forgot = el.querySelector('#alForgot');
+    if (forgot) {
+      var mail = String((settings && settings.supportEmail) || '').trim();
+      if (mail) {
+        forgot.innerHTML = '<a href="mailto:' + escapeHtml(mail) + '?subject=' +
+          encodeURIComponent('DAS Studio — admin email reminder') +
+          '">Forgot the admin email?</a>';
+      } else {
+        forgot.innerHTML = '<span class="al-hint">No support email is configured — set one in Admin → Settings to get a recovery link here.</span>';
+      }
+    }
     var remBox = el.querySelector('#alRemember');
     if (remBox) {
       remBox.checked = !!window.__dasRememberAdmin;
@@ -4090,7 +4510,14 @@
     var wrap = el.querySelector('#alEmailWrap');
     if (!wrap) return;
     var authOn = false;
-    try { authOn = !!(window.__dasAuthMode && window.__dasAuthMode()); } catch (e) { authOn = false; }
+    try { authOn = !!(window.__dasAuthMode && window.__dasAuthMode()); }
+    catch (e) {
+      /* C3: a throwing probe used to hide the field, which is the one failure
+         mode that locks the admin out (password-only form, backend needs the
+         email). Fail visible: an extra field costs nothing, a missing required
+         one costs the login. */
+      authOn = true;
+    }
     var loading = authLoading();
     var show = authOn || loading;
     wrap.style.display = show ? '' : 'none';
@@ -4112,9 +4539,45 @@
     if (isAdmin && Date.now() - lastActivity > SESSION_MS) { alert('Session expired due to inactivity.'); adminLogout('Session timeout'); }
   });
 
+  /* D8: no keyboard save. Ctrl/Cmd+S and Cmd/Ctrl+Enter submit the form the
+     caret is in, which is what every other admin panel does. */
+  document.addEventListener('keydown', function (e) {
+    var isSave = (e.key === 's' || e.key === 'S') && (e.ctrlKey || e.metaKey);
+    var isRun = e.key === 'Enter' && (e.ctrlKey || e.metaKey);
+    if (!isSave && !isRun) return;
+    var tgt = (e.target && e.target.closest) ? e.target.closest('form') : null;
+    var ae = document.activeElement;
+    var form = tgt || (ae && ae.closest ? ae.closest('form') : null);
+    if (!form) return;
+    e.preventDefault();
+    if (typeof form.requestSubmit === 'function') form.requestSubmit();
+    else form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+  });
+
   /* runtime error capture for System Health */
-  window.addEventListener('error', function (e) { pushLog(ERR_KEY, { t: Date.now(), m: String(e.message || 'Error').slice(0, 200), s: (e.filename || '').split('/').pop() + ':' + (e.lineno || '') }, 50); });
-  window.addEventListener('unhandledrejection', function (e) { pushLog(ERR_KEY, { t: Date.now(), m: 'Promise: ' + String(e.reason).slice(0, 180), s: '' }, 50); });
+  /* F6: an error with no category cannot be triaged. cat is one of
+     network | auth | storage | ui | data | unknown, derived from the message
+     and the source file, so System Health can group instead of listing. */
+  function errCategory(msg, src) {
+    var s = (String(msg || '') + ' ' + String(src || '')).toLowerCase();
+    if (/quota|storage|setitem|localstorage|sessionstorage|indexeddb/.test(s)) return 'storage';
+    /* 'token' alone is ambiguous ("Unexpected token in JSON"); require an auth signal */
+    if (/auth\/|\bauth\b|firebase|permission-denied|unauthenticated|sign-?in|idtoken|id token/.test(s)) return 'auth';
+    if (/fetch|network|offline|xhr|net::|failed to load|timeout|dns/.test(s)) return 'network';
+    if (/json|parse|undefined is not|is not a function|null|typeerror|referenceerror|syntaxerror/.test(s)) return 'data';
+    if (/dom|element|queryselector|closest|appendchild|render/.test(s)) return 'ui';
+    return 'unknown';
+  }
+  window.__dasErrCategory = errCategory;
+  window.addEventListener('error', function (e) {
+    var src = (e.filename || '').split('/').pop() + ':' + (e.lineno || '');
+    var m = String(e.message || 'Error').slice(0, 200);
+    pushLog(ERR_KEY, { t: Date.now(), cat: errCategory(m, src), m: m, s: src }, 50);
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    var m = 'Promise: ' + String(e.reason).slice(0, 180);
+    pushLog(ERR_KEY, { t: Date.now(), cat: errCategory(m, ''), m: m, s: '' }, 50);
+  });
 
   /* audit hooks */
   Hooks.onSaveTools.push(function () { logAct('tools', 'Tools saved (' + tools.length + ' total)'); });
@@ -4177,7 +4640,7 @@
     if (!(function(){ try { var q = lsGet('das_studio_seo', null); return q && /^G-[A-Z0-9]{6,12}$/.test(q.ga || ''); } catch (e) { return false; } })()) alerts += '<div class="xm-alert warn">🟠 Google Analytics is not active yet. Add your real GA4 Measurement ID in the SEO tab.</div>';
     if (settings.maintenance) alerts += '<div class="xm-alert warn">🟠 Maintenance mode is ON — visitors cannot see the site.</div>';
     if (crit) alerts += '<div class="xm-alert bad">🔴 ' + crit + ' critical feedback item(s) unresolved.</div>';
-    if (settings.headCode || settings.bodyCode) alerts += '<div class="xm-alert warn">🟠 Custom head/body code is active — review it regularly.</div>';
+    if (CUSTOM_CODE.head || CUSTOM_CODE.body) alerts += '<div class="xm-alert warn">🟠 Custom head/body code is active (stored in Firestore /code/main) — review it regularly.</div>';
     if (!alerts) alerts = '<div class="xm-alert ok">✅ No issues detected.</div>';
     var rec = lsGet(AUDIT_KEY, []).slice(0, 6).map(function (l) { return '<tr><td>' + ssFmtDateTime(l.t) + '</td><td><b>' + escapeHtml(l.a) + '</b></td><td>' + escapeHtml(l.d) + '</td></tr>'; }).join('') || '<tr><td colspan="3">No activity yet.</td></tr>';
     $('tabDash').innerHTML = '<div class="stats-grid">' + stat('Total Tools', tools.length) + stat('Published', tools.length - hidden) + stat('Hidden', hidden) + stat('Total Visits', analyticsData.visits || 0) + '</div>' +
@@ -4234,30 +4697,8 @@
   /* ---- Security ---- */
   /* superseded by secRender2; kept out of tabRenderers so it cannot overwrite
      the AppHooks dispatcher */
-  var secRenderV0 = function () {
-    var lg = lsGet(LOGIN_KEY, []), lock = lsGet(LOCK_KEY, { fails: 0, until: 0 });
-    var rows = lg.slice(0, 20).map(function (l) { return '<tr><td>' + ssFmtDateTime(l.t) + '</td><td><span class="xm-badge ' + (l.ok ? 'xm-ok' : 'xm-bad') + '">' + (l.ok ? 'Success' : 'Failed') + '</span></td><td style="font-size:11px">' + escapeHtml(l.ua || '') + '</td></tr>'; }).join('') || '<tr><td colspan="3">No login attempts recorded.</td></tr>';
-    var failed = lg.filter(function (l) { return !l.ok; }).length;
-    $('tabSec').innerHTML = (usingDefaultPass() ? '<div class="xm-alert bad">🔴 You are using the default password. Change it now.</div>' : '<div class="xm-alert ok">✅ Custom password is set.</div>') +
-      '<div class="stats-grid">' + stat('Failed attempts (logged)', failed) + stat('Lockout', lock.until > Date.now() ? 'Active' : 'None') + stat('Session timeout', '30 min') + '</div>' +
-      '<div class="settings-section-title">🔑 Change Admin Password</div>' +
-      '<div class="form-group"><label>Current password</label><input type="password" id="secOld" autocomplete="off"></div>' +
-      '<div class="form-group"><label>New password (min 10 chars, upper + lower + number)</label><input type="password" id="secNew" autocomplete="new-password"></div>' +
-      '<div class="form-group"><label>Confirm new password</label><input type="password" id="secNew2" autocomplete="new-password"></div>' +
-      '<div class="xm-row"><button class="btn-primary" id="secSave" type="button">Update Password</button><button class="btn-secondary" id="secOut" type="button">Force Logout</button></div>' +
-      '<div class="settings-section-title">📜 Login History</div><div class="xm-scroll"><table class="analytics-table"><thead><tr><th>Time</th><th>Result</th><th>Device</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
-      '<div class="xm-alert warn">ℹ️ <b>Important:</b> this site has no server, so the password is only hashed (SHA-256) and checked in the browser. It deters casual access but is <b>not</b> real security — anyone with DevTools can bypass it or edit localStorage. For real protection, add a backend (server-side auth, HTTP-only cookies, database).</div>';
-    $('secSave').onclick = function () {
-      var o = $('secOld').value, n = $('secNew').value, n2 = $('secNew2').value;
-      if (n !== n2) return alert('New passwords do not match.');
-      if (n.length < 10 || !/[a-z]/.test(n) || !/[A-Z]/.test(n) || !/[0-9]/.test(n)) return alert('Password must be 10+ characters with upper-case, lower-case and a number.');
-      hashPass(o).then(function (h) {
-        if (h !== storedHash()) return alert('Current password is incorrect.');
-        hashPass(n).then(function (nh) { lsSet(AUTH_KEY, { hash: nh, changed: Date.now() }); logAct('security', 'Admin password changed'); alert('Password updated.'); tabRenderers.tabSec(); });
-      });
-    };
-    $('secOut').onclick = function () { adminLogout('Forced logout'); };
-  };
+  /* F4: the v1 security renderer (secRenderV0) lived here. It was
+     superseded by secRender2 and never called — removed. */
 
   /* ---- Activity Logs ---- */
   var logFilter = '';
@@ -6060,6 +6501,8 @@
                        : '<div class="failed" style="color:var(--muted)">saved only, not emailed</div>');
         }
         return '<div class="th-msg ' + kind + '"><div class="meta">' + who + ' · ' + escapeHtml(ssFmtDateTime(m.at)) +
+          ' <span class="th-ago" title="' + escapeHtml(new Date(m.at).toISOString()) + '">(' +
+          (typeof agoText === 'function' ? agoText(m.at) : '') + ')</span>' +
           '</div><div class="body">' + escapeHtml(m.text) + '</div>' + state + '</div>';
       }).join('');
     log.scrollTop = log.scrollHeight;
@@ -6453,10 +6896,16 @@
     if (!Array.isArray(s.alerts)) s.alerts = [];
     if (s.ipEnforce == null) s.ipEnforce = false;
     if (s.ipLookupUrl == null) s.ipLookupUrl = 'https://api.ipify.org?format=json';
-    if (s.lastIp == null) s.lastIp = '';
+    /* A4: the detected IP used to be persisted here, so every script on the
+       page (and the next person on a shared machine) could read it. It lives in
+       memory for the life of the tab now, and any stored copy is deleted. */
+    if (s.lastIp != null) { delete s.lastIp; try { lsSet(SEC_KEY, s); } catch (e) {} }
     if (!s.epoch) s.epoch = 1;
     return s;
   }
+  var LAST_IP = '';
+  function secLastIp() { return LAST_IP; }
+  function secSetLastIp(ip) { LAST_IP = String(ip || ''); }
   function secSave(s) { lsSet(SEC_KEY, s); }
   function secAlert(kind, msg) {
     var s = secGet();
@@ -6557,7 +7006,27 @@
   }
 
   /* ---- admin sessions ---- */
-  function sessAll() { var a = lsGet(SESS_KEY, []); return Array.isArray(a) ? a : []; }
+  /* A4: the session list is readable by any script on the page, so it carries
+     no personal data — no IP, no geo lookup, no token. Only what the Security
+     tab draws. Unknown/legacy fields (ip, epoch, city…) are dropped on read and
+     on write. */
+  var SESS_FIELDS = ['id', 'start', 'lastSeen', 'device', 'ua'];
+  function sessClean(rec) {
+    var out = {};
+    SESS_FIELDS.forEach(function (k) { if (rec && rec[k] != null) out[k] = rec[k]; });
+    return out;
+  }
+  function sessAll() {
+    var a = lsGet(SESS_KEY, []);
+    if (!Array.isArray(a)) return [];
+    var cleaned = a.map(sessClean);
+    /* if a legacy record carried an ip/city/epoch, drop it on disk too — hiding
+       it in memory only leaves the PII readable in DevTools */
+    try {
+      if (JSON.stringify(cleaned) !== JSON.stringify(a)) lsSet(SESS_KEY, cleaned);
+    } catch (e) {}
+    return cleaned;
+  }
   function sessSave(a) { lsSet(SESS_KEY, a); }
   function sessCurrentId() {
     try {
@@ -6570,10 +7039,12 @@
     var id = sessCurrentId(), list = sessAll(), found = false;
     list.forEach(function (s) { if (s.id === id) { s.lastSeen = Date.now(); found = true; } });
     if (!found) {
-      list.unshift({ id: id, start: Date.now(), lastSeen: Date.now(), device: getDeviceInfo(),
-        ua: navigator.userAgent.slice(0, 80), epoch: secGet().epoch });
+      /* no `epoch` here any more: a value stored next to the record cannot
+         prove the record is genuine, and it made the list look verified */
+      list.unshift(sessClean({ id: id, start: Date.now(), lastSeen: Date.now(),
+        device: getDeviceInfo(), ua: navigator.userAgent.slice(0, 80) }));
     }
-    sessSave(list.slice(0, 20));
+    sessSave(list.slice(0, 20).map(sessClean));
   }
   function sessRevoke(id) {
     sessSave(sessAll().filter(function (s) { return s.id !== id; }));
@@ -7053,7 +7524,7 @@
         '<label style="display:flex;align-items:center;gap:6px;font-size:12px"><input type="checkbox" id="secIpOn"' + (s.ipEnforce ? ' checked' : '') + ' style="width:auto"> Enforce</label>' +
         '<button class="btn-secondary" id="secIpSave" type="button">Save</button>' +
         '<button class="btn-secondary" id="secIpNow" type="button">Check my IP</button></div>' +
-      '<div class="xm-note" id="secIpMsg">' + (s.lastIp ? 'Last detected IP: ' + escapeHtml(s.lastIp) : 'The browser cannot read your IP by itself — the panel asks the lookup URL above.') + '</div>' +
+      '<div class="xm-note" id="secIpMsg">' + (secLastIp() ? 'Last detected IP: ' + escapeHtml(secLastIp()) + ' (this tab only)' : 'The browser cannot read your IP by itself — the panel asks the lookup URL above.') + '</div>' +
 
       '<div class="settings-section-title">💻 Active sessions</div>' +
       '<div class="xm-scroll"><table class="analytics-table"><thead><tr><th>Started</th><th>Device</th><th>State</th><th></th></tr></thead><tbody>' + sessRows + '</tbody></table></div>' +
@@ -7122,7 +7593,7 @@
         .then(function (r) { return r.json(); })
         .then(function (j) {
           var ip = j.ip || j.query || '';
-          st.lastIp = ip; secSave(st);
+          secSetLastIp(ip);   /* memory only — see A4 */
           msg.textContent = 'Your IP: ' + ip + (st.ipAllow.length ? (st.ipAllow.indexOf(ip) > -1 ? ' — allowed ✅' : ' — NOT in the allow list ⚠️') : '');
         })
         .catch(function () { msg.textContent = 'Could not look up the IP (offline or blocked).'; });
@@ -7693,7 +8164,7 @@
       '<div class="xm-row"><input id="s2ipurl" value="' + escapeHtml(s.ipLookupUrl) + '" style="flex:1;min-width:200px" placeholder="IP lookup URL">' +
         '<button class="btn-secondary" id="s2ipsave" type="button">Save</button>' +
         '<button class="btn-secondary" id="s2ipnow" type="button">Check my IP</button></div>' +
-      '<div class="xm-note" id="s2ipmsg">' + (s.lastIp ? 'Last detected IP: ' + escapeHtml(s.lastIp) : 'The browser cannot read your IP by itself — the panel asks the lookup URL above.') + '</div>' +
+      '<div class="xm-note" id="s2ipmsg">' + (secLastIp() ? 'Last detected IP: ' + escapeHtml(secLastIp()) + ' (this tab only)' : 'The browser cannot read your IP by itself — the panel asks the lookup URL above.') + '</div>' +
 
       '<div class="settings-section-title">🚨 Security alerts</div>' +
       '<div class="xm-row"><label style="display:flex;align-items:center;gap:8px;font-size:12px"><input type="checkbox" id="s2alertmail"' +
@@ -7787,7 +8258,7 @@
       msg.textContent = 'Looking up…';
       fetch(st.ipLookupUrl).then(function (r) { return r.json(); }).then(function (j) {
         var ip = j.ip || j.query || '';
-        st.lastIp = ip; secSave(st);
+        secSetLastIp(ip);   /* memory only — see A4 */
         msg.textContent = 'Your IP: ' + ip +
           (st.ipMode === 'ban' ? (st.ipBan.indexOf(ip) > -1 ? ' — banned ⛔' : ' — not banned ✅')
                                : (st.ipAllow.length ? (st.ipAllow.indexOf(ip) > -1 ? ' — allowed ✅' : ' — not whitelisted ⚠️') : ''));
@@ -8475,8 +8946,11 @@
       '<div class="settings-section-title">🐞 Error monitoring</div>' +
       '<div class="xm-scroll"><table class="analytics-table"><tbody>' +
       (errs.slice(0, 10).map(function (e) {
-        return '<tr><td style="width:150px">' + ssFmtDateTime(e.t) + '</td><td>' + escapeHtml(e.m) + '</td><td style="font-size:11px">' + escapeHtml(e.s) + '</td></tr>';
-      }).join('') || '<tr><td colspan="3">No errors captured. 🎉</td></tr>') + '</tbody></table></div>';
+        var cat = e.cat || (typeof errCategory === 'function' ? errCategory(e.m, e.s) : 'unknown');
+        return '<tr><td style="width:150px">' + ssFmtDateTime(e.t) + '</td>' +
+          '<td style="width:90px"><span class="xm-badge ' + (cat === 'network' ? 'xm-warn' : 'xm-bad') + '">' + escapeHtml(cat) + '</span></td>' +
+          '<td>' + escapeHtml(e.m) + '</td><td style="font-size:11px">' + escapeHtml(e.s) + '</td></tr>';
+      }).join('') || '<tr><td colspan="4">No errors captured. 🎉</td></tr>') + '</tbody></table></div>';
 
     $('h2fetch').onclick = function () {
       var url = $('h2url').value.trim();
@@ -8539,14 +9013,68 @@
     tab.insertBefore(box, tab.firstChild);
   });
 
+  /* ============================================================
+     E4 — "what should I do next?" on System Health
+     ============================================================ */
+  Hooks.onTabSys.push(function () {
+    var tab = document.getElementById('tabSys');
+    if (!tab) return;
+    var old = document.getElementById('sysActions');
+    if (old) old.remove();
+    var items = [];
+    try {
+      var st = storeSize('das_studio_');
+      var pct = Math.min(100, st.total / (5 * 1024 * 1024) * 100);
+      if (pct >= 70) {
+        items.push({ bad: true, html: 'Storage is <b>' + pct.toFixed(0) + '% full</b> — clear old media and exported attachments.' ,
+          act: 'media', label: 'Open Media' });
+      }
+    } catch (e) {}
+    try {
+      var seo = lsGet('das_studio_seo', null);
+      if (!seo || !seo.ga) items.push({ bad: false, html: 'Google Analytics is <b>not configured</b> — add the GA4 id in SEO.', act: 'seo', label: 'Open SEO' });
+    } catch (e) {}
+    try {
+      var d = dbV2();
+      if (d && d.schedule && d.schedule !== 'off' && (!d.lastBackup || Date.now() - d.lastBackup > (d.schedule === 'daily' ? 86400000 : 604800000))) {
+        items.push({ bad: true, html: '<b>A backup is overdue</b> — export a JSON backup from Database.', act: 'db', label: 'Open Database' });
+      }
+    } catch (e) {}
+    try {
+      if (!lsGet('das_studio_backend_health', null)) items.push({ bad: false, html: 'No <b>server health endpoint</b> configured — CPU/RAM/disk stay unknown.', act: 'sys', label: 'Stay here' });
+    } catch (e) {}
+    if (!items.length) items.push({ bad: false, html: 'Nothing to do — storage, analytics and backups all look fine.' });
+    var box = document.createElement('div');
+    box.id = 'sysActions';
+    box.className = 'an-summary';
+    box.innerHTML = '<div class="settings-section-title">✅ Next actions</div>' + items.map(function (it) {
+      return '<div class="an-sum-line">' + (it.bad ? '🔴 ' : '• ') + it.html +
+        (it.act ? ' <button type="button" class="fb-mini" data-sys-go="' + it.act + '">' + it.label + '</button>' : '') + '</div>';
+    }).join('');
+    tab.insertBefore(box, tab.firstChild);
+    box.querySelectorAll('[data-sys-go]').forEach(function (b) {
+      b.onclick = function () {
+        var target = b.getAttribute('data-sys-go');
+        if (target === 'sys') return;
+        try { admGo(target === 'seo' ? 'tabSeoBtn' : (target === 'db' ? 'tabDbBtn' : 'tabMediaBtn')); } catch (e) {}
+      };
+    });
+  });
+
   (function wireConsoleV2() {
-    tabRenderers.tabUsers = usersRender2;
+    /* F2: every tab is base + dispatcher now. tabUsers, tabMedia and tabLog were
+       the last three still assigned directly (twice each, v1 then v2). */
+    AppHooks.base('tabUsers', usersRender2);
+    tabRenderers.tabUsers = function () { return AppHooks.run('tabUsers', arguments); };
     /* tabSec base is registered once through AppHooks (secRender2) */
     AppHooks.base('tabDb', dbRender2);
     tabRenderers.tabDb = function () { return AppHooks.run('tabDb', arguments); };
-    tabRenderers.tabMedia = mediaRender2;
-    tabRenderers.tabLog = logRender2;
-    tabRenderers.tabSys = sysRender2;
+    AppHooks.base('tabMedia', mediaRender2);
+    tabRenderers.tabMedia = function () { return AppHooks.run('tabMedia', arguments); };
+    AppHooks.base('tabLog', logRender2);
+    tabRenderers.tabLog = function () { return AppHooks.run('tabLog', arguments); };
+    AppHooks.base('tabSys', sysRender2);
+    tabRenderers.tabSys = function () { return AppHooks.run('tabSys', arguments); };
   })();
   /* ============================================================
      FULL-PAGE ADMIN SHELL — sidebar, breadcrumbs, search, alerts
@@ -8957,13 +9485,13 @@
 
     /* ---------- sorting ---------- */
     var sortEl = document.getElementById('sortTools');
-    function clicksOf(id) {
+    /* click records are keyed by the tool's title (titleMain + titleAccent), which
+       is exactly the card's .card-title text; they carry no id. This used to look
+       for c[k].id (never matched) and return the SUM of every tool's clicks, so
+       every card scored the same and "Most popular" silently fell back to A-Z. */
+    function clicksOf(title) {
       var c = (typeof analyticsData !== 'undefined' && analyticsData.clicks) ? analyticsData.clicks : {};
-      var t = null;
-      for (var k in c) { if (c[k] && String(c[k].id) === String(id)) t = c[k]; }
-      var total = 0;
-      for (var n in c) total += c[n].count || 0;
-      return total;
+      return Number(c[title] && c[title].count) || 0;
     }
     function sortCards(mode) {
       var gridEl = document.getElementById('grid');
@@ -8973,16 +9501,16 @@
         var ta = (a.querySelector('.card-title') || {}).textContent || '';
         var tb = (b.querySelector('.card-title') || {}).textContent || '';
         if (mode === 'az') return ta.localeCompare(tb);
-        if (mode === 'newest') return Number(b.getAttribute('data-id')) - Number(a.getAttribute('data-id'));
+        if (mode === 'newest') return (Number(b.getAttribute('data-id')) || 0) - (Number(a.getAttribute('data-id')) || 0);
         if (mode === 'featured') {
           var fa = a.querySelector('.card-featured') ? 1 : 0;
           var fb = b.querySelector('.card-featured') ? 1 : 0;
           if (fa !== fb) return fb - fa;
-          return Number(b.getAttribute('data-id')) - Number(a.getAttribute('data-id'));
+          return (Number(b.getAttribute('data-id')) || 0) - (Number(a.getAttribute('data-id')) || 0);
         }
         if (mode === 'popular') {
-          var ca = clicksOf(a.getAttribute('data-id'));
-          var cb = clicksOf(b.getAttribute('data-id'));
+          var ca = clicksOf(ta);
+          var cb = clicksOf(tb);
           if (ca !== cb) return cb - ca;
           return ta.localeCompare(tb);
         }
@@ -9009,9 +9537,10 @@
         return !c.classList.contains('hidden');
       });
       cards.forEach(function (c, i) { c.classList.toggle('lm-hide', i >= lmShown); });
-      var rest = cards.length - lmShown;
+      var rest = Math.max(0, cards.length - lmShown);
       bar.style.display = rest > 0 ? 'flex' : 'none';
-      bar.querySelector('button').textContent = 'Load more tools (' + rest + ' left)';
+      var lmLabel = bar.querySelector('button');
+      if (lmLabel && rest > 0) lmLabel.textContent = 'Load more tools (' + rest + ' left)';
     }
     var lmBtn = document.getElementById('loadMoreBtn');
     if (lmBtn) lmBtn.addEventListener('click', function () { lmShown += LM_STEP; lmApply(false); });
@@ -9032,11 +9561,7 @@
           open.textContent = 'Open tool ↗';
           body.appendChild(open);
         });
-        var dc = document.getElementById('dirCount');
-        if (dc) {
-          var n = publishedToolCount();
-          dc.textContent = n + (n === 1 ? ' tool' : ' tools');
-        }
+        updateDirCount();
         if (sortEl && sortEl.value !== 'default') sortCards(sortEl.value);
       });
     }
@@ -9219,13 +9744,65 @@
   var THEME_PATCHES = [];
 
   var t20Filter = 'all';
+  var t20Search = '';
+
+  /* D2: 29 cards is a scroll marathon on a phone, so the gallery now opens on
+     the visitor's own colour scheme, can be searched, and keeps up to five
+     pinned themes above the grid. */
+  function t20Pins() {
+    try { var a = JSON.parse(localStorage.getItem('das_theme_pins') || '[]'); return Array.isArray(a) ? a.slice(0, 5) : []; }
+    catch (e) { return []; }
+  }
+  function t20SetPins(a) { try { localStorage.setItem('das_theme_pins', JSON.stringify((a || []).slice(0, 5))); } catch (e) {} }
+  function t20TogglePin(id) {
+    if (!id) return;
+    var a = t20Pins(), i = a.indexOf(id);
+    if (i > -1) a.splice(i, 1); else a.unshift(id);
+    t20SetPins(a);
+    t20Render();
+  }
+  function t20RenderPins() {
+    var grid = document.getElementById('t20Grid');
+    if (!grid || !grid.parentNode) return;
+    var host = document.getElementById('t20Pins');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 't20Pins';
+      host.className = 't20-pins';
+      grid.parentNode.insertBefore(host, grid);
+    }
+    var cards = t20Pins().map(function (id) {
+      var t = null;
+      THEMES20.forEach(function (x) { if (x.id === id) t = x; });
+      if (!t) return '';
+      return '<button type="button" class="t20-pin" data-pin="' + t.id + '" title="' + escapeHtml(t.name) + '">📌 ' +
+        escapeHtml(t.name) + '</button>';
+    }).join('');
+    host.innerHTML = '<span class="t20-pins-label">Pinned</span>' +
+      (cards || '<span class="t20-pins-empty">none yet</span>') +
+      '<button type="button" class="t20-pin-btn" id="t20PinCurrent" title="Pin the theme that is applied now">📌 Pin current</button>';
+    host.querySelectorAll('[data-pin]').forEach(function (b) {
+      b.onclick = function () { t20Apply(b.getAttribute('data-pin')); };
+    });
+    var pinBtn = document.getElementById('t20PinCurrent');
+    if (pinBtn) pinBtn.onclick = function () {
+      /* a fresh install has no settings.theme20 yet — pin the first theme
+         instead of doing nothing */
+      var id = settings.theme20 || (THEMES20[0] && THEMES20[0].id);
+      t20TogglePin(id);
+    };
+  }
 
   function t20Render() {
     var grid = document.getElementById('t20Grid');
     if (!grid) return;
     var list = THEMES20.filter(function (t) {
-      if (t20Filter === 'all') return true;
-      return t.tag.toLowerCase() === t20Filter;
+      if (t20Filter !== 'all' && t.tag.toLowerCase() !== t20Filter) return false;
+      if (t20Search) {
+        var hay = (t.name + ' ' + t.tag + ' ' + (t.fam || '') + ' ' + (t.best || '') + ' ' + (t.feat || []).join(' ')).toLowerCase();
+        if (hay.indexOf(t20Search) === -1) return false;
+      }
+      return true;
     });
     grid.innerHTML = list.map(function (t) {
       var active = settings.theme20 === t.id;
@@ -9240,6 +9817,7 @@
     grid.querySelectorAll('[data-t20]').forEach(function (b) {
       b.onclick = function () { t20Apply(b.getAttribute('data-t20')); };
     });
+    t20RenderPins();
   }
 
   function t20Apply(id) {
@@ -9291,19 +9869,39 @@
       root.setAttribute('data-theme', t.mode);
       root.style.setProperty('--btn-radius', (t.btn == null ? 12 : t.btn) + 'px');
     })();
-    t20Render();
-    t20FillCustomizer();
+    /* D2: open on the visitor's own colour scheme instead of all 29 */
+    try {
+      var savedF = localStorage.getItem('das_t20_filter');
+      t20Filter = savedF || ((window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark');
+    } catch (e) { t20Filter = 'dark'; }
 
     var bar = document.getElementById('t20Bar');
     if (bar) {
+      bar.querySelectorAll('[data-f]').forEach(function (x) {
+        x.classList.toggle('active', x.getAttribute('data-f') === t20Filter);
+      });
       bar.addEventListener('click', function (e) {
         var b = e.target.closest('[data-f]');
         if (!b) return;
         t20Filter = b.getAttribute('data-f');
+        try { localStorage.setItem('das_t20_filter', t20Filter); } catch (e2) {}
         bar.querySelectorAll('[data-f]').forEach(function (x) { x.classList.toggle('active', x === b); });
         t20Render();
       });
+      /* D2: search box, created once */
+      if (!document.getElementById('t20Search')) {
+        var sb = document.createElement('input');
+        sb.id = 't20Search';
+        sb.type = 'search';
+        sb.className = 't20-search';
+        sb.placeholder = 'Search themes…';
+        sb.setAttribute('aria-label', 'Search themes');
+        sb.addEventListener('input', function () { t20Search = String(this.value || '').trim().toLowerCase(); t20Render(); });
+        bar.parentNode.insertBefore(sb, bar.nextSibling);
+      }
     }
+    t20Render();
+    t20FillCustomizer();
 
     ['apPrimary', 'apSecondary'].forEach(function (id) {
       var el = document.getElementById(id);
@@ -9333,7 +9931,12 @@
   function tp(bg, bg2, panel, pborder, border, text, muted) {
     return { bg: bg, bg2: bg2, panel: panel, 'panel-border': pborder, border: border, text: text, muted: muted };
   }
-  THEMES20 = [
+  /* B1: the 20 base themes are a FACTORY, not a shared mutable array. Every
+     call returns fresh objects, so a patch can never leave a residual value
+     behind for the next call, and no module can see an empty THEMES20 just
+     because it ran before the data was assigned. */
+  function themes20Base() {
+    return [
     { id: 'glass', name: 'Glassmorphism', tag: 'Dark', fam: 'glass', mode: 'dark', btn: 12,
       sw: ['#6366F1', '#8B5CF6', '#0F172A'],
       p: tp('#0F172A', '#0B1220', '#1B2545', 'rgba(255,255,255,.20)', 'rgba(255,255,255,.14)', '#FFFFFF', '#B8C2DA'),
@@ -9533,7 +10136,11 @@
       pros: 'Clean and immediately professional',
       cons: 'Similar to many modern SaaS products',
       css: '.card{box-shadow:0 1px 2px rgba(0,0,0,.10),0 14px 34px -22px rgba(79,70,229,.55)}' }
-  ];
+      ];
+  }
+  /* THEMES20 is the live list the gallery and t20Apply() read. It is seeded
+     here and re-seeded by applyThemePatches() before every patch pass. */
+  var THEMES20 = themes20Base();
 
   function t20ById(id) {
     var t = null;
@@ -9637,9 +10244,8 @@
     root.style.setProperty('--btn-radius', (t.btn == null ? 12 : t.btn) + 'px');
     t20Paint(t);
   })();
-  /* patches are registered below; the single apply point runs after them */
-  t20Render();
-  t20FillCustomizer();
+  /* the gallery is rendered once, at the end of applyThemePatches(), so it
+     always shows the final patched list (B2) */
   /* ============================================================
      THEMES 9–15 — exact palettes from the design specs
      ============================================================ */
@@ -9877,6 +10483,9 @@ THEME_PATCHES.push(function patchThemes1620() {
      the parser reached them, so what a theme looked like depended on line
      order, and re-entering a block (a reload of the module) stacked residuals. */
   function applyThemePatches() {
+    /* B1: start from a clean factory copy, so re-running this (a hot reload, a
+       second call from another module) cannot stack one patch on another. */
+    THEMES20 = themes20Base();
     var before = THEMES20.length;
     THEME_PATCHES.forEach(function (fn, i) {
       try { fn(); } catch (e) {
@@ -9885,6 +10494,12 @@ THEME_PATCHES.push(function patchThemes1620() {
     });
     window.__dasThemeCount = THEMES20.length;
     window.__dasThemePatches = THEME_PATCHES.length;
+    /* B2: render the gallery AFTER the patches, with the final list. The
+       filter (t20Filter) and the selected theme (settings.theme20) live
+       outside the array, so re-rendering keeps the current state. */
+    try {
+      if (document.getElementById('t20Grid')) { t20Render(); t20FillCustomizer(); }
+    } catch (e) {}
     return THEMES20.length - before;
   }
 
@@ -10302,6 +10917,30 @@ THEME_PATCHES.push(function addScreenshotThemes() {
         };
       });
     }
+
+    /* ============================================================
+       E2 — the card says what the tool is good for before you click
+       ============================================================ */
+    Hooks.onRenderGrid.push(function () {
+      Array.prototype.forEach.call(document.querySelectorAll('#grid .card'), function (card) {
+        var id = Number(card.getAttribute('data-id'));
+        var t = null;
+        tools.forEach(function (x) { if (Number(x.id) === id) t = x; });
+        if (!t) return;
+        var bits = [];
+        var tags = (typeof toolTagsOf === 'function' ? toolTagsOf(t) : (t.tags || [])) || [];
+        if (!tags.length && t.keywords) {
+          tags = String(t.keywords).split(/[,;]+/).map(function (x) { return x.trim(); }).filter(Boolean).slice(0, 5);
+        }
+        if (tags.length) bits.push('Tags: ' + tags.slice(0, 5).join(', '));
+        if (t.version) bits.push('Version: ' + t.version);
+        var title = (t.titleMain || '') + (t.titleAccent || '');
+        var clicks = (analyticsData.clicks || {})[title];
+        if (clicks && clicks.lastClicked) bits.push('Last opened: ' + clicks.lastClicked);
+        if (t.desc) bits.push(String(t.desc).slice(0, 140));
+        if (bits.length) card.title = bits.join('\n');
+      });
+    });
 
     /* hook card rendering: add an info button + recent tracking */
     Hooks.onRenderGrid.push(function () {
@@ -10774,6 +11413,7 @@ THEME_PATCHES.push(function addScreenshotThemes() {
           try { syncLoginEmailField(document.getElementById('admLogin')); } catch (e) {}
           wireAuth();
           pullFromCloud();
+          pullCustomCode();
           renderStatus();
         })
         .catch(function (err) {
@@ -10954,6 +11594,42 @@ THEME_PATCHES.push(function addScreenshotThemes() {
       }).catch(function () {});
     }
 
+    /* ---------- custom head/body code lives ONLY here ----------
+       /code/main { head, body, updatedAt }
+       Rules: readable by everyone (visitors need the admin's snippet), writable
+       only by an admin with a recent sign-in. Nothing is cached in
+       localStorage, so a visitor editing their own storage cannot inject
+       anything that survives a reload or reaches another browser. */
+    function pullCustomCode() {
+      if (!state.ready) return;
+      state.db.collection('code').doc('main').get().then(function (doc) {
+        if (!doc.exists) return;
+        var d = doc.data() || {};
+        if (typeof window.__dasSetCustomCode !== 'function') return;
+        window.__dasSetCustomCode(d.head || '', d.body || '');
+      }).catch(function () {});
+    }
+    window.__dasPullCustomCode = pullCustomCode;
+
+    window.__dasPushCustomCode = function (head, body) {
+      if (!state.ready) return false;
+      if (!state.user) { try { admLoginError('Sign in as admin to save custom code.'); } catch (e) {} return false; }
+      try {
+        state.db.collection('code').doc('main').set({
+          head: String(head || '').slice(0, 20000),
+          body: String(body || '').slice(0, 20000),
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }).catch(function (e) {
+          try {
+            var code = (e && e.code) || '';
+            alert('Custom code could not be saved: ' + (e && e.message || e) +
+              (/permission-denied/.test(code) ? '\n\nYour sign-in may be older than the 5-minute window for sensitive writes — sign out and back in.' : ''));
+          } catch (e2) {}
+        });
+        return true;
+      } catch (e) { return false; }
+    };
+
     function pushAll() {
       if (!state.ready) return Promise.reject(new Error('Firebase SDK is not loaded.'));
       if (!state.user) return Promise.reject(new Error('Sign in as admin first.'));
@@ -10999,6 +11675,7 @@ THEME_PATCHES.push(function addScreenshotThemes() {
       document.getElementById('fbPullAll').onclick = function () {
         if (!confirm('Reload tools and settings from Firestore?')) return;
         pullFromCloud();
+        pullCustomCode();
         setTimeout(function () { location.reload(); }, 600);
       };
       document.getElementById('fbSignOut').onclick = function () {
@@ -11223,18 +11900,29 @@ THEME_PATCHES.push(function addScreenshotThemes() {
        - a local record has its own unique id — use it, never the ticket, which
          restarts at 001 in every browser;
        - legacy records without an id fall back to their creation time. */
+    /* C2: the fallback for a record with no id was 'fb<createdAt>', so two
+       legacy tickets written in the same millisecond collided and the second
+       overwrote the first. The fallback now mixes the ticket, the sender and
+       the message, which stays stable across pushes (so re-sending is still
+       idempotent) but is very unlikely to collide. */
+    function feedbackHash(s) {
+      var h = 5381;
+      for (var i = 0; i < s.length; i++) h = ((h * 33) ^ s.charCodeAt(i)) >>> 0;
+      return ('0000000' + h.toString(36)).slice(-7);
+    }
     function feedbackDocId(rec) {
       var id = String((rec && rec.id) || '');
       if (id.indexOf('cloud_') === 0 && id.length > 6) return id.slice(6);
       if (/^[A-Za-z0-9_-]{3,120}$/.test(id)) return id;
       var t = Number(rec && (rec.createdAt || rec.t)) || 0;
-      if (t > 0) return 'fb' + t;
-      return 'fb' + Date.now();
+      var sig = feedbackHash([(rec && rec.ticket) || '', (rec && rec.email) || '',
+        (rec && rec.name) || '', (rec && rec.message) || ''].join('\u0001'));
+      return 'fb' + (t > 0 ? t : '0') + '-' + sig;
     }
     window.__dasFeedbackDocId = feedbackDocId;
 
     function cloudCreateFeedback(rec) {
-      if (!db() || !rec || !rec.message) return;
+      if (!db() || !rec || !rec.message) return Promise.resolve();
       var doc = {
         message: String(rec.message).slice(0, 4900),
         name: String(rec.name || '').slice(0, 80),
@@ -11258,7 +11946,7 @@ THEME_PATCHES.push(function addScreenshotThemes() {
         }
       }
       /* the ticket number restarts at 001 in every browser — key by unique id */
-      db().collection('feedback').doc(feedbackDocId(rec)).set(doc)
+      return db().collection('feedback').doc(feedbackDocId(rec)).set(doc)
         .then(function () {
           note('Ticket ' + doc.ticket + ' delivered to the cloud' +
             (doc.attachmentData ? ' with attachment.' : (att ? ' (attachment not synced).' : '.')));
@@ -11266,22 +11954,8 @@ THEME_PATCHES.push(function addScreenshotThemes() {
         .catch(function (e) { note('Ticket upload failed: ' + (e.code || e.message), true); });
     }
 
-    /* the form's own listener runs first, so read back what it just stored */
-    var form = document.getElementById('userFeedbackForm');
-    if (form) {
-      form.addEventListener('submit', function () {
-        setTimeout(function () {
-          try {
-            var list = JSON.parse(localStorage.getItem('das_studio_feedbacks') || '[]');
-            /* records are appended, so the newest is the one with the latest createdAt */
-            var newest = list.slice().sort(function (a, b) {
-              return (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
-            })[0];
-            if (newest) cloudCreateFeedback(newest);
-          } catch (e) {}
-        }, 400);
-      });
-    }
+    /* the submit handler emits this only after the ticket is really saved */
+    Hooks.onFeedbackSaved.push(function (rec) { cloudCreateFeedback(rec); });
 
     /* ---------- 3. admin pulls tickets raised anywhere ---------- */
     function mergeCloudFeedback() {
@@ -11398,14 +12072,13 @@ THEME_PATCHES.push(function addScreenshotThemes() {
       } catch (e) {}
     }
 
-    /* refresh tickets whenever the Messages tab opens */
-    var prevMsgs = tabRenderers.tabMsgs;
-    if (prevMsgs) {
-      tabRenderers.tabMsgs = function () {
-        prevMsgs.apply(null, arguments);
-        mergeCloudFeedback();
-      };
-    }
+    /* refresh tickets whenever the Messages tab opens — a subscriber now */
+    /* the old wrapper was guarded by `if (tabRenderers.tabMsgs)`, which was
+       always false — the Messages tab had no renderer at all, so opening it
+       never refreshed tickets. Give it a real base. */
+    AppHooks.base('tabMsgs', function () { try { renderFeedbacks(); } catch (e) {} });
+    tabRenderers.tabMsgs = function () { return AppHooks.run('tabMsgs', arguments); };
+    Hooks.onTabMsgs.push(function () { mergeCloudFeedback(); });
 
     /* start when Firebase is ready, and again when the admin signs in */
     var tries = 0;
@@ -11501,12 +12174,11 @@ THEME_PATCHES.push(function addScreenshotThemes() {
     }, 600);
 
     /* ---------- 2. announcement views and clicks ---------- */
-    var baseBump = annBump;
-    annBump = function (id, kind) {
-      baseBump.apply(null, arguments);
+    /* F2: a subscriber, not a re-assignment */
+    Hooks.onAnnBump.push(function (id, kind) {
       if (kind === 'views') send('view', { path: '/ann/' + String(id).slice(0, 60), ref: '' });
       else send('tool', { tool: 'ann:' + String(id).slice(0, 60) });
-    };
+    });
 
     /* ---------- 3. pull and aggregate ---------- */
     window.__dasCloudPull = pull;
@@ -11608,13 +12280,14 @@ THEME_PATCHES.push(function addScreenshotThemes() {
       pull().then(function (n) { if (n) { try { anBase(); } catch (e) {} } });
     });
 
-    var prevNotice = tabRenderers.tabNotice;
-    if (prevNotice) {
-      tabRenderers.tabNotice = function () {
-        prevNotice.apply(null, arguments);
-        pull().then(function (n) { if (n) { try { if (typeof annRenderReport === 'function') annRenderReport(); } catch (e) {} } });
-      };
-    }
+    /* same as tabMsgs: there was no base, only a guard that never fired */
+    AppHooks.base('tabNotice', function () {
+      try { if (typeof annRenderReport === 'function') annRenderReport(); } catch (e) {}
+    });
+    tabRenderers.tabNotice = function () { return AppHooks.run('tabNotice', arguments); };
+    Hooks.onTabNotice.push(function () {
+      pull().then(function (n) { if (n) { try { if (typeof annRenderReport === 'function') annRenderReport(); } catch (e) {} } });
+    });
 
     var tries = 0;
     var t = setInterval(function () {
@@ -11666,11 +12339,114 @@ THEME_PATCHES.push(function addScreenshotThemes() {
   });
 
   /* ============================================================
+     D5 — "when did this last sync, and pull now"
+     ============================================================ */
+  Hooks.onTabAnalytics.push(function () {
+    var tab = document.getElementById('tabAnalytics');
+    if (!tab) return;
+    var foot = document.getElementById('anSyncNote');
+    if (!foot) {
+      foot = document.createElement('div');
+      foot.id = 'anSyncNote';
+      foot.className = 'an-sync';
+      tab.appendChild(foot);
+    }
+    var last = Number(localStorage.getItem('das_an_cloud_t') || 0);
+    foot.innerHTML = 'Last synced ' + (last ? agoText(last) : 'never') +
+      ' · <button type="button" class="fb-mini" id="anPullNow">Pull now</button>' +
+      (window.__dasCloudPull ? '' : ' <span class="xm-note">(cloud analytics not loaded)</span>');
+    var btn = document.getElementById('anPullNow');
+    if (btn) btn.onclick = function () {
+      if (typeof window.__dasCloudPull !== 'function') return;
+      btn.disabled = true;
+      btn.textContent = 'Pulling…';
+      window.__dasCloudPull().then(function () {
+        btn.disabled = false; btn.textContent = 'Pull now';
+        try { tabRenderers.tabAnalytics(); } catch (e) {}
+      }).catch(function () {
+        btn.disabled = false; btn.textContent = 'Pull now';
+        alert('Pull failed — check the connection and that you are signed in as admin.');
+      });
+    };
+  });
+
+  /* ============================================================
+     E3 — "how do I improve?": recommendations, not just numbers
+     ============================================================ */
+  Hooks.onTabAnalytics.push(function () {
+    var tab = document.getElementById('tabAnalytics');
+    if (!tab) return;
+    var old = document.getElementById('anInsights');
+    if (old) old.remove();
+    var tips = [];
+    var dev = analyticsData.devices || {}, devTotal = 0;
+    Object.keys(dev).forEach(function (k) { devTotal += Number(dev[k]) || 0; });
+    var mobile = devTotal ? Math.round((Number(dev.mobile) || 0) / devTotal * 100) : null;
+    if (mobile != null && mobile >= 60) tips.push('📱 <b>' + mobile + '% of visits are mobile</b> — check the first screen on a phone: hero, search and the first three cards.');
+    var daily = analyticsData.daily || {}, hours = {};
+    Object.keys(daily).forEach(function (k) { /* daily has no hour data */ });
+    var sessions = analyticsData.sessions || [];
+    sessions.forEach(function (x) {
+      if (!x || !x.start) return;
+      var h = new Date(x.start).getHours();
+      hours[h] = (hours[h] || 0) + 1;
+    });
+    var peak = Object.keys(hours).sort(function (a, b) { return hours[b] - hours[a]; })[0];
+    if (peak != null) tips.push('⏰ <b>Peak hour is ' + String(peak).padStart(2, '0') + ':00</b> — schedule announcements and posts for then.');
+    var clicks = analyticsData.clicks || {};
+    var top = Object.keys(clicks).map(function (k) { return { k: k, c: Number(clicks[k].count) || 0 }; })
+      .sort(function (a, b) { return b.c - a.c; })[0];
+    if (top && top.c >= 5) tips.push('🏆 <b>' + escapeHtml(top.k) + '</b> gets most clicks (' + top.c + ') — feature it at the top of the grid.');
+    if (!tips.length) tips.push('Not enough data yet for a recommendation — check back after a few days of traffic.');
+    var box = document.createElement('div');
+    box.id = 'anInsights';
+    box.className = 'an-summary an-insights';
+    box.innerHTML = '<div class="settings-section-title">💡 Insights</div>' +
+      tips.map(function (t) { return '<div class="an-sum-line">' + t + '</div>'; }).join('');
+    tab.appendChild(box);
+  });
+
+  /* ============================================================
      ITEM 34 — trend arrows on the dashboard KPIs
+     ============================================================ */
+  /* ============================================================
+     E1 — one sentence that answers "what happened today?"
      ============================================================ */
   Hooks.onTabDash.push(function () {
     var tab = document.getElementById('tabDash');
     if (!tab) return;
+    var old = document.getElementById('dashNarrative');
+    if (old) old.remove();
+    var DAY = 86400000, now = Date.now();
+    var daily = analyticsData.daily || {};
+    var today = daily[anDayKey(now)] || { visits: 0, clicks: 0 };
+    var yest = daily[anDayKey(now - DAY)] || { visits: 0 };
+    var delta = yest.visits ? Math.round(((today.visits || 0) - yest.visits) / yest.visits * 100) : null;
+    var newTickets = 0;
+    try {
+      loadFeedbacks().forEach(function (f) { if (f.createdAt && now - f.createdAt < DAY) newTickets++; });
+    } catch (e) {}
+    var backupDue = false;
+    try {
+      var db = dbV2();
+      if (db && db.schedule && db.schedule !== 'off') {
+        var due = db.schedule === 'daily' ? DAY : 7 * DAY;
+        backupDue = !db.lastBackup || (now - db.lastBackup) > due;
+      }
+    } catch (e) {}
+    var pending = 0;
+    try { pending = loadFeedbacks().filter(function (f) { return !f.spam && (f.status === 'pending' || f.status === 'inprogress'); }).length; } catch (e) {}
+    var bits = [];
+    bits.push('<b>' + (today.visits || 0) + '</b> visit' + ((today.visits || 0) === 1 ? '' : 's') +
+      (delta == null ? '' : ' (<b class="' + (delta >= 0 ? 'up' : 'down') + '">' + (delta >= 0 ? '↑+' : '↓') + delta + '%</b>)'));
+    bits.push('<b>' + newTickets + '</b> new ticket' + (newTickets === 1 ? '' : 's') + (pending ? ' (' + pending + ' open)' : ''));
+    if (backupDue) bits.push('<b>1 backup due</b>');
+    var box = document.createElement('div');
+    box.id = 'dashNarrative';
+    box.className = 'an-summary dash-narrative';
+    box.innerHTML = '<div class="settings-section-title">📌 Today</div><div class="an-sum-line">' +
+      bits.join(' · ') + ' · all systems normal.</div>';
+    tab.insertBefore(box, tab.firstChild);
     var DAY = 86400000, now = Date.now();
     var daily = analyticsData.daily || {};
     var buckets = { visits: [0, 0], clicks: [0, 0] };

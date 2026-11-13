@@ -1,0 +1,152 @@
+--- a/script.js	2026-11-14 04:42:08.051848000 +0000
++++ b/script.js	2026-11-14 04:44:38.577597966 +0000
+@@ -2019,6 +2019,7 @@
+     api.onTabNotice = slot('tabNotice').hooks;
+     api.onAnnBump = slot('annBump').hooks;
+     api.onAnnDismiss = slot('annDismiss').hooks;
++    api.onFeedbackSaved = slot('feedbackSaved').hooks;
+     return api;
+   })();
+   window.AppHooks = AppHooks;
+@@ -4137,6 +4138,9 @@
+       alert('Sorry — the browser storage is full, so your message could not be saved. Please email us directly.');
+       return;
+     }
++    /* the cloud module subscribes to this; it used to guess "the newest ticket"
++       400 ms after ANY submit event, so a rejected submit re-uploaded an old one */
++    AppHooks.emit('feedbackSaved', [record]);
+ 
+     var cfg = fbEmailConfig();
+     if (cfg.autoConfirm && email && !record.spam) {
+@@ -9481,13 +9485,13 @@
+ 
+     /* ---------- sorting ---------- */
+     var sortEl = document.getElementById('sortTools');
+-    function clicksOf(id) {
++    /* click records are keyed by the tool's title (titleMain + titleAccent), which
++       is exactly the card's .card-title text; they carry no id. This used to look
++       for c[k].id (never matched) and return the SUM of every tool's clicks, so
++       every card scored the same and "Most popular" silently fell back to A-Z. */
++    function clicksOf(title) {
+       var c = (typeof analyticsData !== 'undefined' && analyticsData.clicks) ? analyticsData.clicks : {};
+-      var t = null;
+-      for (var k in c) { if (c[k] && String(c[k].id) === String(id)) t = c[k]; }
+-      var total = 0;
+-      for (var n in c) total += c[n].count || 0;
+-      return total;
++      return Number(c[title] && c[title].count) || 0;
+     }
+     function sortCards(mode) {
+       var gridEl = document.getElementById('grid');
+@@ -9497,16 +9501,16 @@
+         var ta = (a.querySelector('.card-title') || {}).textContent || '';
+         var tb = (b.querySelector('.card-title') || {}).textContent || '';
+         if (mode === 'az') return ta.localeCompare(tb);
+-        if (mode === 'newest') return Number(b.getAttribute('data-id')) - Number(a.getAttribute('data-id'));
++        if (mode === 'newest') return (Number(b.getAttribute('data-id')) || 0) - (Number(a.getAttribute('data-id')) || 0);
+         if (mode === 'featured') {
+           var fa = a.querySelector('.card-featured') ? 1 : 0;
+           var fb = b.querySelector('.card-featured') ? 1 : 0;
+           if (fa !== fb) return fb - fa;
+-          return Number(b.getAttribute('data-id')) - Number(a.getAttribute('data-id'));
++          return (Number(b.getAttribute('data-id')) || 0) - (Number(a.getAttribute('data-id')) || 0);
+         }
+         if (mode === 'popular') {
+-          var ca = clicksOf(a.getAttribute('data-id'));
+-          var cb = clicksOf(b.getAttribute('data-id'));
++          var ca = clicksOf(ta);
++          var cb = clicksOf(tb);
+           if (ca !== cb) return cb - ca;
+           return ta.localeCompare(tb);
+         }
+@@ -9533,9 +9537,10 @@
+         return !c.classList.contains('hidden');
+       });
+       cards.forEach(function (c, i) { c.classList.toggle('lm-hide', i >= lmShown); });
+-      var rest = cards.length - lmShown;
++      var rest = Math.max(0, cards.length - lmShown);
+       bar.style.display = rest > 0 ? 'flex' : 'none';
+-      bar.querySelector('button').textContent = 'Load more tools (' + rest + ' left)';
++      var lmLabel = bar.querySelector('button');
++      if (lmLabel && rest > 0) lmLabel.textContent = 'Load more tools (' + rest + ' left)';
+     }
+     var lmBtn = document.getElementById('loadMoreBtn');
+     if (lmBtn) lmBtn.addEventListener('click', function () { lmShown += LM_STEP; lmApply(false); });
+@@ -11917,7 +11922,7 @@
+     window.__dasFeedbackDocId = feedbackDocId;
+ 
+     function cloudCreateFeedback(rec) {
+-      if (!db() || !rec || !rec.message) return;
++      if (!db() || !rec || !rec.message) return Promise.resolve();
+       var doc = {
+         message: String(rec.message).slice(0, 4900),
+         name: String(rec.name || '').slice(0, 80),
+@@ -11941,7 +11946,7 @@
+         }
+       }
+       /* the ticket number restarts at 001 in every browser — key by unique id */
+-      db().collection('feedback').doc(feedbackDocId(rec)).set(doc)
++      return db().collection('feedback').doc(feedbackDocId(rec)).set(doc)
+         .then(function () {
+           note('Ticket ' + doc.ticket + ' delivered to the cloud' +
+             (doc.attachmentData ? ' with attachment.' : (att ? ' (attachment not synced).' : '.')));
+@@ -11949,22 +11954,8 @@
+         .catch(function (e) { note('Ticket upload failed: ' + (e.code || e.message), true); });
+     }
+ 
+-    /* the form's own listener runs first, so read back what it just stored */
+-    var form = document.getElementById('userFeedbackForm');
+-    if (form) {
+-      form.addEventListener('submit', function () {
+-        setTimeout(function () {
+-          try {
+-            var list = JSON.parse(localStorage.getItem('das_studio_feedbacks') || '[]');
+-            /* records are appended, so the newest is the one with the latest createdAt */
+-            var newest = list.slice().sort(function (a, b) {
+-              return (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0);
+-            })[0];
+-            if (newest) cloudCreateFeedback(newest);
+-          } catch (e) {}
+-        }, 400);
+-      });
+-    }
++    /* the submit handler emits this only after the ticket is really saved */
++    Hooks.onFeedbackSaved.push(function (rec) { cloudCreateFeedback(rec); });
+ 
+     /* ---------- 3. admin pulls tickets raised anywhere ---------- */
+     function mergeCloudFeedback() {
+--- a/tools/stamp-sw.js	2026-11-14 04:42:06.620396000 +0000
++++ b/tools/stamp-sw.js	2026-11-14 04:44:38.578692245 +0000
+@@ -27,12 +27,16 @@
+ const checkOnly = args.includes('--check');
+ 
+ const PLACEHOLDER = '__BUILD_ID__';
++/* Only the CACHE_VERSION declaration is the stamp target. sw.js also compares
++   against the placeholder at runtime (to warn when unstamped), so searching the
++   whole file made --check fail forever and a second run rewrite that comparison. */
++const DECL = /(var\s+CACHE_VERSION\s*=\s*)'__BUILD_ID__'/;
+ const swPath = path.join(root, 'sw.js');
+ const shellFiles = ['index.html', 'style.css', 'script.js', 'config.js'];
+ 
+ if (checkOnly) {
+   const src = fs.readFileSync(swPath, 'utf8');
+-  if (src.indexOf(PLACEHOLDER) > -1) {
++  if (DECL.test(src)) {
+     console.error('sw.js is unstamped — run `node tools/stamp-sw.js` before deploying.');
+     process.exit(1);
+   }
+@@ -50,12 +54,12 @@
+ const buildId = 'das-' + new Date().toISOString().slice(0, 10).replace(/-/g, '') + '-' + id;
+ 
+ const src = fs.readFileSync(swPath, 'utf8');
+-if (src.indexOf(PLACEHOLDER) === -1) {
++if (!DECL.test(src)) {
+   console.log('sw.js already stamped with a fixed id; nothing to do.');
+   process.exit(0);
+ }
+ 
+-const out = src.replace("'" + PLACEHOLDER + "'", "'" + buildId + "'");
++const out = src.replace(DECL, "$1'" + buildId + "'");
+ fs.mkdirSync(outDir, { recursive: true });
+ const target = path.join(outDir, 'sw.js');
+ fs.writeFileSync(target, out, 'utf8');

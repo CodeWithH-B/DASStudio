@@ -117,7 +117,11 @@
     backdrop-filter:blur(var(--glass-blur,0px));-webkit-backdrop-filter:blur(var(--glass-blur,0px));
     box-shadow:var(--card-shadow,0 0 0 rgba(0,0,0,0));
     text-decoration:none;color:inherit;display:flex;flex-direction:column;position:relative;
-    transition:transform .3s ease,border-color .3s ease,box-shadow .3s ease;}
+    transition:transform .3s ease,border-color .3s ease,box-shadow .3s ease;
+    border-width:var(--card-bw,1px);border-style:var(--card-bs,solid);
+    border-color:var(--card-bc,var(--panel-border));
+    transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease;
+    display:flex;flex-direction:column;overflow:hidden;}
   .card:hover{transform:translateY(-6px);border-color:var(--accent);box-shadow:var(--card-shadow-hover,var(--shadow))}
   .card.hidden{display:none}
   .card.dragging{opacity:0.4;border:2px dashed var(--accent-grad-1)}
@@ -726,8 +730,7 @@
     box-shadow:0 0 0 3px color-mix(in srgb,var(--btn-bg1,#6366f1) 35%,transparent),0 10px 24px -12px var(--btn-bg1,#6366f1)}
   body.btn-hover-none .admin-btn:hover,body.btn-hover-none .btn-primary:hover,body.btn-hover-none .btn-secondary:hover{
     transform:none;box-shadow:none}
-  .card{border-width:var(--card-bw,1px);border-style:var(--card-bs,solid);
-    border-color:var(--card-bc,var(--panel-border))}
+
   body.card-hover-tilt .card:hover{transform:perspective(900px) rotateX(1.5deg) rotateY(-3deg) translateY(-6px)}
   body.card-hover-zoom .card:hover{transform:scale(1.015)}
   body.card-hover-none .card:hover{transform:none}
@@ -900,6 +903,9 @@
   #adminModal .modal{max-width:none;max-height:none;width:auto;flex:1;border-radius:0;border:none;
     height:100vh;overflow-y:auto;padding:0 30px 48px;background:var(--bg2);box-shadow:none;opacity:1}
   .adm-sidebar,.adm-top{animation:admFade .22s ease both}
+  /* H1: the sidebar is keyboard-navigable (roving tabindex) but had no visible
+     focus ring, so arrow-key users could not see where they were. */
+  #admNav .adm-item:focus-visible{outline:2px solid var(--accent-grad-1);outline-offset:2px;border-radius:8px}
   @keyframes admFade{from{opacity:.6;transform:translateY(4px)}to{opacity:1;transform:none}}
   #adminModal .modal > h2{display:none}
   #adminModal .tab-nav{display:none}
@@ -1046,7 +1052,7 @@
 
   /* ---------- grid & cards ---------- */
   .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:20px;padding-bottom:36px;align-items:stretch}
-  .card{transition:transform .22s ease,border-color .22s ease,box-shadow .22s ease}
+
   .card:hover{transform:translateY(-4px)}
   .card-header{padding:10px 14px;font-size:10.5px}
   .card-image{aspect-ratio:16/9;height:auto;min-height:0;overflow:visible}
@@ -1335,8 +1341,10 @@
   @media (max-width:560px){ .t20-pp{grid-template-columns:1fr} }
   /* ============ THEMES 9–15 refinements ============ */
   /* pastel accents are light — keep button text dark for contrast */
-  .t-pastel .btn-primary,.t-pastel .admin-btn,.t-pastel .chip.active,
-  .t-pastel .cb-btn.accept,.t-pastel .feedback-float{color:#374151!important}
+  /* H4: this used to be a hardcoded #374151 with !important — a second
+     specificity war next to the --btn-fg fix. The accent is light, so
+     t20Paint() already computes --btn-fg = #111318 for it; nothing to override. */
+  .t-pastel .chip.active,.t-pastel .cb-btn.accept,.t-pastel .feedback-float{color:#111318}
   .t-pastel .btn-primary{box-shadow:0 10px 24px -14px rgba(167,139,250,.9)}
   /* brutal cards stay paper-white with hard black borders */
   .t-brutal .card{background:#fff}
@@ -1565,7 +1573,7 @@ img{max-width:100%}
 /* ---- directory + cards ---- */
 .dir-bar{align-items:center;gap:12px;flex-wrap:wrap}
 .dir-bar select{min-height:40px}
-.card{display:flex;flex-direction:column;overflow:hidden}
+
 .card .card-body,.card>div:last-child{flex:1 1 auto}
 .card h3,.card h2{overflow-wrap:anywhere;line-height:1.25}
 .card p{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
@@ -1832,3 +1840,37 @@ img{max-width:100%}
    ITEM 43 — card images get a reserved 16:9 box (no CLS)
    ================================================================== */
 #grid .card img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;background:var(--card)}
+
+/* ==================================================================
+   PART D / E — states and blocks added in this pass
+   ================================================================== */
+.al-hint{font-size:12px;line-height:1.5;color:var(--muted);margin:0 0 6px}
+.al-forgot{font-size:12px;margin:2px 0 8px;min-height:16px}
+.al-forgot a{color:var(--accent-grad-1);text-decoration:underline}
+
+.t20-search{width:100%;margin:8px 0 12px;padding:9px 12px;border-radius:10px;
+  border:1px solid var(--panel-border);background:var(--panel);color:var(--text);font:inherit}
+.t20-pins{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 12px}
+.t20-pins-label{font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--muted)}
+.t20-pins-empty{font-size:12px;color:var(--muted)}
+.t20-pin,.t20-pin-btn{border:1px solid var(--panel-border);background:var(--panel);color:var(--text);
+  border-radius:99px;padding:5px 11px;font-size:12px;cursor:pointer}
+.t20-pin:hover,.t20-pin-btn:hover{border-color:var(--accent-grad-1)}
+.t20-pin-btn{margin-left:auto;opacity:.9}
+
+.an-sync{margin:14px 0 4px;font-size:12px;color:var(--muted)}
+.an-sync .fb-mini{margin-left:4px}
+.an-insights{margin:14px 0 0}
+.dash-narrative{margin-bottom:14px}
+.dash-narrative .up{color:#10b981}
+.dash-narrative .down{color:#ef4444}
+.th-ago{opacity:.65;font-size:11px}
+
+.maint-preview{position:fixed;left:14px;bottom:14px;z-index:10050;padding:8px 13px;border-radius:10px;
+  background:#f59e0b;color:#1a1a1a;font:700 12px/1.4 system-ui;box-shadow:0 10px 24px -14px rgba(0,0,0,.6)}
+
+.cb-prefs{z-index:10040}
+.cb-prefs-box{max-width:520px}
+.cb-prefs-state{font-size:13px;margin:0 0 8px}
+.cb-prefs-note{font-size:12px;color:var(--muted);margin:0 0 14px}
+.cb-prefs-actions{display:flex;flex-wrap:wrap;gap:8px}
