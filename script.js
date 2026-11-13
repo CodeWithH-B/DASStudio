@@ -11,6 +11,83 @@
   var SCHEMA_VERSION = 1;
 
   /* ============================================================
+     CONFIG — every tunable number in one place (ITEM 39)
+     ============================================================
+     These used to be scattered literals: 30 min session, 5 min lockout,
+     24 h announcement dismissal, 3 MB uploads, 900 KB Firestore attachments.
+     Change them here, not in eleven different call sites. */
+  var CONFIG = {
+    /* auth / session */
+    sessionTimeoutMs: 30 * 60 * 1000,     /* admin session length */
+    sessionWarnMs: 29 * 60 * 1000,        /* "you will be signed out" warning */
+    loginMaxFails: 5,                     /* attempts before the lockout */
+    loginLockMs: 5 * 60 * 1000,           /* lockout length */
+
+    /* content */
+    announceDismissHours: 24,             /* default "don't show again" window */
+    uploadMaxBytes: 3 * 1024 * 1024,      /* image uploads */
+    uploadMaxDocBytes: 6 * 1024 * 1024,   /* documents kept in browser storage */
+    firestoreAttachmentMax: 900000,       /* 1 MiB Firestore doc minus overhead */
+
+    /* performance */
+    tickMs: 1000,                         /* master ticker resolution */
+    observerDebounceMs: 200,              /* DOM observer debounce */
+    debug: false                          /* ITEM 40: console logging */
+  };
+  window.DAS_RUNTIME_CONFIG = CONFIG;
+
+  /* ============================================================
+     TICKER — one interval for the whole app (ITEM 41)
+     ============================================================
+     Six setInterval() calls used to run independently (15s heartbeat, 15s
+     session check, 5s live analytics, 10s idle check, 500ms Firebase poll,
+     announcement schedule). Each one is now a counter on a single tick, so the
+     browser schedules one timer instead of six and a hidden tab costs nothing. */
+  var Ticker = (function () {
+    var jobs = [], timer = null, ticks = 0;
+    function run() {
+      if (document.hidden) return;              /* keep the perf pause on hidden */
+      ticks++;
+      for (var i = 0; i < jobs.length; i++) {
+        var j = jobs[i];
+        if (j.cancelled) continue;
+        j.elapsed += CONFIG.tickMs;
+        if (j.elapsed >= j.every) {
+          j.elapsed = 0;
+          try { j.fn(ticks); } catch (e) { /* one bad job must not stop the tick */ }
+        }
+      }
+      /* drop cancelled jobs so the list cannot grow forever */
+      if (ticks % 60 === 0) jobs = jobs.filter(function (j) { return !j.cancelled; });
+    }
+    return {
+      every: function (ms, fn) {
+        var job = { every: Math.max(CONFIG.tickMs, Number(ms) || CONFIG.tickMs), elapsed: 0, fn: fn, cancelled: false };
+        jobs.push(job);
+        if (!timer) timer = setInterval(run, CONFIG.tickMs);
+        return function cancel() { job.cancelled = true; };
+      },
+      count: function () { return jobs.filter(function (j) { return !j.cancelled; }).length; },
+      stop: function () { if (timer) { clearInterval(timer); timer = null; } jobs = []; }
+    };
+  })();
+  window.DasTicker = Ticker;
+
+  /* ITEM 42: one debounce helper for DOM observers */
+  function debounce(fn, ms) {
+    var t = null;
+    return function () {
+      var args = arguments, self = this;
+      clearTimeout(t);
+      t = setTimeout(function () { fn.apply(self, args); }, ms || CONFIG.observerDebounceMs);
+    };
+  }
+  /* the proPatch IIFE below runs in its own scope; hand it the shared helper
+     instead of letting it declare a second one */
+  window.__dasDebounce = debounce;
+  window.__dasDebounceMs = CONFIG.observerDebounceMs;
+
+  /* ============================================================
      DEFAULT DATA
      ============================================================ */
   var defaultTools = [
@@ -126,6 +203,7 @@
      or a build step, not from a browser-writable key). Otherwise <script>,
      <iframe>, <object>, <embed> and inline on* handlers are stripped. */
   var CUSTOM_CODE_TRUSTED = !!(window.DAS_CONFIG && window.DAS_CONFIG.trustedCode === true);
+  var customCodeBlocked = false;
   function stripActiveContent(node) {
     var all = [node].concat(Array.prototype.slice.call(node.querySelectorAll('*')));
     all.forEach(function (n) {
@@ -142,7 +220,22 @@
     for (var i = 0; i < prev.length; i++) prev[i].remove();
     if (!code || !code.trim()) return;
     if (!CUSTOM_CODE_TRUSTED && /<\s*script/i.test(code)) {
-      try { console.warn('[DAS Studio] blocked <script> in custom head/body code. Set window.DAS_CONFIG.trustedCode = true for admin-authored snippets.'); } catch (e) {}
+      customCodeBlocked = true;
+      window.__dasCustomCodeBlocked = true;
+      /* The message has to say what happened AND what to do, because the
+         admin sees a silently "saved but not working" panel otherwise. */
+      try {
+        console.warn(
+          '[DAS Studio] Your custom head/body code was saved but its <script> tag was NOT run.\n' +
+          '  Why: custom code is stored in localStorage, which any visitor can edit. Running a\n' +
+          '  script from there would let a visitor plant code that then runs in every other\n' +
+          '  visitor\'s browser (stored XSS). So scripts are only injected when the DEPLOYER\n' +
+          '  opts in with trustedCode: true in config.js.\n' +
+          '  What to do: set trustedCode: true in config.js and re-deploy. Until you do, the\n' +
+          '  panel strips <script>, <iframe>, <object>, <embed> and on* handlers from this code.\n' +
+          '  Admin > Security now shows this warning as well.'
+        );
+      } catch (e) {}
     }
     var temp = document.createElement('div');
     temp.innerHTML = code;
@@ -222,6 +315,9 @@
   }
   function annIsDismissed(a, kind) {
     if (!a || !a.dismissible) return false;
+    /* ITEM 27: ?showAnn=1 ignores the 24h dismissal so an admin can check their
+       own announcement without clearing storage. */
+    try { if (/[?&]showAnn=1(?:&|$)/.test(location.search)) return false; } catch (e) {}
     var m = annDismissMap();
     var until = m[(kind || 'bar') + '_' + a.id];
     return !!until && Date.now() < until;
@@ -459,7 +555,7 @@
       start: settings.noticeStart || '',
       end: settings.noticeEnd || '',
       dismissible: !!settings.noticeDismissible,
-      dismissHours: settings.noticeDismissHours != null ? settings.noticeDismissHours : 24,
+      dismissHours: settings.noticeDismissHours != null ? settings.noticeDismissHours : CONFIG.announceDismissHours,
       actionText: settings.noticeActionText || '',
       actionUrl: settings.noticeActionUrl || '',
       actionNewTab: settings.noticeActionNewTab !== false,
@@ -491,6 +587,30 @@
     var v = pack[key];
     return (v != null) ? v : SS_I18N.en[key];
   }
+  /* ONE number for "how many tools": a tool counts when a visitor can open it.
+     The grid counter, the hero stat and the section label all read this, so
+     they can no longer disagree (they used to show rendered cards, published
+     tools and "all tools including drafts" respectively). */
+  function publishedToolCount() {
+    try { return tools.filter(function (t) { return toolStatusOf(t) === 'published'; }).length; }
+    catch (e) { return 0; }
+  }
+  window.__dasToolCount = publishedToolCount;
+
+  /* ITEM 31/32: "when was this measured" belongs next to every number. */
+  function agoText(t) {
+    var ms = Date.now() - (Number(t) || 0);
+    if (!t) return 'never';
+    if (ms < 0) ms = 0;
+    var m = Math.floor(ms / 60000);
+    if (m < 1) return 'just now';
+    if (m < 60) return m + 'm ago';
+    var h = Math.floor(m / 60);
+    if (h < 24) return h + 'h ago';
+    return Math.floor(h / 24) + 'd ago';
+  }
+  window.__dasAgo = agoText;
+
   function ssCountText(n) {
     return SS_LANG === 'bn'
       ? (n + 'টি টুল · সব এক জায়গায়')
@@ -1070,7 +1190,7 @@
       var ov = document.getElementById('maintenanceOverlay');
       if (!ov) return;
       ov.style.display = 'flex';
-      setTimeout(function () { ov.style.display = settings.maintenance ? 'flex' : 'none'; }, 10000);
+      setTimeout(function () { applyMaintenanceGate(); }, 10000);
     });
 
     var tzEl = document.getElementById('settingTimezone');
@@ -1088,11 +1208,45 @@
       applyLanguage(visitorLang || settings.siteLang || 'en', false);
     } catch (e) { applyLanguage(settings.siteLang || 'en', false); }
     ssApplyAnalyticsConsent();
-    setTimeout(function () { ssRenderCookieBanner(); }, 900);
+    /* ITEM 24: showing this 900ms late pushed the page down while the visitor
+       was already scrolling. It is rendered now, in the same frame as the rest
+       of the first paint. */
+    ssRenderCookieBanner();
   })();
   /* ============================================================
      APPLY SETTINGS TO DOM
      ============================================================ */
+  /* ============================================================
+     MAINTENANCE GATE — the owner is never locked out of their own site
+     ============================================================
+     #maintenanceOverlay sits at z-index 9999 and covered the admin shell.
+     Layering is now: overlay 9999 < #adminModal 10000 < #admLogin 10001, so
+     sign-in is always reachable; and a signed-in admin (or ?admin=1) bypasses
+     the gate completely so they can repair the site they have just closed.
+     ============================================================ */
+  var MAINT_BYPASS_KEY = 'das_maint_bypass';
+  function maintBypassActive() {
+    if (isAdmin) return true;
+    try { if (sessionStorage.getItem(MAINT_BYPASS_KEY) === '1') return true; } catch (e) {}
+    return false;
+  }
+  function applyMaintenanceGate() {
+    var ov = document.getElementById('maintenanceOverlay');
+    if (!ov) return;
+    var show = !!settings.maintenance && !maintBypassActive();
+    ov.style.display = show ? 'flex' : 'none';
+    if (show) ov.classList.remove('adm-bypass'); else ov.classList.add('adm-bypass');
+    ov.setAttribute('aria-hidden', show ? 'false' : 'true');
+  }
+  window.__dasApplyMaintenance = applyMaintenanceGate;
+  /* ?admin=1 opens the sign-in box on a closed site. It does not open the site:
+     the password is still required, and the bypass is only granted on success. */
+  try {
+    if (/[?&]admin=1(?:&|$)/.test(location.search)) {
+      setTimeout(function () { try { adminLogin(); } catch (e) {} }, 500);
+    }
+  } catch (e) {}
+
   function applySettingsToDOM() {
     document.getElementById('siteMetaTitle').textContent = settings.title;
     document.getElementById('siteMetaDesc').setAttribute('content', settings.desc);
@@ -1129,7 +1283,7 @@
     ssInjectSeo();
 
     ssRenderMaintenance();
-    document.getElementById('maintenanceOverlay').style.display = settings.maintenance ? 'flex' : 'none';
+    applyMaintenanceGate();
     renderNoticeBar();
 
     var r = document.documentElement;
@@ -1173,29 +1327,10 @@
     document.head.appendChild(link);
   }
 
-  var THEME_PRESETS = [
-    { id: 'default', name: 'Indigo Studio', desc: 'The original DAS look', sw: ['#6366f1', '#ec4899', '#06b6d4'],
-      v: { color1: '#6366f1', color2: '#ec4899', blob1: '', blob2: '', blob3: '#06b6d4', blob4: '#f59e0b',
-           blobOpacity: 50, fontFamily: 'inter', fontSize: 100, cardRadius: 14, glassAlpha: 100, glassBlur: 0, shadowStrength: 70 } },
-    { id: 'cyberpunk', name: 'Cyberpunk', desc: 'Neon yellow, magenta & cyan', sw: ['#facc15', '#ff2e88', '#00e5ff'],
-      v: { color1: '#facc15', color2: '#ff2e88', blob1: '#ff2e88', blob2: '#00e5ff', blob3: '#7c3aed', blob4: '#facc15',
-           blobOpacity: 70, fontFamily: 'mono', fontSize: 100, cardRadius: 4, glassAlpha: 78, glassBlur: 8, shadowStrength: 95 } },
-    { id: 'neonpurple', name: 'Neon Purple', desc: 'Violet glow on deep ink', sw: ['#a855f7', '#22d3ee', '#ec4899'],
-      v: { color1: '#a855f7', color2: '#22d3ee', blob1: '#a855f7', blob2: '#ec4899', blob3: '#6366f1', blob4: '#22d3ee',
-           blobOpacity: 65, fontFamily: 'poppins', fontSize: 100, cardRadius: 20, glassAlpha: 85, glassBlur: 10, shadowStrength: 85 } },
-    { id: 'ocean', name: 'Ocean Blue', desc: 'Calm blue & teal gradients', sw: ['#0ea5e9', '#14b8a6', '#6366f1'],
-      v: { color1: '#0ea5e9', color2: '#14b8a6', blob1: '#0ea5e9', blob2: '#22d3ee', blob3: '#14b8a6', blob4: '#3b82f6',
-           blobOpacity: 45, fontFamily: 'manrope', fontSize: 100, cardRadius: 18, glassAlpha: 92, glassBlur: 4, shadowStrength: 60 } },
-    { id: 'slate', name: 'Minimal Slate', desc: 'Quiet grey, almost no glow', sw: ['#64748b', '#94a3b8', '#cbd5e1'],
-      v: { color1: '#64748b', color2: '#94a3b8', blob1: '#475569', blob2: '#64748b', blob3: '#334155', blob4: '#94a3b8',
-           blobOpacity: 18, fontFamily: 'system', fontSize: 100, cardRadius: 8, glassAlpha: 100, glassBlur: 0, shadowStrength: 35 } },
-    { id: 'sunset', name: 'Sunset Gold', desc: 'Warm amber & rose', sw: ['#f59e0b', '#f43f5e', '#fb923c'],
-      v: { color1: '#f59e0b', color2: '#f43f5e', blob1: '#f59e0b', blob2: '#f43f5e', blob3: '#fb7185', blob4: '#fbbf24',
-           blobOpacity: 55, fontFamily: 'poppins', fontSize: 100, cardRadius: 22, glassAlpha: 95, glassBlur: 2, shadowStrength: 75 } },
-    { id: 'bangla', name: 'Bengali Classic', desc: 'Hind Siliguri, deep teal & saffron', sw: ['#0f766e', '#f59e0b', '#2563eb'],
-      v: { color1: '#0f766e', color2: '#f59e0b', blob1: '#0f766e', blob2: '#2563eb', blob3: '#14b8a6', blob4: '#f59e0b',
-           blobOpacity: 42, fontFamily: 'hind', fontSize: 102, cardRadius: 16, glassAlpha: 96, glassBlur: 3, shadowStrength: 65 } }
-  ];
+  /* The 7-card "preset" grid in the Appearance tab is now a shortcut for the
+     first 7 entries of THEMES20 — it used to be a separate 7-item system
+     (THEME_PRESETS) with its own apply path, so a preset and a theme could
+     fight over the same settings. */
 
   var AP_DEFAULTS = {
     fontFamily: 'inter', fontSize: 100, cardRadius: 14, glassAlpha: 100, glassBlur: 0,
@@ -1463,9 +1598,8 @@
   anSave();
 
   var anLastBeat = Date.now();
-  setInterval(function () {
-    /* PERF: a hidden tab must not keep writing the heartbeat */
-    if (document.hidden) return;
+  Ticker.every(15000, function () {
+    /* the master ticker already skips a hidden tab */
     var s = anSession();
     s.lastSeen = Date.now();
     var secs = Math.floor((Date.now() - anSessionStart) / 1000);
@@ -1474,7 +1608,7 @@
       anLastBeat = Date.now();
       anSave();
     }
-  }, 15000);
+  });
 
   window.addEventListener('beforeunload', function () {
     var secs = Math.floor((Date.now() - anSessionStart) / 1000);
@@ -1484,6 +1618,175 @@
     s.duration = secs;
     anSave();
   });
+
+  /* ============================================================
+     APPHOOKS — one ordered registry for every extension point
+     ============================================================
+     The file used to extend itself by re-assigning globals, up to five layers
+     deep (tabSec -> secRender2 -> wrappedSec -> firebase -> diagnostics,
+     renderGrid -> publicSiteV2 -> proPolish, adminLoginCore local -> REST ->
+     SDK, ...). Which layer won depended on the order the lines happened to
+     run in, so moving a block silently changed behaviour and two layers doing
+     the same job could both run.
+
+     Now each extension point has exactly ONE base and an ordered list of
+     decorators. Order is explicit, not incidental.
+
+     A module subscribes by pushing into the array for its event. That is the
+     only supported way to extend the app, and it never redefines anything:
+
+       Hooks.onTabSec.push(fn)          after every security-tab render
+       Hooks.onRenderGrid.push(fn)      after every grid render
+       Hooks.onSaveTools.push(fn)       after tools are written to storage
+       Hooks.onTrackToolClick.push(fn)  after a tool click is recorded
+       Hooks.onLogin.push(fn)           may take over sign-in: return true
+       Hooks.onStorageWrite.push(fn)    after a successful localStorage write
+       Hooks.onStorageError.push(fn)    when a write throws (quota / blocked)
+
+     AppHooks.base(name, fn)            the one implementation (internal)
+     AppHooks.on(name, fn, priority)    push(fn) plus an explicit order
+     AppHooks.run / AppHooks.emit       base + decorators / decorators only
+     AppHooks.handle(name, args)        offer the call to the sign-in chain
+     AppHooks.trace(name)               what is attached, in running order
+
+     Inspect from the console:  Hooks.trace('tabSec')
+     ============================================================ */
+  var AppHooks = (function () {
+    var reg = {}, seq = 0;
+    function slot(name) { return reg[name] || (reg[name] = { base: null, hooks: [], mw: [] }); }
+    /* an entry is either a bare function (push) or {fn, p, i} (on/middleware) */
+    function norm(entry, idx) {
+      if (typeof entry === 'function') return { fn: entry, p: 100, i: idx };
+      return { fn: entry.fn, p: (entry.p == null ? 100 : entry.p), i: (entry.i == null ? idx : entry.i) };
+    }
+    function asc(list) {
+      return list.map(norm).sort(function (a, b) { return (a.p - b.p) || (a.i - b.i); });
+    }
+    function desc(list) {
+      return list.map(norm).sort(function (a, b) { return (b.p - a.p) || (b.i - a.i); });
+    }
+    function report(name, err) {
+      try { console.warn('[DAS Studio] Hooks "' + name + '" threw:', (err && err.message) || err); } catch (e) {}
+    }
+    function fire(name, list, args) {
+      var ordered = asc(list);
+      for (var k = 0; k < ordered.length; k++) {
+        try { ordered[k].fn.apply(null, args); } catch (e) { report(name, e); }
+      }
+    }
+    var api = {
+      base: function (name, fn) { slot(name).base = fn; return fn; },
+      on: function (name, fn, priority) {
+        slot(name).hooks.push({ fn: fn, p: (priority == null ? 100 : priority), i: seq++ });
+        return fn;
+      },
+      middleware: function (name, fn, priority) {
+        slot(name).mw.push({ fn: fn, p: (priority == null ? 100 : priority), i: seq++ });
+        return fn;
+      },
+      /* decorators only — for events that have no base implementation */
+      emit: function (name, args) {
+        var s = reg[name];
+        if (!s) return;
+        fire(name, s.hooks, args || []);
+      },
+      run: function (name, args) {
+        var s = reg[name];
+        args = args || [];
+        if (!s) return undefined;
+        /* a decorator-only extension point is legal: the hooks still run */
+        var out = (typeof s.base === 'function') ? s.base.apply(null, args) : undefined;
+        fire(name, s.hooks, args);
+        return out;
+      },
+      /* last registered gets first refusal; a handler that returns true owns
+         the call, otherwise it falls through to the next one and finally to
+         the base implementation */
+      handle: function (name, args) {
+        var s = reg[name];
+        args = args || [];
+        if (!s) return false;
+        var list = desc(s.mw);
+        for (var k = 0; k < list.length; k++) {
+          var took = false;
+          try { took = list[k].fn.apply(null, args) === true; } catch (e) { report(name, e); }
+          if (took) return true;
+        }
+        if (typeof s.base === 'function') { s.base.apply(null, args); return true; }
+        return false;
+      },
+      trace: function (name) {
+        var s = reg[name];
+        if (!s) return [];
+        var out = [{ step: 'base', fn: s.base ? (s.base.name || 'anonymous') : '(none)' }];
+        asc(s.hooks).forEach(function (h) { out.push({ step: 'hook p' + h.p, fn: h.fn.name || 'anonymous' }); });
+        desc(s.mw).forEach(function (m) { out.push({ step: 'handler p' + m.p, fn: m.fn.name || 'anonymous' }); });
+        return out;
+      },
+      names: function () { return Object.keys(reg); }
+    };
+    /* The subscription arrays a module pushes into. They ARE the storage the
+       runner reads, so push(fn) and on(name, fn) are the same list. */
+    api.onTabSec = slot('tabSec').hooks;
+    api.onRenderGrid = slot('renderGrid').hooks;
+    api.onSaveTools = slot('saveTools').hooks;
+    api.onTrackToolClick = slot('trackToolClick').hooks;
+    api.onLogin = slot('adminLogin').mw;
+    api.onStorageWrite = slot('storageWrite').hooks;
+    api.onStorageError = slot('storageError').hooks;
+    api.onTabAnalytics = slot('tabAnalytics').hooks;
+    api.onTabDash = slot('tabDash').hooks;
+    api.onTabDb = slot('tabDb').hooks;
+    return api;
+  })();
+  window.AppHooks = AppHooks;
+  var Hooks = AppHooks;
+  window.Hooks = Hooks;
+
+  /* ============================================================
+     ONE localStorage.setItem WRAPPER
+     ============================================================
+     Two modules used to patch Storage.prototype.setItem on their own: the
+     Firestore mirror (crossBrowserSync) captured the native function, then the
+     storage-error toast (proPatch2) captured the mirror as its "orig". That
+     only worked because of install order, and the toast's own logger wrote to
+     localStorage — on a full disk that recursed until the stack blew.
+
+     There is exactly one patch now. It reports a successful write to
+     Hooks.onStorageWrite and a failed one to Hooks.onStorageError, and it
+     never re-enters itself, so a logger inside an error handler is safe. */
+  (function singleStorageWrite() {
+    var nativeSet = Storage.prototype.setItem;
+    var depth = 0;
+    Storage.prototype.setItem = function (key, value) {
+      if (depth > 0) return nativeSet.apply(this, arguments);  /* nested write: no hooks, no recursion */
+      depth = 1;
+      try {
+        var out = nativeSet.apply(this, arguments);
+        AppHooks.emit('storageWrite', [key, value]);
+        return out;
+      } catch (err) {
+        AppHooks.emit('storageError', [key, err]);
+        throw err;
+      } finally {
+        depth = 0;
+      }
+    };
+  })();
+
+  /* Capture each base once (function declarations are hoisted, so the real
+     implementations already exist here) and replace the global with a single
+     dispatcher. Every later layer only adds a hook — it can no longer replace
+     the implementation by accident. */
+  AppHooks.base('renderGrid', renderGrid);
+  AppHooks.base('saveTools', saveToolsToStorage);
+  AppHooks.base('trackToolClick', trackToolClick);
+  AppHooks.base('adminLogin', adminLoginCore);
+  AppHooks.base('tabSec', secRender2);
+  renderGrid = function () { return AppHooks.run('renderGrid', arguments); };
+  saveToolsToStorage = function () { return AppHooks.run('saveTools', arguments); };
+  trackToolClick = function () { return AppHooks.run('trackToolClick', arguments); };
+  adminLoginCore = function (pass, email) { return AppHooks.handle('adminLogin', arguments); };
 
   function trackToolClick(t) {
     if (!analyticsData.clicks) analyticsData.clicks = {};
@@ -1576,7 +1879,7 @@
     var publicTools = tools.filter(function(item) { return isAdmin || toolStatusOf(item) === 'published'; });
     /* featured tools are pinned to the top of the grid */
     publicTools.sort(function(a, b) { return (b.featured ? 1 : 0) - (a.featured ? 1 : 0); });
-    toolCountEl.textContent = ssCountText(publicTools.length);
+    toolCountEl.textContent = ssCountText(publishedToolCount());
 
     publicTools.forEach(function(item, index) {
       var numStr = (index + 1 < 10 ? '0' : '') + (index + 1);
@@ -1754,6 +2057,8 @@
   }
 
   function apMarkPreset(id) {
+    /* ITEM 36: the preset grid now mirrors settings.theme20 */
+    id = id || settings.theme20 || '';
     var cards = document.querySelectorAll('.preset-card');
     Array.prototype.forEach.call(cards, function (c) {
       var on = c.getAttribute('data-preset') === id;
@@ -1763,19 +2068,23 @@
     });
   }
 
+  /* ITEM 36: the grid is a view over THEMES20, not a second theme system. */
+  function presetList() {
+    return (typeof THEMES20 !== 'undefined' ? THEMES20 : []).slice(0, 7);
+  }
   function renderPresetGrid() {
     var grid = document.getElementById('presetGrid');
     if (!grid) return;
-    grid.innerHTML = THEME_PRESETS.map(function (p) {
+    grid.innerHTML = presetList().map(function (p) {
       return '<button type="button" class="preset-card" data-preset="' + p.id + '">' +
         '<span class="preset-check" style="display:none;">✓</span>' +
-        '<div class="preset-sw">' + p.sw.map(function (c) {
+        '<div class="preset-sw">' + (p.sw || []).map(function (c) {
           return '<span style="background:' + c + '"></span>';
         }).join('') + '</div>' +
         '<div class="preset-name">' + p.name + '</div>' +
-        '<div class="preset-desc">' + p.desc + '</div></button>';
+        '<div class="preset-desc">' + (p.tag || '') + '</div></button>';
     }).join('');
-    apMarkPreset(settings.themePreset || 'default');
+    apMarkPreset(settings.theme20 || '');
   }
 
   function apPersist() {
@@ -1783,9 +2092,15 @@
   }
 
   function apApplyPreset(id) {
+    /* one apply path: a preset IS a THEMES20 entry */
     var preset = null;
-    THEME_PRESETS.forEach(function (p) { if (p.id === id) preset = p; });
+    presetList().forEach(function (p) { if (p.id === id) preset = p; });
     if (!preset) return;
+    if (typeof t20Apply === 'function') {
+      t20Apply(id);
+      apMarkPreset(id);
+      return;
+    }
     var v = preset.v;
     settings.color1 = v.color1;
     settings.color2 = v.color2;
@@ -2133,13 +2448,13 @@
 
   function anStartLive() {
     if (anLiveTimer) return;
-    anLiveTimer = setInterval(function () {
+    anLiveTimer = Ticker.every(5000, function () {
       var tab = document.getElementById('tabAnalytics');
       if (!tab || !tab.classList.contains('active')) return;
       anSession();
       anSave();
       renderAnalytics();
-    }, 5000);
+    });
   }
 
   (function bindAnalyticsUI() {
@@ -2390,6 +2705,23 @@
     });
   }
 
+  /* ITEM 29: how long a ticket has been sitting without an answer. */
+  function fbWaitingHours(it) {
+    if (!it || it.spam) return null;
+    if (it.status === 'resolved' || it.status === 'closed') return null;
+    var th = it.thread || [];
+    var last = th.length ? th[th.length - 1] : null;
+    if (last && last.kind !== 'user') return null;   /* we answered last */
+    var since = Number(it.createdAt) || 0;
+    if (!since) return null;
+    return (Date.now() - since) / 3600000;
+  }
+  function fbFmtWait(h) {
+    if (h < 1) return Math.max(1, Math.round(h * 60)) + 'm';
+    if (h < 48) return Math.round(h) + 'h';
+    return Math.round(h / 24) + 'd';
+  }
+
   function fbCardHtml(it) {
     var initial = (it.name || '?').trim().charAt(0).toUpperCase() || '?';
     var threadCount = (it.thread || []).length;
@@ -2405,7 +2737,13 @@
       (it.email ? '<div class="fb-email">' + escapeHtml(it.email) + '</div>'
                 : '<div class="fb-email">no email provided</div>') +
       '</div></div><div class="fb-badges">' + fbBadge('type', it.type) + fbBadge('priority', it.priority) +
-      fbBadge('status', it.status) + '</div></div>';
+      fbBadge('status', it.status) + (function () {
+        /* ITEM 29: how long this ticket has been waiting for an answer */
+        var w = fbWaitingHours(it);
+        if (w == null) return '';
+        return '<span class="fb-sla' + (w >= 24 ? ' late' : '') + '" title="Waiting since the ticket was opened">⏱ ' +
+          fbFmtWait(w) + ' waiting</span>';
+      })() + '</div></div>';
 
     html += '<p class="fb-msg">' + escapeHtml(it.message) + '</p>';
 
@@ -3284,7 +3622,10 @@
      USER FEEDBACK MODAL (submit form + attachment capture)
      ============================================================ */
   var fbModal = document.getElementById('userFeedbackModal');
-  document.getElementById('openFeedbackModalBtn').addEventListener('click', function() { fbModal.classList.add('active'); });
+  /* ITEM 15: the button used to open the modal here AND again from the
+     delegated capture listener in feedbackFix, so openFeedback() ran twice and
+     the focus call scrolled the page twice. The delegated listener is the one
+     that survives script errors, so this one is gone. */
   document.getElementById('feedbackModalClose').addEventListener('click', function() { fbModal.classList.remove('active'); });
   document.getElementById('feedbackCancel').addEventListener('click', function() { fbModal.classList.remove('active'); });
 
@@ -3312,7 +3653,7 @@
   document.getElementById('fbAttachment').addEventListener('change', function() {
     var file = this.files && this.files[0];
     if (!file) { fbAttachmentDraft = null; fbRenderAttachPreview(); return; }
-    if (file.size > 3 * 1024 * 1024) {
+    if (file.size > CONFIG.uploadMaxBytes) {
       alert('That file is too large. Please attach a file under 3 MB.');
       this.value = '';
       fbAttachmentDraft = null;
@@ -3486,6 +3827,18 @@
     empty.style.display = visible ? 'none' : 'block';
   }
 
+  /* ITEM 13: a recently-viewed click used to open a tool whose card was hidden
+     by the active filter or search, which looked like a broken grid. Reset both
+     before opening, and keep the reset reachable from other modules. */
+  function resetFilters() {
+    activeFilter = 'all';
+    chips.forEach(function (c) { c.classList.toggle('active', c.getAttribute('data-filter') === 'all'); });
+    if (search && search.value) search.value = '';
+    if (typeof applyFilters === 'function') applyFilters();
+    if (typeof lmApply === 'function') lmApply(true);
+  }
+  window.__dasResetFilters = resetFilters;
+
   chips.forEach(function(chip) {
     chip.addEventListener('click', function() {
       chips.forEach(function(c) { c.classList.remove('active'); });
@@ -3510,7 +3863,9 @@
      ============================================================ */
   var AUTH_KEY = 'das_studio_auth', AUDIT_KEY = 'das_studio_audit', LOGIN_KEY = 'das_studio_logins', LOCK_KEY = 'das_studio_lock', ERR_KEY = 'das_studio_errors';
   var DEFAULT_HASH = '501d4a2b16227630101a37714f19f67417755b7e6b44e902cd2e4e1dd10c004b';
-  var SESSION_MS = 30 * 60 * 1000, MAX_FAILS = 5, LOCK_MS = 5 * 60 * 1000;
+  /* ITEM 39: these three used to be literals here and again in the idle
+     warning, so changing the session length meant finding both. */
+  var SESSION_MS = CONFIG.sessionTimeoutMs, MAX_FAILS = CONFIG.loginMaxFails, LOCK_MS = CONFIG.loginLockMs;
   var lastActivity = Date.now(), sessionStart = 0;
 
   /* SECURITY NOTE: these keys (auth hash, users, security config, feedback) are
@@ -3569,6 +3924,8 @@
   function adminLogout(reason) {
     if (!isAdmin) return;
     isAdmin = false; adminBtn.textContent = '🔒 Admin Panel'; modal.classList.remove('active');
+    try { sessionStorage.removeItem(MAINT_BYPASS_KEY); } catch (e) {}
+    try { applyMaintenanceGate(); } catch (e) {}
     logAct('logout', reason || 'Manual logout'); renderGrid();
   }
   function adminLoginCore(pass) {
@@ -3647,8 +4004,11 @@
     if (el) return el;
     el = document.createElement('div'); el.id = 'admLogin'; el.setAttribute('role', 'dialog'); el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-labelledby', 'alTitle');
     el.innerHTML = '<form class="al-box" id="alForm" autocomplete="on"><h2 id="alTitle">🔐 Admin sign in</h2><p>Enter the admin password to manage tools, settings and messages.</p>' +
+      '<div class="al-status" id="alStatus" role="status" aria-live="polite"></div>' +
       '<div class="al-field" id="alEmailWrap"><input type="email" id="alEmail" autocomplete="username" placeholder="Admin email" aria-label="Admin email" style="width:100%"></div><div class="al-field"><input type="password" id="alPass" autocomplete="current-password" placeholder="Password" aria-label="Admin password" required>' +
-      '<button type="button" class="al-eye" id="alEye" aria-label="Show password">👁️</button></div><div class="al-err" id="alErr" role="alert"></div>' +
+      '<button type="button" class="al-eye" id="alEye" aria-label="Show password">👁️</button></div>' +
+      '<label class="al-remember"><input type="checkbox" id="alRemember"> Remember me on this device</label>' +
+      '<div class="al-err" id="alErr" role="alert"></div>' +
       '<div class="al-row"><button type="button" id="alCancel">Cancel</button><button type="submit" class="go" id="alGo">Sign in</button></div></form>';
     document.body.appendChild(el);
     var inp = el.querySelector('#alPass');
@@ -3659,24 +4019,87 @@
        password-hash mode adminLoginCore() ignored the second argument, so the
        field asked for something that was never used. Hide it when auth is off. */
     syncLoginEmailField(el);
+    var remBox = el.querySelector('#alRemember');
+    if (remBox) {
+      remBox.checked = !!window.__dasRememberAdmin;
+      remBox.onchange = function () { window.__dasRememberAdmin = !!this.checked; };
+    }
     el.querySelector('#alEye').onclick = function () { var show = inp.type === 'password'; inp.type = show ? 'text' : 'password'; this.setAttribute('aria-label', show ? 'Hide password' : 'Show password'); inp.focus(); };
     el.querySelector('#alCancel').onclick = function () { el.classList.remove('show'); };
     el.addEventListener('mousedown', function (e) { if (e.target === el) el.classList.remove('show'); });
     el.addEventListener('keydown', function (e) { if (e.key === 'Escape') el.classList.remove('show'); });
     el.querySelector('#alForm').onsubmit = function (e) {
-      e.preventDefault(); var v = inp.value; if (!v) return;
-      el.classList.remove('show'); inp.value = ''; inp.type = 'password'; adminLoginCore(v, (mailInp && mailInp.value || '').trim());
+      e.preventDefault();
+      var v = inp.value; if (!v) return;
+      var email = (mailInp && mailInp.value || '').trim();
+      var needsEmail = false;
+      try { needsEmail = !!(window.__dasAuthMode && window.__dasAuthMode()); } catch (e2) {}
+      /* never send an empty email to a backend that needs one, and never throw
+         away what the user typed while we are still deciding */
+      if (needsEmail && !email) {
+        el.querySelector('#alErr').textContent = 'Enter the admin email as well, then press Sign in.';
+        try { mailInp.focus(); } catch (e3) {}
+        return;
+      }
+      var readyFn = window.__dasAuthReady;
+      if (authLoading() && typeof readyFn === 'function' && !readyFn()) {
+        el.querySelector('#alErr').textContent = 'Still connecting to the sign-in service — press Sign in again in a moment.';
+        return;
+      }
+      el.classList.remove('show'); inp.value = ''; inp.type = 'password';
+      adminLoginCore(v, email);
     };
     return el;
   }
-  function syncLoginEmailField(el) {
+  /* RACE: the Firebase SDK takes 2-8s to download. During that window
+     __dasAuthMode() answered false, the email field was hidden, and the user
+     submitted a password-only form that the backend rejects with email=''.
+     While auth is still loading we keep the field visible and re-check. */
+  function authLoading() {
+    try { return !!(window.__dasAuthLoading && window.__dasAuthLoading()); } catch (e) { return false; }
+  }
+  /* ITEM 21: the SDK needs 2-8s. Silence during that window is what made the
+     email-field race look like a broken form, so the dialog now says which mode
+     it is in: connecting, Firebase, or local-only. */
+  function renderLoginStatus(el) {
+    var box = (el || document).querySelector('#alStatus');
+    if (!box) return;
+    var err = '';
+    try { err = (window.__dasAuthError && window.__dasAuthError()) || ''; } catch (e) {}
+    var on = false;
+    try { on = !!(window.__dasAuthMode && window.__dasAuthMode()); } catch (e) {}
+    var cls, html;
+    if (authLoading()) {
+      cls = 'wait';
+      html = '<span class="al-spin" aria-hidden="true"></span> Connecting to Firebase…';
+    } else if (err) {
+      cls = 'warn';
+      html = '⚠️ Firebase did not load — running in <b>local mode</b> (password checked in this browser only). ' + escapeHtml(err);
+    } else if (!on) {
+      cls = 'warn';
+      html = '🔒 <b>Local mode</b> — the password is checked in this browser only. Connect Firebase in Admin → Security for real sign-in.';
+    } else {
+      cls = 'ok';
+      html = '✅ Firebase connected.';
+    }
+    box.className = 'al-status ' + cls;
+    box.innerHTML = html;
+  }
+  function syncLoginEmailField(el, tries) {
     if (!el) return;
     var wrap = el.querySelector('#alEmailWrap');
     if (!wrap) return;
     var authOn = false;
     try { authOn = !!(window.__dasAuthMode && window.__dasAuthMode()); } catch (e) { authOn = false; }
-    wrap.style.display = authOn ? '' : 'none';
-    if (authOn) wrap.removeAttribute('aria-hidden'); else wrap.setAttribute('aria-hidden', 'true');
+    var loading = authLoading();
+    var show = authOn || loading;
+    wrap.style.display = show ? '' : 'none';
+    if (show) wrap.removeAttribute('aria-hidden'); else wrap.setAttribute('aria-hidden', 'true');
+    tries = tries || 0;
+    renderLoginStatus(el);
+    if (loading && tries < 10) {
+      setTimeout(function () { syncLoginEmailField(el, tries + 1); }, 700);
+    }
   }
   function admLoginError(msg) {
     var el = admLoginBox(); el.classList.add('show');
@@ -3685,19 +4108,16 @@
   }
   function adminLogin() { admLoginError(''); }
   ['click', 'keydown', 'mousemove'].forEach(function (ev) { document.addEventListener(ev, function () { lastActivity = Date.now(); }, { passive: true }); });
-  setInterval(function () {
-    /* PERF: nothing to do while the tab is in the background */
-    if (document.hidden) return;
+  Ticker.every(15000, function () {
     if (isAdmin && Date.now() - lastActivity > SESSION_MS) { alert('Session expired due to inactivity.'); adminLogout('Session timeout'); }
-  }, 15000);
+  });
 
   /* runtime error capture for System Health */
   window.addEventListener('error', function (e) { pushLog(ERR_KEY, { t: Date.now(), m: String(e.message || 'Error').slice(0, 200), s: (e.filename || '').split('/').pop() + ':' + (e.lineno || '') }, 50); });
   window.addEventListener('unhandledrejection', function (e) { pushLog(ERR_KEY, { t: Date.now(), m: 'Promise: ' + String(e.reason).slice(0, 180), s: '' }, 50); });
 
   /* audit hooks */
-  var _saveTools = saveToolsToStorage;
-  saveToolsToStorage = function () { _saveTools(); logAct('tools', 'Tools saved (' + tools.length + ' total)'); };
+  Hooks.onSaveTools.push(function () { logAct('tools', 'Tools saved (' + tools.length + ' total)'); });
   /* BUGFIX: a missing element used to throw here and kill the rest of the IIFE. */
   var _settingsFormEl = document.getElementById('settingsForm');
   if (_settingsFormEl) _settingsFormEl.addEventListener('submit', function () { logAct('settings', 'Site settings saved'); });
@@ -3723,6 +4143,10 @@
     tabBtns.push(t[0]); tabContents.push(t[1]);
   });
   var tabRenderers = {};
+  /* the security tab has one base (secRender2) plus decorators; the dispatcher
+     keeps every caller — sidebar, deep link, re-render after a save — on the
+     full chain instead of on whichever layer was assigned last. */
+  tabRenderers.tabSec = function () { return AppHooks.run('tabSec', arguments); };
   NEW_TABS.forEach(function (t) { document.getElementById(t[0]).addEventListener('click', function () { switchTab(t[0], t[1]); tabRenderers[t[1]](); }); });
   function $(id) { return document.getElementById(id); }
   var STAT_META = { 'Total Tools': ['🧰', '#6366f1'], 'Published': ['✅', '#10b981'], 'Hidden': ['🙈', '#94a3b8'], 'Total Visits': ['👁️', '#3b82f6'],
@@ -3808,7 +4232,9 @@
   };
 
   /* ---- Security ---- */
-  tabRenderers.tabSec = function () {
+  /* superseded by secRender2; kept out of tabRenderers so it cannot overwrite
+     the AppHooks dispatcher */
+  var secRenderV0 = function () {
     var lg = lsGet(LOGIN_KEY, []), lock = lsGet(LOCK_KEY, { fails: 0, until: 0 });
     var rows = lg.slice(0, 20).map(function (l) { return '<tr><td>' + ssFmtDateTime(l.t) + '</td><td><span class="xm-badge ' + (l.ok ? 'xm-ok' : 'xm-bad') + '">' + (l.ok ? 'Success' : 'Failed') + '</span></td><td style="font-size:11px">' + escapeHtml(l.ua || '') + '</td></tr>'; }).join('') || '<tr><td colspan="3">No login attempts recorded.</td></tr>';
     var failed = lg.filter(function (l) { return !l.ok; }).length;
@@ -3968,7 +4394,7 @@
     input.addEventListener('change', function () {
       var file = this.files && this.files[0];
       if (!file) return;
-      if (file.size > 3 * 1024 * 1024) { alert('Please choose an image smaller than 3 MB.'); this.value = ''; return; }
+      if (file.size > CONFIG.uploadMaxBytes) { alert('Please choose an image smaller than ' + (CONFIG.uploadMaxBytes / 1048576) + ' MB.'); this.value = ''; return; }
       var reader = new FileReader();
       reader.onload = function (ev) {
         var raw = ev.target.result;
@@ -4080,8 +4506,8 @@
     mmRenderAll();
   }
   function mmRenderAll() {
-    var p = document.getElementById('mmPanel');
-    if (p) mmRender(p);
+    /* ITEM 37: this used to render into #mmPanel (the retired Manage Tools tab)
+       AND #tabTM, so every tool row existed twice in the DOM. One target now. */
     var t = document.getElementById('tabTM');
     if (t) mmRender(t);
   }
@@ -4235,7 +4661,13 @@
     if (!action) { alert('Choose a bulk action from the dropdown.'); return; }
     var n = chosen.length;
     if (action === 'delete') {
-      if (!confirm('Permanently delete ' + n + ' tool(s)?\n\nExport a JSON backup first if you are not sure.')) return;
+      /* ITEM 33: "delete 50 tools?" without saying which ones is a trap. */
+      var preview = chosen.slice(0, 5).map(function (t) {
+        return '  • ' + (((t.titleMain || '') + (t.titleAccent || '')).trim() || ('#' + t.id));
+      }).join('\n');
+      if (chosen.length > 5) preview += '\n  …and ' + (chosen.length - 5) + ' more';
+      if (!confirm('Permanently delete ' + n + ' tool(s)?\n\n' + preview +
+        '\n\nExport a JSON backup first if you are not sure.')) return;
       tools = tools.filter(function (t) { return !mmSel[String(t.id)]; });
     } else if (action === 'publish') {
       chosen.forEach(function (t) { t.status = 'published'; t.hidden = false; t.updatedAt = Date.now(); });
@@ -6350,7 +6782,7 @@
     };
     function addFile(file) {
       if (!file) return;
-      var max = /^image\//.test(file.type) ? 3 * 1024 * 1024 : 6 * 1024 * 1024;
+      var max = /^image\//.test(file.type) ? CONFIG.uploadMaxBytes : CONFIG.uploadMaxDocBytes;
       if (file.size > max) { alert('File is too large for browser storage (max ' + (max / 1048576) + ' MB).'); return; }
       var rd = new FileReader();
       rd.onload = function (ev) {
@@ -6907,7 +7339,7 @@
     tabRenderers.tabUsers = usersRender;
     tabRenderers.tabDb = dbRender;
     tabRenderers.tabMedia = mediaRender;
-    tabRenderers.tabSec = secRender;
+    /* tabSec base is registered once through AppHooks (secRender2) */
     tabRenderers.tabLog = logRender;
     tabRenderers.tabSys = sysRender;
   })();
@@ -7287,7 +7719,7 @@
           secAlert('password', 'Admin password changed');
           secNotifyAdmin('password', 'The admin password was changed from ' + getDeviceInfo() + '.');
           alert('Password updated.');
-          secRender2();
+          AppHooks.run('tabSec');
         });
       });
     };
@@ -7302,7 +7734,7 @@
       adminLogout('Logged out everywhere');
     };
     $('s2method').onchange = function () {
-      var st = secV2(); st.twoFA.method = this.value; secSave(st); secRender2();
+      var st = secV2(); st.twoFA.method = this.value; secSave(st); AppHooks.run('tabSec');
     };
     var on = $('s2on');
     if (on) on.onclick = function () {
@@ -7315,7 +7747,7 @@
         secSave(st);
         fbSendEmail({ to: settings.supportEmail, subject: 'Your DAS Studio login code', text: 'Your one-time code is ' + code + ' (valid 5 minutes).' });
         alert('Email OTP enabled.\n\nA test code was ' + code + ' (shown here because this is a local demo — check the email gateway log for the real send).');
-        secRender2();
+        AppHooks.run('tabSec');
         return;
       }
       var secret = newTotpSecret();
@@ -7328,14 +7760,14 @@
       secAlert('2fa', 'Two-factor authentication enabled');
       secNotifyAdmin('2fa', 'Two-factor authentication was enabled.');
       alert('2FA is ON.\n\nBackup codes:\n' + st.twoFA.backup.join('\n'));
-      secRender2();
+      AppHooks.run('tabSec');
     };
     var off = $('s2off');
     if (off) off.onclick = function () {
       if (!confirm('Disable two-factor authentication?')) return;
       var st = secV2(); st.twoFA = { enabled: false, method: st.twoFA.method, secret: '', backup: [] }; secSave(st);
       secAlert('2fa', 'Two-factor authentication disabled');
-      secRender2();
+      AppHooks.run('tabSec');
     };
     var codes = $('s2codes');
     if (codes) codes.onclick = function () { alert('Backup codes:\n' + (secV2().twoFA.backup || []).join('\n')); };
@@ -7348,7 +7780,7 @@
       st.ipLookupUrl = $('s2ipurl').value.trim() || 'https://api.ipify.org?format=json';
       secSave(st);
       alert('IP rules saved.');
-      secRender2();
+      AppHooks.run('tabSec');
     };
     $('s2ipnow').onclick = function () {
       var st = secV2(), msg = $('s2ipmsg');
@@ -7365,7 +7797,7 @@
       var st = secV2(); st.alertsEmail = this.checked; secSave(st);
     };
     $('tabSec').querySelectorAll('[data-rev]').forEach(function (b) {
-      b.onclick = function () { sessRevoke(b.getAttribute('data-rev')); secAlert('session', 'Session revoked'); secRender2(); };
+      b.onclick = function () { sessRevoke(b.getAttribute('data-rev')); secAlert('session', 'Session revoked'); AppHooks.run('tabSec'); };
     });
   }
 
@@ -7405,9 +7837,19 @@
       var raw = localStorage.getItem(t.key) || '';
       var bytes = raw.length * 2;
       var count = 0;
-      try { var j = JSON.parse(raw); count = Array.isArray(j) ? j.length : (j && typeof j === 'object' ? Object.keys(j).length : 0); } catch (e) {}
+      var lastWrite = 0;
+      try {
+        var j = JSON.parse(raw);
+        count = Array.isArray(j) ? j.length : (j && typeof j === 'object' ? Object.keys(j).length : 0);
+        /* ITEM 32: when did this table last change? */
+        (Array.isArray(j) ? j : []).forEach(function (r) {
+          var ts = Number(r && (r.updatedAt || r.createdAt || r.t || r.at)) || 0;
+          if (ts > lastWrite) lastWrite = ts;
+        });
+        if (!lastWrite && j && typeof j === 'object' && j.updatedAt) lastWrite = Number(j.updatedAt) || 0;
+      } catch (e) {}
       return '<tr><td><b>' + t.label + '</b><div class="xm-note" style="margin:0">' + t.key + '</div></td>' +
-        '<td>' + count + '</td><td>' + kb(bytes) + '</td>' +
+        '<td>' + count + '</td><td>' + kb(bytes) + '</td><td>' + (lastWrite ? agoText(lastWrite) : '—') + '</td>' +
         '<td><div class="xm-bar" style="width:80px"><i style="width:' + Math.min(100, bytes / (1024 * 512) * 100) + '%"></i></div></td></tr>';
     }).join('');
 
@@ -7455,7 +7897,7 @@
         '<button class="btn-secondary" id="d2export" type="button">⬇️ Export selected</button></div>' +
 
       '<div class="settings-section-title">🩺 Health &amp; maintenance</div>' +
-      '<div class="xm-scroll"><table class="analytics-table"><thead><tr><th>Table</th><th>Rows</th><th>Size</th><th>Usage</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
+      '<div class="xm-scroll"><table class="analytics-table"><thead><tr><th>Table</th><th>Rows</th><th>Size</th><th>Last write</th><th>Usage</th></tr></thead><tbody>' + rows + '</tbody></table></div>' +
       '<div class="xm-row" style="margin-top:10px">' +
         '<button class="btn-secondary" id="d2check" type="button">🔄 Integrity check</button>' +
         '<button class="btn-secondary" id="d2opt" type="button">🧹 Optimise (drop empty keys)</button>' +
@@ -8002,15 +8444,18 @@
       '<div class="xm-row"><input id="h2url" placeholder="Backend health endpoint (https://api.example.com/health)" value="' + escapeHtml(d.healthUrl || '') + '" style="flex:1;min-width:220px">' +
         '<button class="btn-secondary" id="h2fetch" type="button">Fetch</button></div>' +
       '<div id="h2server">' + (backend
-        ? '<div class="h-grid">' + gauge('CPU', backend.cpu, 100, '#6366f1') + gauge('RAM', backend.ram, 100, '#a855f7') +
-          gauge('Disk', backend.disk, 100, '#f59e0b') + gauge('Database', backend.db == null ? null : backend.db, 100, '#10b981') + '</div>' +
+        ? '<div class="h-grid">' + gauge('CPU', backend.cpu, 100, '#6366f1', 'checked ' + agoText(backend.t)) +
+          gauge('RAM', backend.ram, 100, '#a855f7', 'checked ' + agoText(backend.t)) +
+          gauge('Disk', backend.disk, 100, '#f59e0b', 'checked ' + agoText(backend.t)) +
+          gauge('Database', backend.db == null ? null : backend.db, 100, '#10b981', 'checked ' + agoText(backend.t)) + '</div>' +
           '<div class="xm-note">Reported by ' + escapeHtml(d.healthUrl) + ' at ' + ssFmtDateTime(backend.t) + '.</div>'
         : '<div class="xm-alert warn">⚠️ <b>CPU, RAM, disk and database status cannot be read from a static page.</b> Point the field above at a small health endpoint on your server that returns JSON like <code>{"cpu":42,"ram":61,"disk":38,"db":true}</code> and this panel will show the real numbers.</div>') + '</div>' +
 
       '<div class="settings-section-title">🌐 Uptime monitor</div>' +
       '<div class="xm-row"><input id="h2ping" placeholder="URL to check (blank = this site)" value="' + escapeHtml(up.url || '') + '" style="flex:1;min-width:180px">' +
         '<button class="btn-secondary" id="h2check" type="button">Check now</button></div>' +
-      '<div class="xm-note">' + (checks.length ? checks.length + ' checks · ' + upOk + ' up · uptime ' + uptimePct : 'No checks run yet.') + '</div>' +
+      '<div class="xm-note">' + (checks.length ? checks.length + ' checks · ' + upOk + ' up · uptime ' + uptimePct +
+        ' · last check ' + agoText(up.last || (checks[0] && checks[0].t)) : 'No checks run yet.') + '</div>' +
       '<div class="xm-scroll" style="max-height:130px"><table class="analytics-table"><tbody>' +
       (checks.slice(0, 10).map(function (c) {
         return '<tr><td style="width:150px">' + ssFmtDateTime(c.t) + '</td><td>' + (c.ok ? '<span class="xm-badge xm-ok">up</span>' : '<span class="xm-badge xm-bad">down</span>') + '</td><td>' + c.ms + ' ms</td></tr>';
@@ -8060,10 +8505,45 @@
     };
   }
 
+  /* ============================================================
+     ITEM 30 — a timeline, not just a table, for the last 24 hours
+     ============================================================ */
+  Hooks.onTabSec.push(function () {
+    var tab = document.getElementById('tabSec');
+    if (!tab || document.getElementById('threatTimeline')) return;
+    var now = Date.now(), span = 24 * 3600000, events = [];
+    try { lsGet(LOGIN_KEY, []).forEach(function (l) { if (l && now - l.t < span) events.push({ t: l.t, ok: !!l.ok }); }); } catch (e) {}
+    try { lsGet(ERR_KEY, []).forEach(function (x) { if (x && now - x.t < span) events.push({ t: x.t, ok: false }); }); } catch (e) {}
+    var buckets = [];
+    for (var i = 0; i < 24; i++) buckets.push({ ok: 0, fail: 0 });
+    events.forEach(function (ev) {
+      var h = Math.floor((now - ev.t) / 3600000);
+      if (h < 0 || h > 23) return;
+      if (ev.ok) buckets[23 - h].ok++; else buckets[23 - h].fail++;
+    });
+    var max = 1;
+    buckets.forEach(function (b) { max = Math.max(max, b.ok + b.fail); });
+    var bars = buckets.map(function (b, i) {
+      var tot = b.ok + b.fail;
+      return '<span class="tl-bar" title="' + (23 - i) + 'h ago · ' + b.fail + ' failed, ' + b.ok + ' ok" style="height:' +
+        Math.max(4, Math.round(tot / max * 100)) + '%;background:' +
+        (b.fail ? '#ef4444' : 'linear-gradient(180deg,var(--accent-grad-1),var(--accent-grad-2))') + '"></span>';
+    }).join('');
+    var fails = events.filter(function (e) { return !e.ok; }).length;
+    var box = document.createElement('div');
+    box.id = 'threatTimeline';
+    box.innerHTML = '<div class="settings-section-title">🕒 Last 24 hours</div>' +
+      '<div class="xm-note">' + events.length + ' event' + (events.length === 1 ? '' : 's') + ' · ' +
+      fails + ' failed attempt' + (fails === 1 ? '' : 's') + ' · red bars are failures, oldest on the left.</div>' +
+      '<div class="xm-chart-mini tl-chart">' + bars + '</div>';
+    tab.insertBefore(box, tab.firstChild);
+  });
+
   (function wireConsoleV2() {
     tabRenderers.tabUsers = usersRender2;
-    tabRenderers.tabSec = secRender2;
-    tabRenderers.tabDb = dbRender2;
+    /* tabSec base is registered once through AppHooks (secRender2) */
+    AppHooks.base('tabDb', dbRender2);
+    tabRenderers.tabDb = function () { return AppHooks.run('tabDb', arguments); };
     tabRenderers.tabMedia = mediaRender2;
     tabRenderers.tabLog = logRender2;
     tabRenderers.tabSys = sysRender2;
@@ -8136,8 +8616,32 @@
       });
     }
     navEl.innerHTML = html;
-    navEl.querySelectorAll('[data-tab]').forEach(function (b) {
+    var items = Array.prototype.slice.call(navEl.querySelectorAll('[data-tab]'));
+    items.forEach(function (b) {
       b.onclick = function () { admGo(b.getAttribute('data-tab')); };
+    });
+
+    /* ITEM 19: 20+ sidebar items in the tab order is unusable. Roving tabindex:
+       one stop, then Arrow keys move between items. */
+    function focusItem(i) {
+      items.forEach(function (x) { x.tabIndex = -1; });
+      var el = items[(i + items.length) % items.length];
+      if (!el) return;
+      el.tabIndex = 0;
+      el.focus();
+    }
+    items.forEach(function (b, i) {
+      b.tabIndex = b.classList.contains('active') || i === 0 ? 0 : -1;
+      b.addEventListener('keydown', function (e) {
+        var k = e.key, next = -1;
+        if (k === 'ArrowDown' || k === 'ArrowRight') next = i + 1;
+        else if (k === 'ArrowUp' || k === 'ArrowLeft') next = i - 1;
+        else if (k === 'Home') next = 0;
+        else if (k === 'End') next = items.length - 1;
+        else return;
+        e.preventDefault();
+        focusItem(next);
+      });
     });
   }
 
@@ -8146,8 +8650,11 @@
     var contentId = active ? active.id : '';
     var idx = (typeof tabContents !== 'undefined') ? tabContents.indexOf(contentId) : -1;
     var btnId = idx > -1 ? tabBtns[idx] : '';
-    document.querySelectorAll('#admNav [data-tab]').forEach(function (b) {
-      b.classList.toggle('active', b.getAttribute('data-tab') === btnId);
+    var navItems = Array.prototype.slice.call(document.querySelectorAll('#admNav [data-tab]'));
+    navItems.forEach(function (b) {
+      var on = b.getAttribute('data-tab') === btnId;
+      b.classList.toggle('active', on);
+      if (on) b.tabIndex = 0; else if (b.tabIndex === 0) b.tabIndex = -1;
     });
     var meta = admMenuLabel(btnId);
     var crumbs = document.getElementById('admCrumbs');
@@ -8371,6 +8878,13 @@
       new MutationObserver(function () {
         var isNow = adminBtnEl.textContent.indexOf('Exit') > -1;
         if (isNow && !wasAdmin) admOpen('tabDashBtn');
+        if (isNow !== wasAdmin) {
+          /* sign-in / sign-out changes who may bypass the maintenance gate */
+          try {
+            if (isNow) sessionStorage.setItem(MAINT_BYPASS_KEY, '1');
+            applyMaintenanceGate();
+          } catch (e) {}
+        }
         wasAdmin = isNow;
       }).observe(adminBtnEl, { childList: true, characterData: true, subtree: true });
     }
@@ -8417,9 +8931,10 @@
       if (!box) return;
       var pub = tools.filter(function (t) { return toolStatusOf(t) === 'published'; });
       var cats = {};
+      var pubCount = publishedToolCount();
       pub.forEach(function (t) { if (t.category) cats[t.category] = 1; });
       box.innerHTML =
-        '<div><b>' + pub.length + '</b><span>Tools</span></div>' +
+        '<div><b>' + pubCount + '</b><span>Tools</span></div>' +
         '<div><b>' + Object.keys(cats).length + '</b><span>Categories</span></div>' +
         '<div><b>100%</b><span>Free access</span></div>' +
         '<div><b>0</b><span>Installs needed</span></div>';
@@ -8502,9 +9017,9 @@
     if (lmBtn) lmBtn.addEventListener('click', function () { lmShown += LM_STEP; lmApply(false); });
 
     if (typeof renderGrid === 'function') {
-      var _render = renderGrid;
-      renderGrid = function () {
-        _render.apply(null, arguments);
+      /* decorator: the base renderer stays in AppHooks, so this can no longer
+         be lost by a later re-assignment */
+      Hooks.onRenderGrid.push(function () {
         heroStats();
         var sk = document.getElementById('skeleton');
         if (sk) sk.style.display = 'none';
@@ -8519,11 +9034,11 @@
         });
         var dc = document.getElementById('dirCount');
         if (dc) {
-          var n = document.querySelectorAll('#grid .card').length;
+          var n = publishedToolCount();
           dc.textContent = n + (n === 1 ? ' tool' : ' tools');
         }
         if (sortEl && sortEl.value !== 'default') sortCards(sortEl.value);
-      };
+      });
     }
     if (typeof applyFilters === 'function') {
       var _af = applyFilters;
@@ -8694,48 +9209,14 @@
       shadowStrength: shadow, blobOpacity: blob, fontSize: 100
     };
   }
-  var THEMES20 = [
-    { id: 'glass', name: 'Glassmorphism', tag: 'Dark', fam: 'glass', mode: 'dark', btn: 12, sw: ['#818cf8', '#22d3ee', '#0f172a'],
-      v: t20('#818cf8', '#22d3ee', '#a855f7', '#0ea5e9', 'glass', 'dark', 20, 52, 16, 60, 60) },
-    { id: 'neo', name: 'Neumorphism', tag: 'Light', fam: 'neo', mode: 'light', btn: 14, sw: ['#5b7cfa', '#94a3b8', '#e8edf7'],
-      v: t20('#5b7cfa', '#94a3b8', '#c7d2fe', '#e2e8f0', 'neo', 'light', 22, 100, 0, 30, 22) },
-    { id: 'minimal', name: 'Minimalist', tag: 'Light', fam: 'minimal', mode: 'light', btn: 8, sw: ['#111827', '#6b7280', '#ffffff'],
-      v: t20('#111827', '#6b7280', '#d1d5db', '#e5e7eb', 'minimal', 'light', 10, 100, 0, 12, 8) },
-    { id: 'darkmode', name: 'Dark Mode', tag: 'Dark', fam: 'dark', mode: 'dark', btn: 10, sw: ['#22d3ee', '#6366f1', '#0b1120'],
-      v: t20('#22d3ee', '#6366f1', '#0ea5e9', '#4f46e5', 'dark', 'dark', 12, 100, 0, 55, 40) },
-    { id: 'cyber', name: 'Cyberpunk Neon', tag: 'Bold', fam: 'cyber', mode: 'dark', btn: 4, sw: ['#facc15', '#ff2e88', '#00e5ff'],
-      v: t20('#facc15', '#ff2e88', '#00e5ff', '#7c3aed', 'cyber', 'dark', 6, 78, 8, 90, 72, 'mono', 4) },
-    { id: 'gradient', name: 'Gradient', tag: 'Bold', fam: 'grad', mode: 'dark', btn: 14, sw: ['#8b5cf6', '#f43f5e', '#f59e0b'],
-      v: t20('#8b5cf6', '#f43f5e', '#f59e0b', '#22d3ee', 'grad', 'dark', 18, 92, 0, 70, 70) },
-    { id: 'threed', name: '3D Modern', tag: 'Bold', fam: '3d', mode: 'dark', btn: 12, sw: ['#38bdf8', '#a855f7', '#0b1220'],
-      v: t20('#38bdf8', '#a855f7', '#6366f1', '#22d3ee', '3d', 'dark', 16, 96, 0, 95, 55) },
-    { id: 'apple', name: 'Apple Style', tag: 'Light', fam: 'apple', mode: 'light', btn: 12, sw: ['#0a84ff', '#5e5ce6', '#f5f5f7'],
-      v: t20('#0a84ff', '#5e5ce6', '#64d2ff', '#bf5af2', 'apple', 'light', 18, 100, 0, 40, 25) },
-    { id: 'material', name: 'Material Design', tag: 'Light', fam: 'material', mode: 'light', btn: 6, sw: ['#6200ee', '#03dac6', '#ffffff'],
-      v: t20('#6200ee', '#03dac6', '#3700b3', '#018786', 'material', 'light', 8, 100, 0, 45, 20) },
-    { id: 'corporate', name: 'Corporate Professional', tag: 'Light', fam: 'corp', mode: 'light', btn: 8, sw: ['#1e3a8a', '#0ea5e9', '#f1f5f9'],
-      v: t20('#1e3a8a', '#0ea5e9', '#3b82f6', '#64748b', 'corp', 'light', 10, 100, 0, 25, 18) },
-    { id: 'retro', name: 'Retro Vintage', tag: 'Light', fam: 'retro', mode: 'light', btn: 4, sw: ['#b45309', '#7c2d12', '#f5ecd7'],
-      v: t20('#b45309', '#7c2d12', '#d97706', '#a16207', 'retro', 'light', 4, 100, 0, 30, 12) },
-    { id: 'holo', name: 'Futuristic Holographic', tag: 'Bold', fam: 'holo', mode: 'dark', btn: 12, sw: ['#22d3ee', '#f472b6', '#0a0f1e'],
-      v: t20('#22d3ee', '#f472b6', '#a855f7', '#38bdf8', 'holo', 'dark', 16, 88, 6, 80, 75) },
-    { id: 'luxury', name: 'Luxury', tag: 'Dark', fam: 'luxury', mode: 'dark', btn: 4, sw: ['#d4af37', '#f7e7a1', '#0b0b0b'],
-      v: t20('#d4af37', '#f7e7a1', '#b8860b', '#8b6f1f', 'luxury', 'dark', 6, 100, 0, 70, 30) },
-    { id: 'pastel', name: 'Pastel Soft', tag: 'Soft', fam: 'pastel', mode: 'light', btn: 16, sw: ['#a78bfa', '#f9a8d4', '#d1fae5'],
-      v: t20('#a78bfa', '#f9a8d4', '#99f6e4', '#fbcfe8', 'pastel', 'light', 20, 100, 0, 35, 38) },
-    { id: 'brutal', name: 'Brutalism', tag: 'Bold', fam: 'brutal', mode: 'light', btn: 0, sw: ['#facc15', '#000000', '#ffffff'],
-      v: t20('#facc15', '#111111', '#ef4444', '#3b82f6', 'brutal', 'light', 0, 100, 0, 0, 0) },
-    { id: 'aurora', name: 'Aurora', tag: 'Dark', fam: 'aurora', mode: 'dark', btn: 14, sw: ['#34d399', '#818cf8', '#0b1226'],
-      v: t20('#34d399', '#818cf8', '#22d3ee', '#a855f7', 'aurora', 'dark', 18, 90, 4, 70, 80) },
-    { id: 'nature', name: 'Nature Organic', tag: 'Light', fam: 'nature', mode: 'light', btn: 14, sw: ['#16a34a', '#a16207', '#f0fdf4'],
-      v: t20('#16a34a', '#a16207', '#65a30d', '#84cc16', 'nature', 'light', 14, 100, 0, 35, 30) },
-    { id: 'mono', name: 'Monochrome', tag: 'Light', fam: 'mono', mode: 'light', btn: 8, sw: ['#111827', '#9ca3af', '#f9fafb'],
-      v: t20('#111827', '#9ca3af', '#4b5563', '#d1d5db', 'mono', 'light', 12, 100, 0, 22, 8) },
-    { id: 'auroraglass', name: 'Aurora Glass', tag: 'Dark', fam: 'auroraglass', mode: 'dark', btn: 14, sw: ['#5eead4', '#818cf8', '#f472b6'],
-      v: t20('#5eead4', '#818cf8', '#f472b6', '#38bdf8', 'auroraglass', 'dark', 20, 46, 18, 65, 85) },
-    { id: 'saas', name: 'SaaS Modern', tag: 'Light', fam: 'saas', mode: 'light', btn: 10, sw: ['#4f46e5', '#0ea5e9', '#f8fafc'],
-      v: t20('#4f46e5', '#0ea5e9', '#6366f1', '#22d3ee', 'saas', 'light', 12, 100, 0, 50, 28) }
-  ];
+  /* THEMES20 is the single source of truth for every theme. The array literal
+     that used to sit here was a first draft of the same 20 themes and was
+     thrown away by the "20 THEMES v2" assignment below, so it is gone; the
+     functions after it (t20Render, t20Apply, ...) are the live engine and stay.
+     The patch blocks further down register exact palettes through
+     THEME_PATCHES and are applied once, in order, by applyThemePatches(). */
+  var THEMES20 = [];
+  var THEME_PATCHES = [];
 
   var t20Filter = 'all';
 
@@ -9156,12 +9637,13 @@
     root.style.setProperty('--btn-radius', (t.btn == null ? 12 : t.btn) + 'px');
     t20Paint(t);
   })();
+  /* patches are registered below; the single apply point runs after them */
   t20Render();
   t20FillCustomizer();
   /* ============================================================
      THEMES 9–15 — exact palettes from the design specs
      ============================================================ */
-  (function patchThemes915() {
+THEME_PATCHES.push(function patchThemes915() {
     var P = {
       material: {
         sw: ['#6750A4', '#625B71', '#FFFBFE'], btn: 6,
@@ -9248,11 +9730,11 @@
       var active = t20ById(settings.theme20);
       if (active) t20Paint(active);
     }
-  })();
+  });
   /* ============================================================
      THEMES 16–20 — exact palettes + density / animation controls
      ============================================================ */
-  (function patchThemes1620() {
+THEME_PATCHES.push(function patchThemes1620() {
     var P = {
       aurora: {
         sw: ['#2563EB', '#8B5CF6', '#080D20'], btn: 14,
@@ -9316,7 +9798,7 @@
       var active = t20ById(settings.theme20);
       if (active) t20Paint(active);
     }
-  })();
+  });
 
   /* ---- density / animation / appearance extras ---- */
   (function appearanceExtras() {
@@ -9390,7 +9872,23 @@
   /* ============================================================
      9 THEMES MATCHING THE SUPPLIED DASHBOARD DESIGNS
      ============================================================ */
-  (function addScreenshotThemes() {
+  /* ITEM 36: one place applies every theme patch, once, in registration order.
+     Before this, three IIFEs each mutated the shared THEMES20 array the moment
+     the parser reached them, so what a theme looked like depended on line
+     order, and re-entering a block (a reload of the module) stacked residuals. */
+  function applyThemePatches() {
+    var before = THEMES20.length;
+    THEME_PATCHES.forEach(function (fn, i) {
+      try { fn(); } catch (e) {
+        try { console.warn('[DAS Studio] theme patch ' + (fn.name || i) + ' failed:', e && e.message); } catch (e2) {}
+      }
+    });
+    window.__dasThemeCount = THEMES20.length;
+    window.__dasThemePatches = THEME_PATCHES.length;
+    return THEMES20.length - before;
+  }
+
+THEME_PATCHES.push(function addScreenshotThemes() {
     var extra = [
       { id: 'abc-gold', name: 'A&BC Black Gold', tag: 'Dark', fam: 'gold', mode: 'dark', btn: 14,
         sw: ['#E5C07B', '#C9A227', '#1B1B1B'],
@@ -9508,7 +10006,10 @@
     });
     var allBtn = document.querySelector('#t20Bar [data-f="all"]');
     if (allBtn) allBtn.textContent = 'All ' + total;
-  })();
+  });
+  /* ITEM 36: apply every registered theme patch once, after all of them exist. */
+  applyThemePatches();
+
   /* ============================================================
      THEME CONTRAST & SURFACE FIXES (all 29 themes)
      ============================================================ */
@@ -9575,6 +10076,9 @@
       var c2 = hx(t.v.color2) || c1;
       var needsDark = cr([255, 255, 255], c1) < 3 || cr([255, 255, 255], c2) < 3;
       r.classList.toggle('light-accent', needsDark);
+      /* ITEM 22: the foreground is a computed value on the variable, so button
+         text stays readable without an !important specificity war. */
+      r.style.setProperty('--btn-fg', needsDark ? '#111318' : '#ffffff');
       r.style.setProperty('--accent-3', settings.color3 || t.v.blob3 || t.v.color2);
 
       /* 5. borders stay visible against the surface */
@@ -9588,6 +10092,7 @@
     else {
       /* default look: keep muted readable on the default dark surface */
       document.documentElement.classList.remove('light-accent');
+      document.documentElement.style.removeProperty('--btn-fg');
     }
   })();
   /* ============================================================
@@ -9755,11 +10260,20 @@
     }
 
     /* ---------- 5. recently viewed ---------- */
-    function recentIds() { try { return JSON.parse(localStorage.getItem('das_recent') || '[]'); } catch (e) { return []; } }
+    /* ITEM 26: this used to live in localStorage, so a shared computer showed
+       the previous person's history the next morning. sessionStorage dies with
+       the tab; the old key is deleted the first time we look. */
+    function recentIds() {
+      try {
+        var raw = sessionStorage.getItem('das_recent');
+        if (raw == null) { try { localStorage.removeItem('das_recent'); } catch (e2) {} return []; }
+        return JSON.parse(raw) || [];
+      } catch (e) { return []; }
+    }
     function pushRecent(id) {
       var list = recentIds().filter(function (x) { return x !== id; });
       list.unshift(id);
-      try { localStorage.setItem('das_recent', JSON.stringify(list.slice(0, 6))); } catch (e) {}
+      try { sessionStorage.setItem('das_recent', JSON.stringify(list.slice(0, 6))); } catch (e) {}
     }
     function renderRecent() {
       var row = document.getElementById('recentRow');
@@ -9774,19 +10288,23 @@
             '🕘 ' + escapeHtml((t.titleMain || '') + (t.titleAccent || '')) + '</button>';
         }).join('') + '</div>';
       row.classList.add('show');
+      /* reserve the row's height once it has appeared, so showing/hiding it on
+         later renders no longer pushes the filter bar up and down */
+      row.setAttribute('data-reserved', '1');
       row.querySelectorAll('[data-recent]').forEach(function (b) {
         b.onclick = function () {
           var id = Number(b.getAttribute('data-recent'));
           var t = tools.filter(function (x) { return Number(x.id) === id; })[0];
+          /* clear any active filter/search first, otherwise the grid behind the
+             dialog stays empty and the tool looks missing */
+          if (typeof window.__dasResetFilters === 'function') { try { window.__dasResetFilters(); } catch (e) {} }
           if (t) toolDetail(t);
         };
       });
     }
 
     /* hook card rendering: add an info button + recent tracking */
-    var _render = renderGrid;
-    renderGrid = function () {
-      _render.apply(null, arguments);
+    Hooks.onRenderGrid.push(function () {
       Array.prototype.forEach.call(document.querySelectorAll('#grid .card'), function (card) {
         if (card.querySelector('.card-info-btn')) return;
         var id = Number(card.getAttribute('data-id'));
@@ -9807,7 +10325,7 @@
       });
       renderRecent();
       if (window.__dasHardenLinks) { try { window.__dasHardenLinks(); } catch (e) {} }
-    };
+    });
 
     /* ---------- 6. command palette ---------- */
     var cmdk = document.createElement('div');
@@ -9944,11 +10462,9 @@
       });
     }
 
-    var _dash = tabRenderers.tabDash;
-    tabRenderers.tabDash = function () {
-      _dash.apply(null, arguments);
-      try { renderSetup(); } catch (e) {}
-    };
+    AppHooks.base('tabDash', tabRenderers.tabDash);
+    tabRenderers.tabDash = function () { return AppHooks.run('tabDash', arguments); };
+    Hooks.onTabDash.push(function () { try { renderSetup(); } catch (e) {} });
 
     /* refresh helpers when data changes */
     var _commit = (typeof mmCommit === 'function') ? mmCommit : null;
@@ -10039,9 +10555,9 @@
     }
 
     /* ---- 3. route the admin login through Firebase when configured ---- */
-    var localCore = adminLoginCore;
-    adminLoginCore = function (pass) {
-      if (!enabled()) return localCore.apply(null, arguments);
+    /* sign-in handler: returning false hands the call to the next one down */
+    Hooks.onLogin.push(function (pass) {
+      if (!enabled()) return false;
       var c = cfg();
       admLoginError('Signing in with Firebase…');
       signIn(c.email, pass).then(function (res) {
@@ -10064,9 +10580,10 @@
         lock.fails = (lock.fails || 0) + 1;
         pushLog(LOGIN_KEY, { t: Date.now(), ok: false, ua: 'Firebase: ' + err.message }, 100);
         secAlert('login', 'Firebase sign-in failed');
-        admLoginError('Firebase: ' + err.message);
+        admLoginError('Wrong email or password. After ' + MAX_FAILS + ' failed attempts the panel locks for 5 minutes.');
       });
-    };
+      return true;
+    });
 
     /* ---- 4. push / pull collections ---- */
     function collections() {
@@ -10146,9 +10663,8 @@
         '<div class="xm-note">Even with a backend, keep the admin panel out of the public HTML when you can — a separate <code>admin.html</code> behind access control removes the whole surface from the public page.</div>';
     }
 
-    var baseSecRender = secRender2;
+    /* decorator, not a replacement: secRender2 stays the tabSec base */
     var wrappedSec = function () {
-      baseSecRender.apply(null, arguments);
       var tab = document.getElementById('tabSec');
       if (!tab || document.getElementById('bkKey')) return;
       var wrap = document.createElement('div');
@@ -10163,7 +10679,7 @@
           projectId: document.getElementById('bkProject').value.trim(),
           enabled: document.getElementById('bkOn').checked
         });
-        secRender2();
+        AppHooks.run('tabSec');
       };
       document.getElementById('bkTest').onclick = function () {
         var msg = document.getElementById('bkMsg');
@@ -10190,8 +10706,7 @@
         pullAll().catch(function (e) { alert('Pull failed: ' + e.message); });
       };
     };
-    secRender2 = wrappedSec;
-    try { tabRenderers.tabSec = wrappedSec; } catch (e) {}
+    Hooks.onTabSec.push(wrappedSec);
   })();
   /* ============================================================
      FIREBASE — SDK, real auth, Firestore sync
@@ -10218,7 +10733,11 @@
     };
 
     var SDK = 'https://www.gstatic.com/firebasejs/10.8.0/';
-    var state = { ready: false, auth: null, db: null, user: null, error: '' };
+    var state = { ready: false, loading: false, auth: null, db: null, user: null, error: '' };
+    /* the login box asks these to decide whether to show the email field */
+    window.__dasAuthReady = function () { try { return !!state.ready; } catch (e) { return false; } };
+    window.__dasAuthLoading = function () { try { return !!state.loading; } catch (e) { return false; } };
+    window.__dasAuthError = function () { try { return state.error || ''; } catch (e) { return ''; } };
 
     function loadScript(src) {
       return new Promise(function (resolve, reject) {
@@ -10232,6 +10751,7 @@
     }
 
     function boot() {
+      state.loading = true;
       loadScript(SDK + 'firebase-app-compat.js')
         .then(function () { return loadScript(SDK + 'firebase-auth-compat.js'); })
         .then(function () { return loadScript(SDK + 'firebase-firestore-compat.js'); })
@@ -10239,21 +10759,35 @@
           if (!window.firebase) throw new Error('Firebase SDK unavailable');
           if (!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
           state.auth = firebase.auth();
+          /* ITEM 10: LOCAL persistence (the SDK default) keeps the admin signed
+             in after the browser is closed — wrong for a shared computer.
+             SESSION is the default here; the sign-in box can opt in to LOCAL
+             with "Remember me on this device". */
+          try {
+            var P = firebase.auth.Auth.Persistence;
+            state.auth.setPersistence(window.__dasRememberAdmin ? P.LOCAL : P.SESSION).catch(function () {});
+          } catch (e) {}
           state.db = firebase.firestore();
           window.__dasAuth = state.auth; window.__dasDb = state.db;
           state.ready = true;
+          state.loading = false;
+          try { syncLoginEmailField(document.getElementById('admLogin')); } catch (e) {}
           wireAuth();
           pullFromCloud();
           renderStatus();
         })
         .catch(function (err) {
           state.error = err.message;
+          state.loading = false;
+          try { syncLoginEmailField(document.getElementById('admLogin')); } catch (e) {}
           renderStatus();
         });
       /* if the CDN is blocked or offline, stop saying "connecting" forever */
       setTimeout(function () {
         if (!state.ready && !state.error) {
           state.error = 'Firebase SDK did not load (offline or blocked)';
+          state.loading = false;
+          try { syncLoginEmailField(document.getElementById('admLogin')); } catch (e) {}
           renderStatus();
         }
       }, 8000);
@@ -10308,27 +10842,53 @@
       });
     }
 
-    var prevLogin = adminLoginCore;
-    adminLoginCore = function (pass, emailArg) {
-      if (!state.ready) return prevLogin.apply(null, arguments);
+    Hooks.onLogin.push(function (pass, emailArg) {
+      if (!state.ready) return false;
       var email = String(emailArg || '').trim();
       var stored = {};
       try { stored = JSON.parse(localStorage.getItem('das_studio_backend') || '{}'); } catch (e) {}
       email = (stored.email || email || '').trim();
-      /* SECURITY: the admin email is no longer published in this file; use the
-         support email the admin configured, or the deploy-time hint. */
-      if (!email) email = ((settings && settings.supportEmail) || (window.DAS_CONFIG && window.DAS_CONFIG.adminEmailHint) || '').trim();
-      if (!email) { admLoginError('Enter the admin email to sign in.'); return; }
+      /* SECURITY: nothing from config.js may be used here. config.js is
+         downloaded by every visitor, so an "adminEmailHint" published the
+         admin's address to the whole internet. Only a value the admin typed
+         in their own settings counts. */
+      if (!email) email = String((settings && settings.supportEmail) || '').trim();
+      if (!email) { admLoginError('Enter the admin email to sign in.'); return true; }
       admLoginError('Signing in…');
-      state.auth.signInWithEmailAndPassword(email, pass)
+      /* ITEM 10: decide persistence BEFORE signing in, or the SDK reuses the
+         previous one. Default is SESSION (gone when the browser closes). */
+      var persist = null;
+      try {
+        var PP = firebase.auth.Auth.Persistence;
+        persist = state.auth.setPersistence(window.__dasRememberAdmin ? PP.LOCAL : PP.SESSION);
+      } catch (e) {}
+      Promise.resolve(persist).catch(function () {}).then(function () {
+        return state.auth.signInWithEmailAndPassword(email, pass);
+      })
         .then(function () { admLoginError(''); })
         .catch(function (err) {
-          var m = String(err.code || err.message || '').replace('auth/', '').replace(/-/g, ' ');
-          admLoginError('Firebase: ' + m);
+          /* ITEM 25: "Firebase: invalid-email" told the admin nothing. */
+          var code = String(err.code || '');
+          var m;
+          if (code === 'auth/wrong-password' || code === 'auth/user-not-found' ||
+              code === 'auth/invalid-email' || code === 'auth/invalid-credential' ||
+              code === 'auth/invalid-login-credentials') {
+            m = 'Wrong email or password. After ' + MAX_FAILS + ' failed attempts the panel locks for 5 minutes.';
+          } else if (code === 'auth/too-many-requests') {
+            m = 'Too many attempts — wait a few minutes, then try again.';
+          } else if (code === 'auth/network-request-failed') {
+            m = 'No connection to Firebase. Check the network and try again.';
+          } else if (code === 'auth/user-disabled') {
+            m = 'This account has been disabled in Firebase.';
+          } else {
+            m = 'Sign-in failed: ' + String(err.message || code).replace('auth/', '').replace(/-/g, ' ');
+          }
+          admLoginError(m);
           pushLog(LOGIN_KEY, { t: Date.now(), ok: false, ua: 'Firebase: ' + m }, 100);
           secAlert('login', 'Failed Firebase sign-in');
         });
-    };
+      return true;
+    });
 
     var prevLogout = adminLogout;
     adminLogout = function (reason) {
@@ -10349,14 +10909,25 @@
       } catch (e) {}
     }
 
-    var prevSaveTools = saveToolsToStorage;
-    saveToolsToStorage = function () {
-      prevSaveTools.apply(null, arguments);
+    Hooks.onSaveTools.push(function () {
       if (isAdmin) dbSave('tools', tools);
-    };
+    });
 
     function pullFromCloud() {
       if (!state.ready) return;
+      /* ITEM 12: the first paint comes from localStorage, then this replaced the
+         whole array a second or two later. A visitor could click a card from the
+         stale list, and a tool deleted in the cloud still opened. Mark the grid
+         as busy while the answer is in flight, and announce the swap when it
+         lands so anything holding a stale reference can refresh. */
+      var gridEl = document.getElementById('grid');
+      var skel = document.getElementById('skeleton');
+      if (gridEl) { gridEl.setAttribute('aria-busy', 'true'); gridEl.classList.add('is-pulling'); }
+      if (skel) skel.style.display = '';
+      function done() {
+        if (gridEl) { gridEl.removeAttribute('aria-busy'); gridEl.classList.remove('is-pulling'); }
+        if (skel && document.querySelectorAll('#grid .card').length) skel.style.display = 'none';
+      }
       state.db.collection('tools').doc('main').get().then(function (doc) {
         if (!doc.exists) return;
         var raw = doc.data() && doc.data().data;
@@ -10366,8 +10937,9 @@
           tools = arr;
           try { localStorage.setItem('das_studio_tools', raw); } catch (e) {}
           renderGrid();
+          try { AppHooks.emit('toolsPulled', [arr]); } catch (e) {}
         }
-      }).catch(function () {});
+      }).catch(function () {}).then(done, done);
 
       state.db.collection('settings').doc('main').get().then(function (doc) {
         if (!doc.exists) return;
@@ -10406,9 +10978,7 @@
       host.innerHTML = txt;
     }
 
-    var prevSec = tabRenderers.tabSec;
-    tabRenderers.tabSec = function () {
-      prevSec.apply(null, arguments);
+    Hooks.onTabSec.push(function () {
       var tab = document.getElementById('tabSec');
       if (!tab || document.getElementById('fbLiveBlock')) return;
       var box = document.createElement('div');
@@ -10435,7 +11005,7 @@
         if (state.ready && state.auth.currentUser) state.auth.signOut();
         adminLogout('Signed out');
       };
-    };
+    });
 
     if (document.readyState === 'complete') boot();
     else window.addEventListener('load', boot);
@@ -10460,106 +11030,32 @@
 
     function ready() { return window.__dasDb && window.__dasAuth; }
 
-    /* ---------- 1. rule-compliant analytics events ---------- */
-    function deviceKind() {
-      var w = window.innerWidth;
-      return w < 640 ? 'mobile' : (w < 1024 ? 'tablet' : 'desktop');
+    /* ---------- 1. diagnostics only — this module no longer emits ----------
+       There used to be TWO emit paths: emitEvent() here (a direct Firestore
+       write, no queue, no de-duplication) and window.__dasEmitCloud in
+       cloudStats (queued, retried). Both wrote analytics_events, so a single
+       page view could land twice and the two writers could disagree about a
+       visitor. cloudStats is now the only writer; everything here is read-only
+       diagnostics for the Security tab. */
+    function emitViaCloud(type, extra) {
+      var send = window.__dasEmitCloud;
+      if (typeof send !== 'function') return false;
+      try { send(type, extra); return true; } catch (e) { return false; }
     }
-    function vid() {
-      var v = localStorage.getItem('das_vid');
-      if (!v) { v = 'v' + Math.random().toString(36).slice(2, 12); localStorage.setItem('das_vid', v); }
-      return v;
-    }
-    function sid() {
-      var s = sessionStorage.getItem('das_sid');
-      if (!s) { s = 's' + Math.random().toString(36).slice(2, 12); sessionStorage.setItem('das_sid', s); }
-      return s;
-    }
+    window.__dasEmitDiagnostic = emitViaCloud;
 
-    function emitEvent(type, extra) {
-      if (!ready()) return;
-      var doc = {
-        t: Date.now(),
-        type: type,
-        vid: vid(),
-        sid: sid(),
-        dev: deviceKind(),
-        lang: (navigator.language || 'en').slice(0, 12)
-      };
-      if (extra && extra.tool) doc.tool = String(extra.tool).slice(0, 80);
-      if (extra && extra.path) doc.path = String(extra.path).slice(0, 100);
-      if (extra && extra.ref) doc.ref = String(extra.ref).slice(0, 100);
-      if (extra && extra.src) doc.src = String(extra.src).slice(0, 40);
-      window.__dasDb.collection('analytics_events').add(doc)
-        .catch(function (e) { log('analytics write: ' + (e.code || e.message), true); });
-    }
-    window.__dasEmit = emitEvent;
-
-    /* page view once per session */
-    try { emitEvent('view', { path: location.pathname.slice(0, 100), ref: (document.referrer || '').slice(0, 100) }); } catch (e) {}
-
-    /* tool clicks already flow through trackToolClick — mirror them to the cloud */
-    var baseClick = trackToolClick;
-    trackToolClick = function (name) {
-      baseClick.apply(null, arguments);
-      emitEvent('tool', { tool: name });
-    };
-
-    /* runtime errors become events, so System Health has real signal */
-    window.addEventListener('error', function (ev) {
-      emitEvent('error', { path: (ev.message || 'error').slice(0, 100) });
-    });
-
-    /* ---------- 2. pull cloud events and merge once ---------- */
+    /* ---------- 2. merging belongs to cloudStats ----------
+       A second aggregation path lived here (watermark das_an_merged) next to
+       cloudStats.pull() (watermark das_an_cloud_t); both added the same
+       Firestore events to analyticsData, so every event was counted twice.
+       This is now a delegate and nothing else. */
     function mergeCloudAnalytics() {
-      /* BUGFIX: two merge paths existed — this one (watermark das_an_merged)
-         and cloudStats.pull() (watermark das_an_cloud_t) — and both added the
-         same Firestore events to analyticsData, so every event was counted
-         twice. cloudStats owns the merge now; this is a thin delegate. */
-      if (typeof window.__dasCloudPull === 'function') {
-        return window.__dasCloudPull().then(function (n) { return n > 0; });
+      if (typeof window.__dasCloudPull !== 'function') {
+        log('Cloud analytics module not loaded yet.', true);
+        return Promise.resolve(false);
       }
-      if (!ready() || !window.__dasUser) return Promise.resolve(false);
-      var since = Number(localStorage.getItem('das_an_merged') || 0);
-      return window.__dasDb.collection('analytics_events')
-        .orderBy('t', 'desc').limit(600).get()
-        .then(function (snap) {
-          var newest = since, merged = 0;
-          snap.forEach(function (doc) {
-            var e = doc.data();
-            if (!e || !e.t || e.t <= since) return;
-            if (e.t > newest) newest = e.t;
-            merged++;
-            if (e.type === 'tool' && e.tool) {
-              analyticsData.clicks[e.tool] = analyticsData.clicks[e.tool] || { count: 0, lastClicked: '' };
-              analyticsData.clicks[e.tool].count += 1;
-              analyticsData.clicks[e.tool].lastClicked = new Date(e.t).toLocaleString();
-              var dk = anDayKey(e.t);
-              analyticsData.daily[dk] = analyticsData.daily[dk] || { visits: 0, clicks: 0 };
-              analyticsData.daily[dk].clicks = (analyticsData.daily[dk].clicks || 0) + 1;
-            } else if (e.type === 'view') {
-              analyticsData.visits = (analyticsData.visits || 0) + 1;
-              var dk2 = anDayKey(e.t);
-              analyticsData.daily[dk2] = analyticsData.daily[dk2] || { visits: 0, clicks: 0 };
-              analyticsData.daily[dk2].visits = (analyticsData.daily[dk2].visits || 0) + 1;
-              if (e.dev) analyticsData.devices[e.dev] = (analyticsData.devices[e.dev] || 0) + 1;
-              if (e.path) analyticsData.pages[e.path] = (analyticsData.pages[e.path] || 0) + 1;
-            }
-          });
-          if (merged) {
-            localStorage.setItem('das_an_merged', String(newest));
-            anSave();
-            log('Merged ' + merged + ' cloud events into analytics.');
-          } else {
-            log('Cloud analytics up to date.');
-          }
-          return merged > 0;
-        })
-        .catch(function (e) {
-          var code = e.code || e.message;
-          log('analytics read: ' + code + (String(code).indexOf('permission') > -1 ? ' — sign in as staff/owner' : ''), true);
-          return false;
-        });
+      return window.__dasCloudPull().then(function (n) { return n > 0; })
+        .catch(function (e) { log('analytics read: ' + (e.code || e.message), true); return false; });
     }
     window.__dasMergeAnalytics = mergeCloudAnalytics;
 
@@ -10580,7 +11076,13 @@
           status: String(f.status || 'new').slice(0, 20),
           createdAt: Number(f.createdAt || f.t || Date.now())
         };
-        return window.__dasDb.collection('feedback').doc(doc.ticket || ('fb' + doc.createdAt)).set(doc)
+        /* BUGFIX: keying the document by ticket wrote a SECOND document for
+           every ticket already pulled from the cloud (local id 'cloud_<docId>',
+           ticket possibly a composite 'TK-2024-001·abc'). One canonical id per
+           ticket now, shared with cloudCreateFeedback(). */
+        var idFn = window.__dasFeedbackDocId;
+        return window.__dasDb.collection('feedback')
+          .doc(typeof idFn === 'function' ? idFn(f) : ('fb' + doc.createdAt)).set(doc)
           .catch(function (e) { log('feedback write: ' + (e.code || e.message), true); });
       });
       return Promise.all(jobs).then(function () { return jobs.length; });
@@ -10599,9 +11101,7 @@
       return 'Signed in as ' + (u.email || u.uid) + ' — claim not read yet.';
     }
 
-    var prevSec = tabRenderers.tabSec;
-    tabRenderers.tabSec = function () {
-      prevSec.apply(null, arguments);
+    Hooks.onTabSec.push(function () {
       var tab = document.getElementById('tabSec');
       if (!tab || document.getElementById('fbDiag')) return;
       var box = document.createElement('div');
@@ -10622,7 +11122,9 @@
 
       document.getElementById('fbTestEvent').onclick = function () {
         if (!ready()) { alert('Firebase SDK is not loaded yet.'); return; }
-        emitEvent('view', { path: '/test', ref: 'diagnostics' });
+        if (!emitViaCloud('view', { path: '/test', ref: 'diagnostics' })) {
+          alert('The cloud analytics module is not loaded yet — reload and try again.'); return;
+        }
         log('Test event sent — check Firestore → analytics_events.');
       };
       document.getElementById('fbPullAn').onclick = function () {
@@ -10636,33 +11138,29 @@
       };
       var tkBtn = document.getElementById('fbSyncTk');
       if (tkBtn) tkBtn.onclick = function () {
-        syncAllTickets().then(function (n) { alert('Re-sent ' + n + ' ticket(s) with their attachments.'); });
+        /* BUGFIX: syncAllTickets() was never defined in this scope — the click
+           threw a ReferenceError and the handler died before doing anything. */
+        var run = window.__dasSyncTickets || window.syncAllTickets;
+        if (typeof run !== 'function') { alert('Ticket sync is not ready yet — reload the page and try again.'); return; }
+        run().then(function (n) { alert('Re-sent ' + n + ' ticket(s) with their attachments.'); })
+           .catch(function (e) { alert('Re-send failed: ' + ((e && e.message) || e)); });
       };
-    };
+    });
 
-    /* analytics tab: merge first, then render with fresh numbers */
-    var prevAn = tabRenderers.tabAnalytics;
-    if (prevAn) {
-      /* the cloud aggregation below owns this now — avoid counting the same events twice */
-      tabRenderers.tabAnalytics = function () { prevAn.apply(null, arguments); };
-    }
+    /* the no-op wrapper that used to sit here is gone: cloudStats owns the
+       analytics tab now and registers its own Hooks.onTabAnalytics subscriber. */
 
-    /* expose user + db for the diagnostics above */
+    /* ITEM 14: this module used to install a SECOND onAuthStateChanged that
+       reset __dasAdminClaim to null. Whether the diagnostic showed the right
+       answer depended on which listener ran last. firebaseBackend's wireAuth()
+       is now the only listener and owns the claim; this block just publishes
+       the db/auth handles for the panel. */
     window.addEventListener('load', function () {
       setTimeout(function () {
         try {
           if (window.firebase && firebase.apps.length) {
             window.__dasDb = window.__dasDb || firebase.firestore();
             window.__dasAuth = window.__dasAuth || firebase.auth();
-            firebase.auth().onAuthStateChanged(function (u) {
-              window.__dasUser = u;
-              window.__dasAdminClaim = null;
-              if (!u || typeof u.getIdTokenResult !== 'function') return;
-              /* the claim is the only thing the client trusts for admin rights */
-              u.getIdTokenResult(true).then(function (res) {
-                window.__dasAdminClaim = !!(res && res.claims && res.claims.admin === true);
-              }).catch(function () { window.__dasAdminClaim = false; });
-            });
           }
         } catch (e) {}
       }, 1500);
@@ -10678,7 +11176,8 @@
     function signedIn() { return !!(window.__dasUser); }
 
     function note(msg, bad) {
-      try { console.log('[sync] ' + msg); } catch (e) {}
+      /* ITEM 40: production consoles stay quiet unless CONFIG.debug is on */
+      if (CONFIG.debug) { try { console.log('[sync] ' + msg); } catch (e) {} }
       var el = document.getElementById('fbLog');
       if (el && el.querySelector('.fb-log-line')) {
         var line = document.createElement('div');
@@ -10707,17 +11206,33 @@
       pending[name] = setTimeout(function () { pushDoc(name, value); }, 1200);
     }
 
-    var nativeSet = Storage.prototype.setItem;
-    Storage.prototype.setItem = function (key, value) {
-      nativeSet.apply(this, arguments);
+    /* the cloud mirror is one subscriber of the single storage wrapper */
+    Hooks.onStorageWrite.push(function (key, value) {
       if (pushing) return;
       try {
         if (key === 'das_studio_settings') schedulePush('settings', JSON.parse(value));
         else if (key === 'das_studio_tools') schedulePush('tools', JSON.parse(value));
       } catch (e) {}
-    };
+    });
 
     /* ---------- 2. feedback written by visitors lands in the cloud ---------- */
+    /* ONE canonical document id per ticket, whatever route wrote it.
+       - a record pulled FROM the cloud carries id 'cloud_<docId>': strip the
+         prefix so writing it back updates that document instead of creating
+         'cloud_<docId>' next to it (the duplicate-document bug);
+       - a local record has its own unique id — use it, never the ticket, which
+         restarts at 001 in every browser;
+       - legacy records without an id fall back to their creation time. */
+    function feedbackDocId(rec) {
+      var id = String((rec && rec.id) || '');
+      if (id.indexOf('cloud_') === 0 && id.length > 6) return id.slice(6);
+      if (/^[A-Za-z0-9_-]{3,120}$/.test(id)) return id;
+      var t = Number(rec && (rec.createdAt || rec.t)) || 0;
+      if (t > 0) return 'fb' + t;
+      return 'fb' + Date.now();
+    }
+    window.__dasFeedbackDocId = feedbackDocId;
+
     function cloudCreateFeedback(rec) {
       if (!db() || !rec || !rec.message) return;
       var doc = {
@@ -10733,7 +11248,7 @@
       /* attachments ride along as a data URL, inside Firestore's 1 MiB document limit */
       var att = rec.attachment;
       if (att && att.data && typeof att.data === 'string') {
-        if (att.data.length < 900000) {
+        if (att.data.length < CONFIG.firestoreAttachmentMax) {
           doc.attachmentData = att.data;
           doc.attachmentName = String(att.name || 'file').slice(0, 120);
           doc.attachmentType = String(att.type || '').slice(0, 60);
@@ -10742,8 +11257,8 @@
           doc.attachmentName = String(att.name || 'file').slice(0, 100) + ' (too large to sync)';
         }
       }
-      /* the ticket number restarts at 001 in every browser, so key the document by its unique id */
-      db().collection('feedback').doc(String(rec.id || ('fb' + doc.createdAt))).set(doc)
+      /* the ticket number restarts at 001 in every browser — key by unique id */
+      db().collection('feedback').doc(feedbackDocId(rec)).set(doc)
         .then(function () {
           note('Ticket ' + doc.ticket + ' delivered to the cloud' +
             (doc.attachmentData ? ' with attachment.' : (att ? ' (attachment not synced).' : '.')));
@@ -10834,13 +11349,19 @@
       if (!db()) return Promise.resolve(0);
       var list = [];
       try { list = JSON.parse(localStorage.getItem('das_studio_feedbacks') || '[]'); } catch (e) {}
-      var jobs = list.map(function (rec) { return cloudCreateFeedback(rec); });
+      /* a record whose id starts with 'cloud_' CAME from Firestore, so it is
+         already there: re-sending it is exactly what produced duplicates. */
+      var outbound = list.filter(function (rec) {
+        return rec && rec.message && String(rec.id || '').indexOf('cloud_') !== 0;
+      });
+      var jobs = outbound.map(function (rec) { return cloudCreateFeedback(rec); });
       return Promise.all(jobs).then(function () {
-        note('Re-sent ' + list.length + ' ticket(s) with attachments.');
-        return list.length;
+        note('Re-sent ' + outbound.length + ' ticket(s) with attachments.');
+        return outbound.length;
       });
     }
     window.__dasSyncTickets = syncAllTickets;
+    window.syncAllTickets = syncAllTickets;
 
     /* ---------- 4. live updates in every open browser ---------- */
     function watch() {
@@ -10888,14 +11409,15 @@
 
     /* start when Firebase is ready, and again when the admin signs in */
     var tries = 0;
-    var timer = setInterval(function () {
+    /* one tick instead of a 500ms interval; 40 tries is now 40s, not 20s */
+    var stopPoll = Ticker.every(1000, function () {
       tries++;
       if (db() && window.firebase) {
-        clearInterval(timer);
+        stopPoll();
         watch();
         if (signedIn()) mergeCloudFeedback();
-      } else if (tries > 40) { clearInterval(timer); }
-    }, 500);
+      } else if (tries > 40) { stopPoll(); }
+    });
 
     window.addEventListener('load', function () {
       setTimeout(function () {
@@ -10945,7 +11467,10 @@
           return s;
         })(),
         dev: window.innerWidth < 640 ? 'mobile' : (window.innerWidth < 1024 ? 'tablet' : 'desktop'),
-        lang: (navigator.language || 'en').slice(0, 12),
+        /* no 'lang' field: the analytics_events rules validate with
+           onlyFields([... t, type, vid, sid, path, ref, dev, src, tool, dur])
+           and one unknown key rejects the whole write. Add it to the rules
+           first if you want it back. */
         src: (extra && extra.src) || tz()
       };
       if (extra && extra.tool) doc.tool = String(extra.tool).slice(0, 80);
@@ -10955,6 +11480,15 @@
       db().collection('analytics_events').add(doc).catch(function () {});
     }
     window.__dasEmitCloud = send;
+
+    /* every cloud analytics event comes through send(). These two used to be
+       emitted by fixFirebaseAnalytics as well, which is why a page view or a
+       tool click could be recorded twice. */
+    Hooks.onTrackToolClick.push(function (name) { send('tool', { tool: name }); });
+    window.addEventListener('error', function (ev) {
+      if (!ev || !ev.message || ev.message === 'Script error.') return;
+      send('error', { path: String(ev.message).slice(0, 100) });
+    });
 
     /* the page view fires before the SDK loads, so queue it and flush later */
     send('view', { path: (location.pathname || '/').slice(0, 100), ref: document.referrer || '' });
@@ -11062,11 +11596,17 @@
       try { if (typeof annRenderReport === 'function') annRenderReport(); } catch (e) {}
     }
 
-    var prevAn = tabRenderers.tabAnalytics;
-    tabRenderers.tabAnalytics = function () {
-      prevAn.apply(null, arguments);
-      pull().then(function (n) { if (n) { try { prevAn.apply(null, arguments); } catch (e) {} } });
-    };
+    /* base + subscriber instead of a re-assigned wrapper */
+    /* BUGFIX: tabRenderers.tabAnalytics was never assigned anywhere in this
+       file — the two wrappers below chained onto `undefined` and the tab threw
+       as soon as anything called it (refreshPanels did). The real renderer is
+       renderAnalytics(), so that is the base now. */
+    var anBase = (typeof renderAnalytics === 'function') ? renderAnalytics : tabRenderers.tabAnalytics;
+    AppHooks.base('tabAnalytics', anBase);
+    tabRenderers.tabAnalytics = function () { return AppHooks.run('tabAnalytics', arguments); };
+    Hooks.onTabAnalytics.push(function () {
+      pull().then(function (n) { if (n) { try { anBase(); } catch (e) {} } });
+    });
 
     var prevNotice = tabRenderers.tabNotice;
     if (prevNotice) {
@@ -11083,6 +11623,86 @@
       else if (tries > 40) clearInterval(t);
     }, 500);
   })();
+  /* ============================================================
+     ITEM 28 — the analytics tab says what the numbers MEAN
+     ============================================================ */
+  Hooks.onTabAnalytics.push(function () {
+    var tab = document.getElementById('tabAnalytics');
+    if (!tab) return;
+    var old = document.getElementById('anSummary');
+    if (old) old.remove();
+    var DAY = 86400000, now = Date.now();
+    var daily = analyticsData.daily || {};
+    var thisW = 0, lastW = 0;
+    Object.keys(daily).forEach(function (k) {
+      var t = Date.parse(k + 'T00:00:00');
+      if (isNaN(t)) return;
+      var v = Number((daily[k] || {}).visits) || 0;
+      if (now - t <= 7 * DAY) thisW += v;
+      else if (now - t <= 14 * DAY) lastW += v;
+    });
+    var delta = lastW > 0 ? Math.round((thisW - lastW) / lastW * 100) : null;
+    var clicks = analyticsData.clicks || {};
+    var top = Object.keys(clicks).map(function (k) { return { k: k, c: Number(clicks[k].count) || 0 }; })
+      .sort(function (a, b) { return b.c - a.c; })[0];
+    var dev = analyticsData.devices || {}, devTotal = 0;
+    Object.keys(dev).forEach(function (k) { devTotal += Number(dev[k]) || 0; });
+    var mobile = devTotal ? Math.round((Number(dev.mobile) || 0) / devTotal * 100) : null;
+
+    var lines = [];
+    lines.push('<b>This week:</b> ' + thisW + ' visit' + (thisW === 1 ? '' : 's') +
+      (delta == null ? ' · no previous week to compare' :
+        ' · <b style="color:' + (delta >= 0 ? '#10b981' : '#ef4444') + '">' + (delta >= 0 ? '▲ +' : '▼ ') + delta + '%</b> vs last week'));
+    if (top) lines.push('Top tool: <b>' + escapeHtml(top.k) + '</b> (' + top.c + ' click' + (top.c === 1 ? '' : 's') + ')');
+    if (mobile != null) lines.push(mobile + '% mobile traffic');
+    if (!top && !thisW) lines.push('No activity recorded yet — open the site in another browser to see live numbers.');
+
+    var box = document.createElement('div');
+    box.id = 'anSummary';
+    box.className = 'an-summary';
+    box.innerHTML = '<div class="settings-section-title">📌 In short</div>' +
+      lines.map(function (l) { return '<div class="an-sum-line">' + l + '</div>'; }).join('');
+    tab.insertBefore(box, tab.firstChild);
+  });
+
+  /* ============================================================
+     ITEM 34 — trend arrows on the dashboard KPIs
+     ============================================================ */
+  Hooks.onTabDash.push(function () {
+    var tab = document.getElementById('tabDash');
+    if (!tab) return;
+    var DAY = 86400000, now = Date.now();
+    var daily = analyticsData.daily || {};
+    var buckets = { visits: [0, 0], clicks: [0, 0] };
+    Object.keys(daily).forEach(function (k) {
+      var t = Date.parse(k + 'T00:00:00');
+      if (isNaN(t)) return;
+      var d = daily[k] || {}, idx = (now - t <= 7 * DAY) ? 0 : ((now - t <= 14 * DAY) ? 1 : -1);
+      if (idx < 0) return;
+      buckets.visits[idx] += Number(d.visits) || 0;
+      buckets.clicks[idx] += Number(d.clicks) || 0;
+    });
+    function trend(key) {
+      var a = buckets[key][0], b = buckets[key][1];
+      if (!b) return '';
+      var pct = Math.round((a - b) / b * 100);
+      if (!isFinite(pct)) return '';
+      var up = pct >= 0;
+      return '<span class="kpi-trend ' + (up ? 'up' : 'down') + '" title="compared with the previous 7 days">' +
+        (up ? '▲ +' : '▼ ') + pct + '%</span>';
+    }
+    Array.prototype.forEach.call(tab.querySelectorAll('.stat-card'), function (card) {
+      if (card.querySelector('.kpi-trend')) return;
+      var label = (card.querySelector('h4') || {}).textContent || '';
+      var key = /visit/i.test(label) ? 'visits' : (/click/i.test(label) ? 'clicks' : '');
+      if (!key) return;
+      var html = trend(key);
+      if (!html) return;
+      var host = card.querySelector('.stat-meta div') || card.querySelector('div');
+      if (host) host.insertAdjacentHTML('afterend', html);
+    });
+  });
+
   /* ============================================================
      INIT
      ============================================================ */
@@ -11119,7 +11739,8 @@ window.admQa=function(k){var b=document.querySelector('.adm-top [data-qa="'+k+'"
   }
   tidy();
   var g=document.getElementById('footerGrid');
-  if(g && window.MutationObserver) new MutationObserver(function(){tidy()}).observe(g,{childList:true,subtree:true,characterData:true});
+  /* ITEM 42: "tidy" walked the whole footer on every DOM change */
+  if(g && window.MutationObserver) new MutationObserver(window.__dasDebounce(function(){tidy()},window.__dasDebounceMs)).observe(g,{childList:true,subtree:true,characterData:true});
   /* SECURITY/PERF: keep rel hardening on links that appear after load, and give
      the first cards' previews a high fetch priority so the fold fills sooner. */
   function hardenRendered(){
@@ -11150,21 +11771,37 @@ window.admQa=function(k){var b=document.querySelector('.adm-top [data-qa="'+k+'"
   function isOpen(m){return m.classList.contains('active')||m.classList.contains('show')||m.classList.contains('open');}
   function prep(m){
     if(m.dataset.a11y) return; m.dataset.a11y='1';
-    m.setAttribute('role','dialog'); m.setAttribute('aria-modal','true');
+    m.setAttribute('role','dialog');
     var h=m.querySelector('h2,h3'); if(h){ if(!h.id) h.id=(m.id||'modal')+'Title'; m.setAttribute('aria-labelledby',h.id); }
     m.querySelectorAll('.modal-close').forEach(function(b){ if(!b.getAttribute('aria-label')) b.setAttribute('aria-label','Close'); b.type='button'; });
   }
   function sync(){
-    var any=false;
-    document.querySelectorAll(MODALS).forEach(function(m){ prep(m); if(isOpen(m)) any=true; });
-    document.body.classList.toggle('modal-open',any);
+    document.querySelectorAll(MODALS).forEach(prep);
+    /* ITEM 18: several modals can be open at once (thread + lightbox). Only the
+       top-most one is a modal; the rest are hidden from screen readers. */
+    var open=[].filter.call(document.querySelectorAll(MODALS),isOpen);
+    open.forEach(function(m,i){
+      var top = i===open.length-1;
+      m.setAttribute('aria-modal', top?'true':'false');
+      if(top){ m.removeAttribute('aria-hidden'); } else { m.setAttribute('aria-hidden','true'); }
+    });
+    document.body.classList.toggle('modal-open',open.length>0);
   }
   function watch(m){
     prep(m);
     new MutationObserver(function(){
       var open=isOpen(m);
-      if(open && !m._wasOpen){ lastFocus=document.activeElement; setTimeout(function(){var f=m.querySelector('input:not([type=hidden]),button,select,textarea,a[href]'); if(f&&!m.contains(document.activeElement)) f.focus({preventScroll:true});},60); }
-      if(!open && m._wasOpen && lastFocus && lastFocus.focus){ try{lastFocus.focus({preventScroll:true});}catch(e){} }
+      /* ITEM 20: one shared lastFocus meant a stacked modal overwrote it and the
+         first modal returned focus to the wrong element. Each modal remembers
+         its own opener now. */
+      if(open && !m._wasOpen){
+        m._prevFocus=document.activeElement; lastFocus=m._prevFocus;
+        setTimeout(function(){var f=m.querySelector('input:not([type=hidden]),button,select,textarea,a[href]'); if(f&&!m.contains(document.activeElement)) f.focus({preventScroll:true});},60);
+      }
+      if(!open && m._wasOpen){
+        var back=m._prevFocus||lastFocus; m._prevFocus=null;
+        if(back && back.focus && document.contains(back)){ try{back.focus({preventScroll:true});}catch(e){} }
+      }
       m._wasOpen=open; sync();
     }).observe(m,{attributes:true,attributeFilter:['class','style']});
   }
@@ -11192,11 +11829,18 @@ window.admQa=function(k){var b=document.querySelector('.adm-top [data-qa="'+k+'"
     if(!i.hasAttribute('loading') && !i.closest('header,.hero')) i.loading='lazy';
     if(!i.hasAttribute('decoding')) i.decoding='async';
     if(!i.hasAttribute('alt')) i.alt='';
+    /* ITEM 43: a card image with no intrinsic size has no reserved box, so the
+       grid jumps when it loads. 400x225 is the card's 16:9 frame. */
+    if(i.closest('#grid') && !i.hasAttribute('width')){
+      i.setAttribute('width','400');
+      i.setAttribute('height','225');
+    }
   }
   function scanImgs(r){(r||document).querySelectorAll('img').forEach(fixImg);}
   scanImgs();
   var grid=document.getElementById('grid');
-  if(grid) new MutationObserver(function(){scanImgs(grid);}).observe(grid,{childList:true,subtree:true});
+  /* ITEM 42: 17 cards appended in a row fired this 17 times */
+  if(grid) new MutationObserver(window.__dasDebounce(function(){scanImgs(grid);},window.__dasDebounceMs)).observe(grid,{childList:true,subtree:true});
 
   /* 3. SEO: canonical + og:url when the admin has not set one */
   function setMeta(sel,make,val){var el=document.head.querySelector(sel); if(!el){el=make(); document.head.appendChild(el);} if(!el.getAttribute('data-set')) {}
@@ -11246,23 +11890,24 @@ window.admQa=function(k){var b=document.querySelector('.adm-top [data-qa="'+k+'"
   window.addEventListener('error',function(e){if(e.message&&e.message!=='Script error.')onErr(e.message,(e.filename||'')+':'+(e.lineno||''));});
   window.addEventListener('unhandledrejection',function(e){onErr((e.reason&&e.reason.message)||e.reason||'Unhandled promise rejection','promise');});
 
-  /* 2. Tell the user when a save fails (storage full or blocked) */
-  try{
-    var orig=Storage.prototype.setItem;
-    Storage.prototype.setItem=function(k,v){
-      try{return orig.call(this,k,v);}
-      catch(e){say('Could not save changes: browser storage is full or blocked. Export a backup and free some space.',false,9000);logErr('Storage write failed for '+k,'storage');throw e;}
-    };
-  }catch(e){}
+  /* 2. Tell the user when a save fails (storage full or blocked).
+     This used to be a SECOND Storage.prototype.setItem patch wrapped around
+     the cloud mirror; it is now a subscriber of the single wrapper. logErr()
+     writes to localStorage from inside the handler, which the wrapper's depth
+     guard turns into a plain native write instead of infinite recursion. */
+  Hooks.onStorageError.push(function(k){
+    say('Could not save changes: browser storage is full or blocked. Export a backup and free some space.',false,9000);
+    logErr('Storage write failed for '+k,'storage');
+  });
 
   /* 3. Idle sign-out warning (admin session is 30 minutes) */
-  var last=Date.now(),WARN=29*60*1000,warned=false;
+  /* the proPatch IIFE has its own scope, so read the shared config off window */
+  var last=Date.now(),WARN=(window.DAS_RUNTIME_CONFIG||{}).sessionWarnMs||1740000,warned=false;
   ['click','keydown','mousemove','touchstart','scroll'].forEach(function(ev){document.addEventListener(ev,function(){last=Date.now();warned=false;},{passive:true});});
-  setInterval(function(){
-    if(document.hidden) return;
+  window.DasTicker.every(10000,function(){
     var adm=document.getElementById('admNav');
     if(adm&&adm.offsetParent!==null&&!warned&&Date.now()-last>WARN){warned=true;say('You will be signed out in about 60 seconds. Click anywhere to stay signed in.',false,15000);}
-  },10000);
+  });
 
   /* 4. Keyboard shortcut reference: press ? outside inputs */
   document.addEventListener('keydown',function(e){

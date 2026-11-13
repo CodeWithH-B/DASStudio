@@ -3,6 +3,27 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!-- Content-Security-Policy: the only line of defence left when markup gets injected.
+     Without it, any XSS in a tool description, a feedback message or a custom-code
+     block runs with full access to the admin session and to Firestore.
+     'unsafe-inline' is deliberate: the admin panel injects inline handlers and inline
+     <style>/<script> blocks at runtime, so hashes or nonces would break it. Everything
+     else is locked to this origin plus Firebase, Google Fonts and Google Analytics.
+     NOTE: frame-ancestors and report-uri are ignored in a meta tag - set those in a real
+     HTTP header (Netlify _headers / Vercel vercel.json / Cloudflare Transform Rule). -->
+<script>
+/* ITEM 23: set the theme before the body is parsed. Reading localStorage here
+   (instead of in script.js, which loads at the end of the document) is what
+   stops a dark flash on a light-mode machine. Mirrors applyTheme() exactly. */
+(function () {
+  try {
+    var t = localStorage.getItem('arna-theme');
+    if (!t) t = (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', t);
+  } catch (e) {}
+})();
+</script>
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com https://www.googletagmanager.com https://www.google-analytics.com https://apis.google.com https://*.firebaseapp.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; media-src 'self' data: blob: https:; connect-src 'self' https://*.googleapis.com https://*.firebaseio.com wss://*.firebaseio.com https://*.firebaseapp.com https://*.gstatic.com https://www.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com; frame-src 'self' https://*.firebaseapp.com https://accounts.google.com; object-src 'none'; base-uri 'self'; form-action 'self'; manifest-src 'self'; worker-src 'self' blob:">
 <title id="siteMetaTitle">DAS Studio</title>
 <meta name="description" id="siteMetaDesc" content="Edit photos, effects, design, video, audio, PDF, 3D, software exploration or vector — all the essential tools in one click.">
 <meta name="theme-color" content="#070b16" id="themeColorMeta">
@@ -17,6 +38,12 @@
 <link rel="icon" id="siteFavicon" href="ds.png" integrity="sha384-FzBCWcgv5VqBLEPSBvyC78gOs2HMh3hKu2LSLSXU01NgL5yKLk/nHdINuu0Ztky1"/>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<!-- ITEM 44: the font CSS is render-blocking, so fetch it in parallel with the
+     document instead of after style.css. display=swap keeps text visible while
+     the woff2 files arrive. A per-file <link rel=preload as=font> is not
+     possible here: the woff2 URLs are hashed per Google build, so they can only
+     be preloaded if the fonts are self-hosted. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 
 <!-- GA4 loads only when a real Measurement ID is saved in Admin > SEO -->
@@ -146,7 +173,6 @@
     <!-- TAB 1: TOOLS -->
     <div class="tab-content active" id="tabTools">
       <div class="settings-section-title">🧰 Tool Library — search, filter, bulk actions &amp; link checks</div>
-      <div id="mmPanel"></div>
       <hr class="settings-divider">
 
       <div class="settings-section-title" id="toolFormTitle">➕ Add New Tool</div>
@@ -1334,5 +1360,15 @@
 
   <script src="config.js"></script>
   <script src="script.js"></script>
+  <script>
+  /* ITEM 45: cache the app shell so the admin panel opens offline. Registered
+     after load so it never competes with the first paint, and skipped on
+     file:// where service workers are not allowed. */
+  if ('serviceWorker' in navigator && location.protocol === 'https:') {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () { /* private mode or blocked */ });
+    });
+  }
+  </script>
 </body>
 </html>

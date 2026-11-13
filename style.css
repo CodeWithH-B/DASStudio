@@ -41,6 +41,8 @@
 
   #maintenanceOverlay{position:fixed;inset:0;background:var(--bg);z-index:9999;display:none;align-items:center;
     justify-content:center;text-align:center;padding:20px;}
+  /* a signed-in admin (or ?admin=1) is never gated by their own maintenance page */
+  #maintenanceOverlay.adm-bypass{display:none!important}
   #maintenanceOverlay h1{font-size:2.5rem;margin-bottom:12px;color:var(--text)}
   #maintenanceOverlay p{color:var(--muted);font-size:1.1rem}
 
@@ -109,7 +111,6 @@
   .chip.active{background:linear-gradient(135deg,var(--accent-grad-1),var(--accent-grad-2));color:#fff;border-color:transparent;
     box-shadow:0 8px 22px -10px var(--accent-grad-1);}
 
-  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;padding-bottom:60px}
 
   .card{--accent:#6366f1;background:color-mix(in srgb,var(--panel) var(--glass-alpha,100%),transparent);
     border:1px solid var(--panel-border);border-radius:var(--card-radius,14px);overflow:hidden;
@@ -178,7 +179,9 @@
   .btn-secondary{padding:9px 16px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer}
   .btn-secondary:disabled{opacity:.4;cursor:not-allowed}
   .btn-primary{padding:9px 16px;border-radius:8px;border:none;background:linear-gradient(135deg,var(--accent-grad-1),var(--accent-grad-2));
-    color:#fff;font-weight:600;cursor:pointer}
+    /* ITEM 22: --btn-fg is computed from the accent's contrast ratio in
+       apApplyDesign(); a variable beats fighting .light-accent with !important */
+    color:var(--btn-fg,#fff);font-weight:600;cursor:pointer}
   .btn-primary:disabled{opacity:.4;cursor:not-allowed}
 
   .settings-section-title{font-size:13.5px;font-weight:700;color:var(--accent-grad-1);margin:6px 0 12px;
@@ -888,8 +891,11 @@
   /* ============================================================
      ADMIN SHELL — full-page dashboard with sidebar navigation
      ============================================================ */
+  /* Z-INDEX: must stay ABOVE #maintenanceOverlay (9999) and BELOW #admLogin
+     (10001). At z-index:100 a site in maintenance mode hid the whole admin
+     shell behind the overlay, so the owner could sign in and then see nothing. */
   #adminModal{display:none;padding:0;align-items:stretch;justify-content:flex-start;
-    background:var(--bg);backdrop-filter:none;z-index:100}
+    background:var(--bg);backdrop-filter:none;z-index:10000}
   #adminModal.active{display:flex}
   #adminModal .modal{max-width:none;max-height:none;width:auto;flex:1;border-radius:0;border:none;
     height:100vh;overflow-y:auto;padding:0 30px 48px;background:var(--bg2);box-shadow:none;opacity:1}
@@ -989,7 +995,6 @@
      card system, multi-column footer, accessibility
      ============================================================ */
   :root{
-    --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px; --sp-7:48px; --sp-8:64px;
     --fs-h1:clamp(30px,4.4vw,50px); --fs-h2:clamp(22px,2.6vw,30px); --fs-card:clamp(17px,1.5vw,21px);
     --fs-body:15px; --fs-nav:14px; --fs-small:12.5px;
   }
@@ -1395,7 +1400,6 @@
   .t-glasslight .top{background:rgba(255,255,255,.55);backdrop-filter:blur(18px)}
   /* ============ CONTRAST FIXES FOR ALL THEMES ============ */
   /* light accents (gold, neon, yellow, pastel) need dark text on buttons */
-  .light-accent .btn-primary,
   .light-accent .chip.active,
   .light-accent .admin-btn,
   .light-accent .feedback-float,
@@ -1406,7 +1410,8 @@
   .light-accent .t20-bar button.active,
   .light-accent .th-tabs button.active,
   .light-accent .ann-item.active{color:#111318!important;text-shadow:none}
-  .light-accent .btn-primary svg,.light-accent .chip.active svg{stroke:#111318!important}
+  .light-accent .btn-primary svg{stroke:currentColor}
+  .light-accent .chip.active svg{stroke:#111318!important}
   .light-accent .feedback-float{box-shadow:0 10px 26px -14px rgba(0,0,0,.55)}
 
   /* inputs and chips sit on the theme surface, not the base one */
@@ -1461,6 +1466,9 @@
   /* ============ RECENTLY VIEWED ============ */
   #recentRow{display:none;margin:0 0 18px}
   #recentRow.show{display:block}
+  /* ITEM 13: once the row has been on screen, keep its height reserved so
+     showing/hiding it stops shifting the filter bar up and down */
+  #recentRow[data-reserved]{min-height:56px}
   .recent-title{font-size:11px;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);font-weight:800;margin-bottom:8px}
   .recent-list{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}
   .recent-item{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:10px;border:1px solid var(--border);
@@ -1475,6 +1483,11 @@
     border:1px solid rgba(255,255,255,.35);background:rgba(0,0,0,.55);color:#fff;font-size:12px;line-height:1;
     cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:.15s}
   .card:hover .card-info-btn,.card-info-btn:focus{opacity:1}
+  /* ITEM 17: there is no hover on a touch screen, so opacity:0 meant the button
+     never appeared on a phone at all. */
+  @media (hover:none){
+    .card-info-btn{opacity:1}
+  }
 
   /* ============ ADMIN SETUP CHECKLIST ============ */
   .setup-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:14px}
@@ -1775,3 +1788,47 @@ img{max-width:100%}
 }
 .modal-overlay{padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}
 .net-toast{bottom:calc(20px + env(safe-area-inset-bottom,0px))}
+
+/* ==================================================================
+   ITEMS 10, 12, 21, 28-30, 34 — states added in this pass
+   ================================================================== */
+
+/* admin sign-in: remember-me, mode status, spinner (items 10, 21) */
+.al-remember{display:flex;align-items:center;gap:8px;margin:10px 0 2px;font-size:12.5px;color:var(--muted);cursor:pointer}
+.al-remember input{width:auto;margin:0;accent-color:var(--accent-grad-1)}
+.al-status{font-size:12px;line-height:1.5;margin:8px 0 0;padding:8px 10px;border-radius:8px;border:1px solid var(--border);color:var(--muted)}
+.al-status.ok{border-color:rgba(34,197,94,.45);background:rgba(34,197,94,.08);color:#22c55e}
+.al-status.warn{border-color:rgba(245,158,11,.45);background:rgba(245,158,11,.08);color:#f59e0b}
+.al-status.wait{border-color:var(--border);background:var(--panel)}
+.al-spin{display:inline-block;width:11px;height:11px;margin-right:6px;vertical-align:-1px;border-radius:50%;
+  border:2px solid currentColor;border-top-color:transparent;animation:alSpin .7s linear infinite}
+@keyframes alSpin{to{transform:rotate(360deg)}}
+
+/* a cloud pull is in flight: the grid is stale, say so (item 12) */
+#grid.is-pulling{opacity:.55;transition:opacity .2s}
+
+/* SLA badge on a ticket card (item 29) */
+.fb-sla{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:99px;font-size:11px;font-weight:700;
+  background:rgba(245,158,11,.14);color:#f59e0b;border:1px solid rgba(245,158,11,.4)}
+.fb-sla.late{background:rgba(239,68,68,.14);color:#ef4444;border-color:rgba(239,68,68,.45)}
+
+/* 24h threat timeline (item 30) */
+.tl-chart{display:flex;align-items:flex-end;gap:3px;height:64px;padding:8px;border:1px solid var(--panel-border);
+  border-radius:12px;background:var(--panel);margin-bottom:14px}
+.tl-bar{flex:1;min-width:3px;border-radius:2px;align-self:flex-end;opacity:.9}
+
+/* "in short" analytics summary (item 28) */
+.an-summary{padding:12px 14px;margin-bottom:16px;border-radius:14px;border:1px solid var(--panel-border);
+  background:var(--panel);box-shadow:0 10px 24px -22px rgba(0,0,0,.6)}
+.an-summary .settings-section-title{margin:0 0 8px}
+.an-sum-line{font-size:13px;line-height:1.6;color:var(--text)}
+
+/* KPI trend arrow (item 34) */
+.kpi-trend{display:inline-block;margin-top:2px;font-size:11.5px;font-weight:800;letter-spacing:.2px}
+.kpi-trend.up{color:#10b981}
+.kpi-trend.down{color:#ef4444}
+
+/* ==================================================================
+   ITEM 43 — card images get a reserved 16:9 box (no CLS)
+   ================================================================== */
+#grid .card img{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;background:var(--card)}
